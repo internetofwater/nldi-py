@@ -1,2 +1,2 @@
-# pynldi
+# NLDI
 Python package for Network Linked Data Index

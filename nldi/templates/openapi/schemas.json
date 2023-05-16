@@ -1,0 +1,328 @@
+{
+  "DataSource": {
+    "type": "object",
+    "properties": {
+      "source": {
+        "type": "string"
+      },
+      "sourceName": {
+        "type": "string"
+      },
+      "features": {
+        "type": "string"
+      }
+    }
+  },
+  "Feature": {
+    "type": "object",
+    "properties": {
+      "type": {
+        "type": "string"
+      },
+      "geometry": {
+        "$ref": "#/components/schemas/FeatureGeometry"
+      },
+      "properties": {
+        "$ref": "#/components/schemas/FeatureProperties"
+      }
+    }
+  },
+  "Geometry": {
+    "type": "object",
+    "properties": {
+      "type": {
+        "type": "string"
+      },
+      "bbox": {
+        "type": "array",
+        "items": {
+          "type": "number",
+          "format": "double"
+        }
+      }
+    }
+  },
+  "GeometryCollection": {
+    "type": "object",
+    "allOf": [
+      {
+        "$ref": "#/components/schemas/Geometry"
+      },
+      {
+        "type": "object",
+        "properties": {
+          "geometries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Geometry"
+            }
+          }
+        }
+      }
+    ]
+  },
+  "LineString": {
+    "type": "object",
+    "allOf": [
+      {
+        "$ref": "#/components/schemas/Geometry"
+      },
+      {
+        "type": "object",
+        "properties": {
+          "coordinates": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Position"
+            }
+          }
+        }
+      }
+    ]
+  },
+  "MultiLineString": {
+    "type": "object",
+    "allOf": [
+      {
+        "$ref": "#/components/schemas/Geometry"
+      },
+      {
+        "type": "object",
+        "properties": {
+          "coordinates": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/Position"
+              }
+            }
+          }
+        }
+      }
+    ]
+  },
+  "MultiPoint": {
+    "type": "object",
+    "allOf": [
+      {
+        "$ref": "#/components/schemas/Geometry"
+      },
+      {
+        "type": "object",
+        "properties": {
+          "coordinates": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Position"
+            }
+          }
+        }
+      }
+    ]
+  },
+  "MultiPolygon": {
+    "type": "object",
+    "allOf": [
+      {
+        "$ref": "#/components/schemas/Geometry"
+      },
+      {
+        "type": "object",
+        "properties": {
+          "coordinates": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Position"
+                }
+              }
+            }
+          }
+        }
+      }
+    ]
+  },
+  "Point": {
+    "type": "object",
+    "allOf": [
+      {
+        "$ref": "#/components/schemas/Geometry"
+      },
+      {
+        "type": "object",
+        "properties": {
+          "coordinates": {
+            "$ref": "#/components/schemas/Position"
+          }
+        }
+      }
+    ]
+  },
+  "Polygon": {
+    "type": "object",
+    "allOf": [
+      {
+        "$ref": "#/components/schemas/Geometry"
+      },
+      {
+        "type": "object",
+        "properties": {
+          "coordinates": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/Position"
+              }
+            }
+          }
+        }
+      }
+    ]
+  },
+  "Position": {
+    "type": "object",
+    "properties": {
+      "additionalElements": {
+        "type": "array",
+        "items": {
+          "type": "number",
+          "format": "double"
+        }
+      },
+      "m": {
+        "type": "number",
+        "format": "double"
+      },
+      "y": {
+        "type": "number",
+        "format": "double"
+      },
+      "x": {
+        "type": "number",
+        "format": "double"
+      },
+      "z": {
+        "type": "number",
+        "format": "double"
+      }
+    }
+  },
+  "FeatureList": {
+    "type": "object",
+    "properties": {
+      "features": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/Feature"
+        }
+      },
+      "navigationUrls": {
+        "type": "string",
+        "writeOnly": true
+      }
+    }
+  },
+  "FeatureGeometry": {
+    "type": "object",
+    "properties": {
+      "type": {
+        "type": "string"
+      },
+      "coordinates": {
+        "maxItems": 2,
+        "minItems": 2,
+        "type": "array",
+        "items": {
+          "type": "number",
+          "format": "double"
+        }
+      }
+    }
+  },
+  "FeatureProperties": {
+    "type": "object",
+    "properties": {
+      "type": {
+        "type": "string"
+      },
+      "source": {
+        "type": "string"
+      },
+      "sourceName": {
+        "type": "string"
+      },
+      "identifier": {
+        "type": "string"
+      },
+      "name": {
+        "type": "string"
+      },
+      "uri": {
+        "type": "string"
+      },
+      "comid": {
+        "type": "string"
+      },
+      "reachcode": {
+        "type": "string"
+      },
+      "measure": {
+        "type": "string"
+      },
+      "navigation": {
+        "type": "string"
+      }
+    }
+  },
+  "Comid": {
+    "type": "object",
+    "properties": {
+      "geometry": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/GeometryCollection"
+          },
+          {
+            "$ref": "#/components/schemas/LineString"
+          },
+          {
+            "$ref": "#/components/schemas/MultiLineString"
+          },
+          {
+            "$ref": "#/components/schemas/MultiPoint"
+          },
+          {
+            "$ref": "#/components/schemas/MultiPolygon"
+          },
+          {
+            "$ref": "#/components/schemas/Point"
+          },
+          {
+            "$ref": "#/components/schemas/Polygon"
+          }
+        ]
+      },
+      "identifier": {
+        "type": "string"
+      },
+      "comid": {
+        "type": "integer",
+        "format": "int32"
+      },
+      "navigation": {
+        "type": "string"
+      },
+      "sourceName": {
+        "type": "string"
+      },
+      "source": {
+        "type": "string"
+      }
+    }
+  }
+}

@@ -1,0 +1,49 @@
+---
+version: '3.3'
+
+services:
+  demo:
+    image: ghcr.io/internetofwater/nldi-db:demo
+    platform: linux/amd64
+    container_name: nldi-db
+    environment:
+      POSTGRES_PASSWORD: changeMe
+      POSTGRES_DB: nldi
+      NLDI_DATABASE_ADDRESS: nldi-db
+      NLDI_DATABASE_NAME: nldi
+      NLDI_DB_OWNER_USERNAME: root
+      NLDI_DB_OWNER_PASSWORD: changeMe
+      NLDI_SCHEMA_OWNER_USERNAME: nldi_schema_owner
+      NLDI_SCHEMA_OWNER_PASSWORD: changeMe
+      NHDPLUS_SCHEMA_OWNER_USERNAME: nhdplus
+      NLDI_READ_ONLY_USERNAME: read_only_user
+      NLDI_READ_ONLY_PASSWORD: changeMe
+    networks:
+      - nldi
+
+  nldi:
+    build:
+      context: .
+    container_name: nldi
+    environment:
+      NLDI_URL: http://localhost:8081/api/nldi
+      NLDI_PATH: /api/nldi
+    networks:
+      - nldi
+    ports:
+      - "8081:80"
+
+  pgadmin:
+    container_name: pgadmin4_container
+    image: dpage/pgadmin4
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: root
+    networks:
+      - nldi
+    ports:
+      - "5050:80"
+
+networks:
+  nldi:

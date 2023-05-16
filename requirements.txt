@@ -1,0 +1,11 @@
+click>7,<=8
+Flask
+geoalchemy
+psycopg2
+pygeoapi
+pygeofilter[backend-sqlalchemy]
+pygeoif
+PyYAML
+requests
+SQLAlchemy<2.0.0
+unicodecsv
