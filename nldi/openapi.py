@@ -39,8 +39,7 @@ import click
 import yaml
 
 from pygeoapi.models.openapi import OAPIFormat
-from pygeoapi.util import (filter_dict_by_key_value, get_provider_by_type,
-                           filter_providers_by_type, to_json, yaml_load,
+from pygeoapi.util import (to_json, yaml_load,
                            url_join, get_base_url)
 
 from nldi import __version__
@@ -77,6 +76,9 @@ def get_oas(cfg):
     :returns: OpenAPI definition YAML dict
     """
 
+    cfg = deepcopy(cfg)
+
+    LOGGER.debug('Generating OpenAPI document')
     oas = {
         'openapi': '3.0.1',
         'tags': [],
@@ -87,7 +89,26 @@ def get_oas(cfg):
         }
     }
 
-    info = {
+    paths = {}
+    tags = [
+        {
+            'description': 'NLDI home',
+            'externalDocs': {
+                'description': 'information',
+                'url': 'https://github.com/internetofwater/nldi-services'
+            },
+            'name': 'nldi'
+        }, {
+            'description': 'NHDPlus Version 2 COMID',
+            'externalDocs': {
+                'description': 'information',
+                'url': 'https://www.usgs.gov/national-hydrography/national-hydrography-dataset'  # noqa
+            },
+            'name': 'comid'
+        }
+    ]
+
+    oas['info'] = {
         'title': cfg['metadata']['identification']['title'],
         'description': cfg['metadata']['identification']['description'],
         'x-keywords': cfg['metadata']['identification']['keywords'],
@@ -103,19 +124,19 @@ def get_oas(cfg):
         },
         'version': __version__
     }
-    oas['info'] = info
 
     oas['servers'] = [
         {
             'url': 'https://labs.waterdata.usgs.gov/api/nldi',
             'description': 'Network Linked Data Index API'
         }, {
+            'url': 'https://labs-beta.waterdata.usgs.gov/api/nldi/',
+            'description': 'Network Linked Data Index API - Beta'
+        }, {
             'url': get_base_url(cfg),
             'description': cfg['metadata']['identification']['title']
         }
     ]
-
-    paths = {}
 
     paths['/'] = {
         'get': {
@@ -192,30 +213,18 @@ def get_oas(cfg):
         }
     }
 
-    tags = [
-        {
-            'description': 'NLDI home',
-            'externalDocs': {
-                'description': 'information',
-                'url': 'https://github.com/internetofwater/nldi-services'
-            },
-            'name': 'nldi'
-        }, {
-            'description': 'NHDPlus Version 2 COMID',
-            'externalDocs': {
-                'description': 'information',
-                'url': 'https://www.usgs.gov/national-hydrography/national-hydrography-dataset'  # noqa
-            },
-            'name': 'comid'
-        }
-    ]
-
-    for src in sort_sources(cfg['sources']):
+    comid = {
+        'source_suffix': 'comid',
+        'source_name': 'NHDPlus comid'
+    }
+    sources = [comid, *sort_sources(cfg['sources'])]
+    for src in sources:
         src_id = src['source_suffix'].lower()
         src_name = src['source_name']
-
         src_path = f'/linked-data/{src_id}'
         src_title = f'get{src_id.title()}'
+        LOGGER.debug(f'Processing {src_id}')
+
         paths[src_path] = {
             'get': {
                 'summary': src_title,

@@ -37,7 +37,7 @@ logging:
 
 metadata:
   identification:
-    title: Network Linked Data Index API in Python
+    title: Network Linked Data Index API - Python
     description: |
       The NLDI is a search service that takes a watershed 
       outlet identifier as a starting point, a navigation 
@@ -79,17 +79,6 @@ sources:
     feature_id: HUC_12
     feature_name: HUC_12
     feature_uri: HUC_12
-    feature_reach: NULL
-    feature_measure: NULL
-    ingest_type: point
-    feature_type: hydrolocation
-  - crawler_source_id: 2
-    source_name: COMID
-    source_suffix: comid
-    source_uri: NULL
-    feature_id: comid
-    feature_name: comid
-    feature_uri: comid
     feature_reach: NULL
     feature_measure: NULL
     ingest_type: point
