@@ -166,28 +166,28 @@ def get_oas(cfg):
         }
     }
 
-    paths['/lookups'] = {
-        'get': {
-            'summary': 'getLookups',
-            'description': 'Returns characteristics types',
-            'tags': ['nldi'],
-            'operationId': 'getLookups',
-            'responses': RESPONSES_
-        }
-    }
+    # paths['/lookups'] = {
+    #     'get': {
+    #         'summary': 'getLookups',
+    #         'description': 'Returns characteristics types',
+    #         'tags': ['nldi'],
+    #         'operationId': 'getLookups',
+    #         'responses': RESPONSES_
+    #     }
+    # }
 
-    paths['/lookups/{characteristicType}/characteristics'] = {
-        'get': {
-            'summary': 'getLookupsCharacteristics',
-            'description': 'Returns available characteristics metadata',
-            'tags': ['nldi'],
-            'operationId': 'getLookupsCharacteristics',
-            'parameters': [
-                {'$ref': '#/components/parameters/characteristicType'}
-            ],
-            'responses': RESPONSES_
-        }
-    }
+    # paths['/lookups/{characteristicType}/characteristics'] = {
+    #     'get': {
+    #         'summary': 'getLookupsCharacteristics',
+    #         'description': 'Returns available characteristics metadata',
+    #         'tags': ['nldi'],
+    #         'operationId': 'getLookupsCharacteristics',
+    #         'parameters': [
+    #             {'$ref': '#/components/parameters/characteristicType'}
+    #         ],
+    #         'responses': RESPONSES_
+    #     }
+    # }
 
     paths['/linked-data'] = {
         'get': {
@@ -268,22 +268,22 @@ def get_oas(cfg):
             }
         }
 
-        src_by_char = url_join('/', src_by_feature, '{characteristicType}')
-        paths[src_by_char] = {
-            'get': {
-                'summary': f'{src_title}Characteristics',
-                'description': ('returns all characteristics of the given '
-                                'type for the specified feature'),
-                'tags': [src_id],
-                'operationId': f'{src_title}Characteristics',
-                'parameters': [
-                    {'$ref': '#/components/parameters/featureId'},
-                    {'$ref': '#/components/parameters/characteristicType'},
-                    {'$ref': '#/components/parameters/characteristicId'}
-                ],
-                'responses': RESPONSES_
-            }
-        }
+        # src_by_char = url_join('/', src_by_feature, '{characteristicType}')
+        # paths[src_by_char] = {
+        #     'get': {
+        #         'summary': f'{src_title}Characteristics',
+        #         'description': ('returns all characteristics of the given '
+        #                         'type for the specified feature'),
+        #         'tags': [src_id],
+        #         'operationId': f'{src_title}Characteristics',
+        #         'parameters': [
+        #             {'$ref': '#/components/parameters/featureId'},
+        #             {'$ref': '#/components/parameters/characteristicType'},
+        #             {'$ref': '#/components/parameters/characteristicId'}
+        #         ],
+        #         'responses': RESPONSES_
+        #     }
+        # }
 
         src_by_basin = url_join('/', src_by_feature, 'basin')
         paths[src_by_basin] = {
