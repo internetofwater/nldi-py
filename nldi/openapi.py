@@ -49,22 +49,14 @@ LOGGER = logging.getLogger(__name__)
 
 THISDIR = os.path.dirname(os.path.realpath(__file__))
 
-with open(TEMPLATES / 'openapi' / 'schemas.json', 'r') as fh:
-    SCHEMAS = json.load(fh)
+with open(TEMPLATES / 'openapi' / 'schemas.yaml', 'r') as fh:
+    SCHEMAS = yaml_load(fh)
 
-with open(TEMPLATES / 'openapi' / 'parameters.json', 'r') as fh:
-    PARAMETERS = json.load(fh)
+with open(TEMPLATES / 'openapi' / 'parameters.yaml', 'r') as fh:
+    PARAMETERS = yaml_load(fh)
 
-with open(TEMPLATES / 'openapi' / 'responses.json', 'r') as fh:
-    RESPONSES = json.load(fh)
-
-RESPONSES_ = {
-    '200': {'$ref': '#/components/responses/200'},
-    '400': {'$ref': '#/components/responses/400'},
-    '404': {'$ref': '#/components/responses/404'},
-    '406': {'$ref': '#/components/responses/406'},
-    '500': {'$ref': '#/components/responses/500'},
-}
+with open(TEMPLATES / 'openapi' / 'responses.yaml', 'r') as fh:
+    RESPONSES = yaml_load(fh)
 
 
 def get_oas(cfg):
@@ -145,7 +137,7 @@ def get_oas(cfg):
             'tags': ['nldi'],
             'operationId': 'getLandingPage',
             'responses': {
-                '200': {'$ref': '#/components/responses/200'},
+                '200': {'description': 'OK'},
                 '400': {'$ref': '#/components/responses/400'},
                 '500': {'$ref': '#/components/responses/500'},
             }
@@ -159,7 +151,7 @@ def get_oas(cfg):
             'tags': ['nldi'],
             'operationId': 'getOpenAPI',
             'responses': {
-                '200': {'$ref': '#/components/responses/200'},
+                '200': {'description': 'OK'},
                 '400': {'$ref': '#/components/responses/400'},
                 '500': {'$ref': '#/components/responses/500'},
             }
@@ -172,7 +164,7 @@ def get_oas(cfg):
     #         'description': 'Returns characteristics types',
     #         'tags': ['nldi'],
     #         'operationId': 'getLookups',
-    #         'responses': RESPONSES_
+    #         'responses': RESPONSES
     #     }
     # }
 
@@ -185,7 +177,7 @@ def get_oas(cfg):
     #         'parameters': [
     #             {'$ref': '#/components/parameters/characteristicType'}
     #         ],
-    #         'responses': RESPONSES_
+    #         'responses': RESPONSES
     #     }
     # }
 
@@ -195,7 +187,19 @@ def get_oas(cfg):
             'description': 'Returns a list of data sources',
             'tags': ['nldi'],
             'operationId': 'getDataSources',
-            'responses': RESPONSES_
+            'responses': {
+                '200': {
+                    'description': 'OK',
+                    'content': {
+                        'application/json': {
+                            'schema': {
+                                '$ref': '#/components/schemas/DataSourceList'
+                            }
+                        }
+                    }
+                },
+                **RESPONSES
+            }
         }
     }
 
@@ -209,7 +213,19 @@ def get_oas(cfg):
             'parameters': [
                 {'$ref': '#/components/parameters/coords'}
             ],
-            'responses': RESPONSES_
+            'responses': {
+                '200': {
+                    'description': 'OK',
+                    'content': {
+                        'application/json': {
+                            'schema': {
+                                '$ref': '#/components/schemas/FeatureCollection'  # noqa
+                            }
+                        }
+                    }
+                },
+                **RESPONSES
+            }
         }
     }
 
@@ -231,7 +247,19 @@ def get_oas(cfg):
                 'description': src_name,
                 'tags': [src_id],
                 'operationId': src_title,
-                'responses': RESPONSES_
+                'responses': {
+                    '200': {
+                        'description': 'OK',
+                        'content': {
+                            'application/json': {
+                                'schema': {
+                                    '$ref': '#/components/schemas/FeatureCollection'  # noqa
+                                }
+                            }
+                        }
+                    },
+                    **RESPONSES
+                }
             }
         }
 
@@ -247,7 +275,19 @@ def get_oas(cfg):
                     'parameters': [
                         {'$ref': '#/components/parameters/coords'}
                     ],
-                    'responses': RESPONSES_
+                    'responses': {
+                        '200': {
+                            'description': 'OK',
+                            'content': {
+                                'application/json': {
+                                    'schema': {
+                                        '$ref': '#/components/schemas/Feature'
+                                    }
+                                }
+                            }
+                        },
+                        **RESPONSES
+                    }
                 }
             }
         else:
@@ -264,7 +304,24 @@ def get_oas(cfg):
                 'parameters': [
                     {'$ref': '#/components/parameters/featureId'}
                 ],
-                'responses': RESPONSES_
+                'responses': {
+                    '200': {
+                        'description': 'OK',
+                        'content': {
+                            'application/json': {
+                                'schema': {
+                                    '$ref': '#/components/schemas/FeatureCollection'  # noqa
+                                }
+                            },
+                            'application/vnd.geo+json': {
+                                'schema': {
+                                    '$ref': '#/components/schemas/FeatureCollection'  # noqa
+                                }
+                            }
+                        }
+                    },
+                    **RESPONSES
+                }
             }
         }
 
@@ -281,7 +338,7 @@ def get_oas(cfg):
         #             {'$ref': '#/components/parameters/characteristicType'},
         #             {'$ref': '#/components/parameters/characteristicId'}
         #         ],
-        #         'responses': RESPONSES_
+        #         'responses': RESPONSES
         #     }
         # }
 
@@ -298,7 +355,24 @@ def get_oas(cfg):
                     {'$ref': '#/components/parameters/simplified'},
                     {'$ref': '#/components/parameters/splitCatchment'}
                 ],
-                'responses': RESPONSES_
+                'responses': {
+                    '200': {
+                        'description': 'OK',
+                        'content': {
+                            'application/json': {
+                                'schema': {
+                                    '$ref': '#/components/schemas/FeatureCollection'  # noqa
+                                }
+                            },
+                            'application/vnd.geo+json': {
+                                'schema': {
+                                    '$ref': '#/components/schemas/FeatureCollection'  # noqa
+                                }
+                            }
+                        }
+                    },
+                    **RESPONSES
+                }
             }
         }
 
@@ -312,7 +386,22 @@ def get_oas(cfg):
                 'parameters': [
                     {'$ref': '#/components/parameters/featureId'}
                 ],
-                'responses': RESPONSES_
+                'responses': {
+                    '200': {
+                        'description': 'OK',
+                        'content': {
+                            'application/json': {
+                                'schema': {
+                                    'type': 'object',
+                                    'additionalProperties': {
+                                        'type': 'object'
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    **RESPONSES
+                }
             }
         }
 
@@ -327,7 +416,19 @@ def get_oas(cfg):
                     {'$ref': '#/components/parameters/featureId'},
                     {'$ref': '#/components/parameters/navigationMode'}
                 ],
-                'responses': RESPONSES_
+                'responses': {
+                    '200': {
+                        'description': 'OK',
+                        'content': {
+                            'application/json': {
+                                'schema': {
+                                    '$ref': '#/components/schemas/DataSourceList'  # noqa
+                                }
+                            }
+                        }
+                    },
+                    **RESPONSES
+                }
             }
         }
 
@@ -348,7 +449,29 @@ def get_oas(cfg):
                     {'$ref': '#/components/parameters/distance'},
                     {'$ref': '#/components/parameters/legacy'}
                 ],
-                'responses': RESPONSES_
+                'responses': {
+                    '200': {
+                        'description': 'OK',
+                        'content': {
+                            'application/json': {
+                                'schema': {
+                                    '$ref': '#/components/schemas/FeatureCollection'  # noqa
+                                }
+                            },
+                            'application/vnd.geo+json': {
+                                'schema': {
+                                    '$ref': '#/components/schemas/FeatureCollection'  # noqa
+                                }
+                            },
+                            'application/ld+json': {
+                                'schema': {
+                                    '$ref': '#/components/schemas/FeatureCollection'  # noqa
+                                }
+                            }
+                        }
+                    },
+                    **RESPONSES
+                }
             }
         }
 
@@ -369,7 +492,29 @@ def get_oas(cfg):
                     {'$ref': '#/components/parameters/trimTolerance'},
                     {'$ref': '#/components/parameters/legacy'}
                 ],
-                'responses': RESPONSES_
+                'responses': {
+                    '200': {
+                        'description': 'OK',
+                        'content': {
+                            'application/json': {
+                                'schema': {
+                                    '$ref': '#/components/schemas/FeatureCollection'  # noqa
+                                }
+                            },
+                            'application/vnd.geo+json': {
+                                'schema': {
+                                    '$ref': '#/components/schemas/FeatureCollection'  # noqa
+                                }
+                            },
+                            'application/ld+json': {
+                                'schema': {
+                                    '$ref': '#/components/schemas/FeatureCollection'  # noqa
+                                }
+                            }
+                        }
+                    },
+                    **RESPONSES
+                }
             }
         }
 
@@ -398,7 +543,8 @@ def generate_openapi_document(cfg_file: Union[Path, io.TextIOWrapper],
     pretty_print = s['server'].get('pretty_print', False)
 
     if output_format == 'yaml':
-        content = yaml.safe_dump(get_oas(s), default_flow_style=False)
+        content = yaml.safe_dump(
+            get_oas(s), default_flow_style=False, sort_keys=False)
     else:
         content = to_json(get_oas(s), pretty=pretty_print)
     return content
