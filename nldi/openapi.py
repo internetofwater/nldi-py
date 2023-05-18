@@ -43,20 +43,25 @@ from pygeoapi.util import (to_json, yaml_load,
                            url_join, get_base_url)
 
 from nldi import __version__
-from nldi.util import TEMPLATES, sort_sources
+from nldi.util import SCHEMAS, sort_sources
 
 LOGGER = logging.getLogger(__name__)
 
-THISDIR = os.path.dirname(os.path.realpath(__file__))
+with open(SCHEMAS / 'openapi' / 'schemas.yaml', 'r') as fh:
+    OAS_SCHEMAS = yaml_load(fh)
 
-with open(TEMPLATES / 'openapi' / 'schemas.yaml', 'r') as fh:
-    SCHEMAS = yaml_load(fh)
+with open(SCHEMAS / 'openapi' / 'parameters.yaml', 'r') as fh:
+    OAS_PARAMETERS = yaml_load(fh)
 
-with open(TEMPLATES / 'openapi' / 'parameters.yaml', 'r') as fh:
-    PARAMETERS = yaml_load(fh)
+with open(SCHEMAS / 'openapi' / 'responses.yaml', 'r') as fh:
+    OAS_RESPONSES = yaml_load(fh)
 
-with open(TEMPLATES / 'openapi' / 'responses.yaml', 'r') as fh:
-    RESPONSES = yaml_load(fh)
+RESPONSES = {
+    '400': {'$ref': '#/components/responses/400'},
+    '404': {'$ref': '#/components/responses/404'},
+    '406': {'$ref': '#/components/responses/406'},
+    '500': {'$ref': '#/components/responses/500'}
+}
 
 
 def get_oas(cfg):
@@ -73,32 +78,15 @@ def get_oas(cfg):
     LOGGER.debug('Generating OpenAPI document')
     oas = {
         'openapi': '3.0.1',
-        'tags': [],
+        'info': {},
+        'servers': {},
         'components': {
-            'schemas': SCHEMAS,
-            'responses': RESPONSES,
-            'parameters': PARAMETERS
-        }
+            'schemas': OAS_SCHEMAS,
+            'responses': OAS_RESPONSES,
+            'parameters': OAS_PARAMETERS
+        },
+        'tags': []
     }
-
-    paths = {}
-    tags = [
-        {
-            'description': 'NLDI home',
-            'externalDocs': {
-                'description': 'information',
-                'url': 'https://github.com/internetofwater/nldi-services'
-            },
-            'name': 'nldi'
-        }, {
-            'description': 'NHDPlus Version 2 COMID',
-            'externalDocs': {
-                'description': 'information',
-                'url': 'https://www.usgs.gov/national-hydrography/national-hydrography-dataset'  # noqa
-            },
-            'name': 'comid'
-        }
-    ]
 
     oas['info'] = {
         'title': cfg['metadata']['identification']['title'],
@@ -127,6 +115,25 @@ def get_oas(cfg):
         }, {
             'url': get_base_url(cfg),
             'description': cfg['metadata']['identification']['title']
+        }
+    ]
+
+    paths = {}
+    tags = [
+        {
+            'description': 'NLDI home',
+            'externalDocs': {
+                'description': 'information',
+                'url': 'https://github.com/internetofwater/nldi-services'
+            },
+            'name': 'nldi'
+        }, {
+            'description': 'NHDPlus Version 2 COMID',
+            'externalDocs': {
+                'description': 'information',
+                'url': 'https://www.usgs.gov/national-hydrography/national-hydrography-dataset'  # noqa
+            },
+            'name': 'comid'
         }
     ]
 
@@ -234,6 +241,7 @@ def get_oas(cfg):
         'source_name': 'NHDPlus comid'
     }
     sources = [comid, *sort_sources(cfg['sources'])]
+    _sources = [_src['source_suffix'] for _src in cfg['sources']]
     for src in sources:
         src_id = src['source_suffix'].lower()
         src_name = src['source_name']
@@ -443,10 +451,20 @@ def get_oas(cfg):
                 'operationId': f'{src_title}NavigationDataSource',
                 'parameters': [
                     {'$ref': '#/components/parameters/featureId'},
-                    {'$ref': '#/components/parameters/navigationMode'},
-                    {'$ref': '#/components/parameters/dataSource'},
-                    {'$ref': '#/components/parameters/stopComid'},
+                    {'$ref': '#/components/parameters/navigationModePP'},
+                    {
+                        'name': 'dataSource',
+                        'in': 'path',
+                        'required': True,
+                        'schema': {
+                            'type': 'string',
+                            'example': 'nwissite',
+                            'enum': _sources
+                        },
+                        'example': 'nwissite'
+                    },
                     {'$ref': '#/components/parameters/distance'},
+                    {'$ref': '#/components/parameters/stopComid'},
                     {'$ref': '#/components/parameters/legacy'}
                 ],
                 'responses': {
@@ -485,9 +503,9 @@ def get_oas(cfg):
                 'operationId': f'{src_title}NavigationFlowlines',
                 'parameters': [
                     {'$ref': '#/components/parameters/featureId'},
-                    {'$ref': '#/components/parameters/navigationMode'},
-                    {'$ref': '#/components/parameters/stopComid'},
+                    {'$ref': '#/components/parameters/navigationModePP'},
                     {'$ref': '#/components/parameters/distance'},
+                    {'$ref': '#/components/parameters/stopComid'},
                     {'$ref': '#/components/parameters/trimStart'},
                     {'$ref': '#/components/parameters/trimTolerance'},
                     {'$ref': '#/components/parameters/legacy'}

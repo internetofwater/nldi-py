@@ -22,6 +22,24 @@ splitCatchment:
 navigationMode:
   name: navigationMode
   in: path
+  description: Upstream Main (UM), Upstream Tributaties (UT), Downstream
+    Main (DM), and Downstream Diversion (DD)
+  required: true
+  schema:
+    pattern: DD|DM|UT|UM
+    type: string
+    example: UM
+    enum:
+      - UM
+      - UT
+      - DM
+      - DD
+  example: UM
+navigationModePP:
+  name: navigationMode
+  in: path
+  description: Upstream Main (UM), Upstream Tributaties (UT), Downstream
+    Main (DM), Downstream Diversion (DD), and Point to Point (PP)
   required: true
   schema:
     pattern: DD|DM|PP|UT|UM
@@ -30,23 +48,14 @@ navigationMode:
     enum:
       - UM
       - UT
-      - PP
       - DM
       - DD
+      - PP
   example: UM
-dataSource:
-  name: dataSource
-  in: path
-  required: true
-  schema:
-    type: string
-    example: nwissite
-  example: nwissite
 stopComid:
   name: stopComid
   in: query
-  description:
-    NHDPlus comid to stop at. Only used when navigationMode is PP
+  description: NHDPlus comid to stop at. Only used when navigationMode is PP
   required: false
   schema:
     type: string

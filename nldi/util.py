@@ -41,7 +41,9 @@ from nldi import __version__
 
 LOGGER = logging.getLogger(__name__)
 
-TEMPLATES = Path(__file__).parent.resolve() / 'templates'
+THISDIR = Path(__file__).parent.resolve()
+TEMPLATES = THISDIR / 'templates'
+SCHEMAS = THISDIR / 'schemas'
 
 
 def yaml_load(fh: IO) -> dict:
