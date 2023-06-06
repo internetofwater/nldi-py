@@ -249,27 +249,28 @@ def get_oas(cfg):
         src_title = f'get{src_id.title()}'
         LOGGER.debug(f'Processing {src_id}')
 
-        paths[src_path] = {
-            'get': {
-                'summary': src_title,
-                'description': src_name,
-                'tags': [src_id],
-                'operationId': src_title,
-                'responses': {
-                    '200': {
-                        'description': 'OK',
-                        'content': {
-                            'application/json': {
-                                'schema': {
-                                    '$ref': '#/components/schemas/FeatureCollection'  # noqa
+        if src_id != 'comid':
+            paths[src_path] = {
+                'get': {
+                    'summary': src_title,
+                    'description': src_name,
+                    'tags': [src_id],
+                    'operationId': src_title,
+                    'responses': {
+                        '200': {
+                            'description': 'OK',
+                            'content': {
+                                'application/json': {
+                                    'schema': {
+                                        '$ref': '#/components/schemas/FeatureCollection'  # noqa
+                                    }
                                 }
                             }
-                        }
-                    },
-                    **RESPONSES
+                        },
+                        **RESPONSES
+                    }
                 }
             }
-        }
 
         if src_id.lower() == 'comid':
             src_by_pos = url_join('/', src_path, 'position')
