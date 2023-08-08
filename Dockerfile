@@ -59,7 +59,8 @@ ENV TZ=${TZ} \
   ${ADD_DEB_PACKAGES}"
 
 
-# ADD . /nldi
+ADD . /nldi
+WORKDIR /nldi
 
 # Install operating system dependencies
 RUN \
@@ -69,18 +70,14 @@ RUN \
   && apt-get remove --purge -y gcc ${DEB_BUILD_DEPS} \
   && apt-get clean \
   && apt autoremove -y  \
-  && rm -rf /var/lib/apt/lists/*
-
-WORKDIR /nldi
-ADD . /nldi
-
-RUN \
-  pip3 install -r requirements-docker.txt \
-  && pip3 install --no-deps https://github.com/geopython/pygeoapi/archive/refs/heads/master.zip \
+  && rm -rf /var/lib/apt/lists/* \
   # Install nldi
+  && pip3 install --no-deps https://github.com/geopython/pygeoapi/archive/refs/heads/master.zip \
+  && pip3 install -r requirements-docker.txt \
   && pip3 install -e . \
   # Set default config and entrypoint for Docker Image
   && cp /nldi/docker/default.source.yml /nldi/local.source.yml \
+  && cp /nldi/docker/pygeoapi.config.yml /nldi/pygeoapi.config.yml \
   && cp /nldi/docker/entrypoint.sh /entrypoint.sh
 
 ENTRYPOINT ["/entrypoint.sh"]

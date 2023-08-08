@@ -49,6 +49,7 @@ if 'templates' in CONFIG['server']:
 
 
 APP = Flask(__name__, static_folder=STATIC_FOLDER, static_url_path='/static')
+APP.url_map.strict_slashes = False
 BLUEPRINT = Blueprint('nldi', __name__, static_folder=STATIC_FOLDER)
 
 API_ = API(CONFIG)
@@ -172,5 +173,9 @@ def get_navigation(source_name=None, identifier=None, nav_mode=None, data_source
     return get_response(API_.get_navigation(
         request, source_name, identifier, nav_mode, data_source))
 
+
+if CONFIG['server']['pygeoapi'] is True:
+    from pygeoapi.flask_app import BLUEPRINT as PYGEOAPI_BLUEPRINT
+    APP.register_blueprint(PYGEOAPI_BLUEPRINT, url_prefix='/pygeoapi')
 
 APP.register_blueprint(BLUEPRINT)
