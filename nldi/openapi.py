@@ -29,9 +29,7 @@
 
 from copy import deepcopy
 import io
-import json
 import logging
-import os
 from pathlib import Path
 from typing import Union
 
@@ -39,11 +37,10 @@ import click
 import yaml
 
 from pygeoapi.models.openapi import OAPIFormat
-from pygeoapi.util import (to_json, yaml_load,
-                           url_join, get_base_url)
+from pygeoapi.util import get_base_url
 
 from nldi import __version__
-from nldi.util import SCHEMAS, sort_sources
+from nldi.util import SCHEMAS, sort_sources, url_join, yaml_load, to_json
 
 LOGGER = logging.getLogger(__name__)
 
@@ -107,14 +104,14 @@ def get_oas(cfg):
 
     oas['servers'] = [
         {
+            'url': get_base_url(cfg),
+            'description': cfg['metadata']['identification']['title']
+        }, {
             'url': 'https://labs.waterdata.usgs.gov/api/nldi',
             'description': 'Network Linked Data Index API'
         }, {
             'url': 'https://labs-beta.waterdata.usgs.gov/api/nldi/',
             'description': 'Network Linked Data Index API - Beta'
-        }, {
-            'url': get_base_url(cfg),
-            'description': cfg['metadata']['identification']['title']
         }
     ]
 
@@ -242,6 +239,7 @@ def get_oas(cfg):
     }
     sources = [comid, *sort_sources(cfg['sources'])]
     _sources = [_src['source_suffix'] for _src in cfg['sources']]
+    _sources.insert(0, 'flowlines')
     for src in sources:
         src_id = src['source_suffix'].lower()
         src_name = src['source_name']

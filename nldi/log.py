@@ -33,9 +33,6 @@ import logging
 import sys
 
 
-from nldi.env import NLDI_LOGLEVEL
-
-
 LOGGER = logging.getLogger(__name__)
 
 

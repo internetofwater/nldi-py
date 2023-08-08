@@ -35,15 +35,27 @@ from pathlib import Path
 from typing import IO
 import yaml
 
-from jinja2 import Environment, FileSystemLoader, select_autoescape
-
-from nldi import __version__
-
 LOGGER = logging.getLogger(__name__)
 
 THISDIR = Path(__file__).parent.resolve()
 TEMPLATES = THISDIR / 'templates'
 SCHEMAS = THISDIR / 'schemas'
+
+
+def url_join(*parts: str) -> str:
+    """
+    helper function to join a URL from a number of parts/fragments.
+    Implemented because urllib.parse.urljoin strips subpaths from
+    host urls if they are specified
+
+    Per https://github.com/geopython/pygeoapi/issues/695
+
+    :param parts: list of parts to join
+
+    :returns: str of resulting URL
+    """
+
+    return '/'.join([str(p).strip().strip('/') for p in parts]).rstrip('/')
 
 
 def yaml_load(fh: IO) -> dict:
