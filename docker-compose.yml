@@ -2,9 +2,17 @@
 version: '3.3'
 
 services:
-  demo:
-    image: ghcr.io/internetofwater/nldi-db:demo
-    platform: linux/amd64
+  # db:
+  #   image: postgis/postgis:12-3.0
+  #   environment:
+  #     POSTGRES_PASSWORD: changeMe
+  #     POSTGRES_DB: nldi
+  #   container_name: nldi-db
+  #   networks:
+  #     - nldi
+
+  nldi-db:
+    image: nldi-db-demo
     container_name: nldi-db
     environment:
       POSTGRES_PASSWORD: changeMe

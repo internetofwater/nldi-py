@@ -77,10 +77,8 @@ ADD . /nldi
 RUN \
   pip3 install -r requirements-docker.txt \
   && pip3 install --no-deps https://github.com/geopython/pygeoapi/archive/refs/heads/master.zip \
-
-  # Install pygeoapi
+  # Install nldi
   && pip3 install -e . \
-
   # Set default config and entrypoint for Docker Image
   && cp /nldi/docker/default.source.yml /nldi/local.source.yml \
   && cp /nldi/docker/entrypoint.sh /entrypoint.sh
