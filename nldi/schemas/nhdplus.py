@@ -31,6 +31,9 @@ from geoalchemy2 import Geometry
 from sqlalchemy import (MetaData, Column, Integer, String,
                         Float, DateTime, SmallInteger)
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import relationship
+
+from nldi.schemas.nldi_data import MainstemLookupModel
 
 # Define the SQLAlchemy model based on the CrawlerSource Pydantic model
 metadata = MetaData(schema='nhdplus')
@@ -137,3 +140,11 @@ class FlowlineVAAModel(BaseModel):
     reachsmdate = Column(DateTime)
     fmeasure = Column(Float)
     tmeasure = Column(Float)
+
+
+FlowlineModel.mainstem_lookup = relationship(
+    MainstemLookupModel,
+    primaryjoin=FlowlineModel.nhdplus_comid == MainstemLookupModel.nhdpv2_comid,  # noqa
+    foreign_keys=[FlowlineModel.nhdplus_comid],
+    uselist=False,
+)

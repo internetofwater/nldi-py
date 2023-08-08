@@ -112,12 +112,13 @@ class FlowlineLookup(BaseLookup):
 
         return {
             'type': 'Feature',
-            'geometry': geometry,
             'properties': {
                 'identifier': item.permanent_identifier,
                 'source': 'comid',
                 'sourceName': 'NHDPlus comid',
                 'comid': item.nhdplus_comid,
+                'mainstem': item.mainstem_lookup.uri,
                 'navigation': navigation
-            }
+            },
+            'geometry': geometry
         }
