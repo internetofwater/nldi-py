@@ -31,9 +31,8 @@ from flask import Blueprint, Flask, make_response, request
 import logging
 import os
 
-from pygeoapi.util import yaml_load
-
 from nldi.api import API
+from nldi.util import yaml_load
 
 LOGGER = logging.getLogger(__name__)
 
@@ -74,25 +73,18 @@ def get_response(result: tuple):
 @BLUEPRINT.route('/')
 def home():
     """
-    OpenAPI endpoint
+    Root endpoint
+
     :returns: HTTP response
     """
     return get_response(API_.landing_page(request))
-
-
-@BLUEPRINT.route('/linked-data')
-def sources():
-    """
-    OpenAPI endpoint
-    :returns: HTTP response
-    """
-    return get_response(API_.get_sources(request))
 
 
 @BLUEPRINT.route('/openapi')
 def openapi():
     """
     OpenAPI endpoint
+
     :returns: HTTP response
     """
     with open(os.environ.get('NLDI_OPENAPI'), encoding='utf8') as ff:
@@ -102,6 +94,83 @@ def openapi():
             openapi_ = ff.read()
 
     return get_response(API_.get_openapi(request, openapi_))
+
+
+@BLUEPRINT.route('/linked-data')
+def sources():
+    """
+    Data sources endpoint
+
+    :returns: HTTP response
+    """
+    return get_response(API_.get_crawler_sources(request))
+
+
+@BLUEPRINT.route('/linked-data/comid/position')
+def get_comid_by_position():
+    """
+    NHDPv2 comid by position endpoint
+
+    :returns: HTTP response
+    """
+    return get_response(API_.get_comid_by_position(request))
+
+
+@BLUEPRINT.route('/linked-data/comid/<int:comid>')
+def get_comid_by_id(comid=None):
+    """
+    NHDPv2 comid by id endpoint
+
+    :returns: HTTP response
+    """
+    return get_response(API_.get_comid_by_id(request, comid))
+
+
+@BLUEPRINT.route('/linked-data/<path:source_name>')
+@BLUEPRINT.route('/linked-data/<path:source_name>/<path:identifier>')
+def get_source_features(source_name=None, identifier=None):
+    """
+    Data source endpoint
+
+    :param source_name: NLDI source name
+    :param identifier: NLDI Source feature identifier
+
+    :returns: HTTP response
+    """
+    return get_response(
+        API_.get_source_features(request, source_name, identifier))
+
+
+@BLUEPRINT.route('/linked-data/<path:source_name>/<path:identifier>/navigation')  # noqa
+@BLUEPRINT.route('/linked-data/<path:source_name>/<path:identifier>/navigation/<path:nav_mode>')  # noqa
+def get_navigation_info(source_name=None, identifier=None, nav_mode=None):
+    """
+    Data source navigation information endpoint
+
+    :param source_name: NLDI source name
+    :param identifier: NLDI Source feature identifier
+    :param nav_mode: NLDI Navigation mode
+
+    :returns: HTTP response
+    """
+    return get_response(
+        API_.get_navigation_info(request, source_name, identifier, nav_mode))
+
+
+@BLUEPRINT.route('/linked-data/<path:source_name>/<path:identifier>/navigation/<path:nav_mode>/<path:data_source>')  # noqa
+def get_navigation(source_name=None, identifier=None, nav_mode=None, data_source=None):  # noqa
+    """
+    Data source navigation endpoint
+
+    :param source_name: NLDI input source name
+    :param identifier: NLDI Source feature identifier
+    :param nav_mode: NLDI Navigation mode
+    :param data_source: NLDI output source name
+
+    :returns: HTTP response
+    """
+    return get_response(API_.get_navigation(
+        request, source_name, identifier, nav_mode, data_source))
 
 
 APP.register_blueprint(BLUEPRINT)

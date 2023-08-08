@@ -26,47 +26,57 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 #
 # =================================================================
+"""Plugin loader"""
 
-"""Logging system"""
-
+import importlib
 import logging
-import sys
-
+from typing import Any
 
 LOGGER = logging.getLogger(__name__)
 
+PLUGINS = {
+    'CatchmentLookup': 'nldi.lookup.catchment.CatchmentLookup',
+    'CrawlerSourceLookup': 'nldi.lookup.source.CrawlerSourceLookup',
+    'FeatureLookup': 'nldi.lookup.feature.FeatureLookup',
+    'FlowlineLookup': 'nldi.lookup.flowline.FlowlineLookup',
+    'MainstemLookup': 'nldi.lookup.mainstem.MainstemLookup'
+}
 
-def setup_logger(logging_config):
+
+def load_plugin(plugin_def: dict) -> Any:
     """
-    Setup configuration
+    loads plugin by name
 
-    :param logging_config: logging specific configuration
+    :param plugin_def: plugin definition
 
-    :returns: void (creates logging instance)
+
+    :returns: plugin object
     """
 
-    log_format = \
-        '[%(asctime)s] {%(pathname)s:%(lineno)d} %(levelname)s - %(message)s'
-    date_format = '%Y-%m-%dT%H:%M:%SZ'
+    name = plugin_def['name']
 
-    loglevels = {
-        'CRITICAL': logging.CRITICAL,
-        'ERROR': logging.ERROR,
-        'WARNING': logging.WARNING,
-        'INFO': logging.INFO,
-        'DEBUG': logging.DEBUG,
-        'NOTSET': logging.NOTSET,
-    }
+    LOGGER.debug(f'Plugins: {PLUGINS}')
 
-    loglevel = loglevels[logging_config['level']]
+    if '.' not in name and name not in PLUGINS.keys():
+        msg = f'Plugin {name} not found'
+        LOGGER.exception(msg)
+        raise InvalidPluginError(msg)
 
-    if 'logfile' in logging_config:
-        logging.basicConfig(level=loglevel, datefmt=date_format,
-                            format=log_format,
-                            filename=logging_config['logfile'])
-    else:
-        logging.basicConfig(level=loglevel, datefmt=date_format,
-                            format=log_format, stream=sys.stdout)
+    if '.' in name:  # dotted path
+        packagename, classname = name.rsplit('.', 1)
+    else:  # core formatter
+        packagename, classname = PLUGINS[name].rsplit('.', 1)
 
-    LOGGER.debug('Logging initialized')
-    return
+    LOGGER.debug(f'package name: {packagename}')
+    LOGGER.debug(f'class name: {classname}')
+
+    module = importlib.import_module(packagename)
+    class_ = getattr(module, classname)
+    plugin = class_(plugin_def)
+
+    return plugin
+
+
+class InvalidPluginError(Exception):
+    """Invalid plugin"""
+    pass

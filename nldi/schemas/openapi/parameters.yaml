@@ -5,6 +5,7 @@ featureId:
   required: true
   schema:
     type: string
+
 simplified:
   name: simplified
   in: query
@@ -12,6 +13,7 @@ simplified:
   schema:
     type: boolean
     default: true
+
 splitCatchment:
   name: splitCatchment
   in: query
@@ -19,6 +21,7 @@ splitCatchment:
   schema:
     type: boolean
     default: false
+
 navigationMode:
   name: navigationMode
   in: path
@@ -35,6 +38,7 @@ navigationMode:
       - DM
       - DD
   example: UM
+
 navigationModePP:
   name: navigationMode
   in: path
@@ -52,6 +56,7 @@ navigationModePP:
       - DD
       - PP
   example: UM
+
 stopComid:
   name: stopComid
   in: query
@@ -70,6 +75,7 @@ distance:
     pattern: "^[0-9]{1,4}(\\.[0-9]+)?$|^$|^\\s$"
     type: string
     example: "10"
+
 trimStart:
   name: trimStart
   in: query
@@ -78,6 +84,7 @@ trimStart:
     type: string
     example: false
   example: false
+
 trimTolerance:
   name: trimTolerance
   in: query
@@ -86,12 +93,14 @@ trimTolerance:
     type: string
     example: 0.1
   example: 0.1
+
 legacy:
   name: legacy
   in: query
   required: false
   schema:
     type: string
+
 coords:
   name: coords
   in: query
@@ -101,6 +110,7 @@ coords:
     pattern: POINT ?\(-?[0-9]+((.)[0-9]+)?\s-?[0-9]+((.)[0-9]+)?\)
     type: string
     example: POINT(-89.509 43.087)
+
 characteristicType:
   name: characteristicType
   in: path
@@ -114,6 +124,7 @@ characteristicType:
       - div
       - tot
   example: local
+
 characteristicId:
   name: characteristicId
   in: query

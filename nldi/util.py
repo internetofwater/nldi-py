@@ -31,19 +31,33 @@
 
 import json
 import logging
+import os
 from pathlib import Path
-from typing import IO
+import re
+from typing import IO, Union
 import yaml
-
-from jinja2 import Environment, FileSystemLoader, select_autoescape
-
-from nldi import __version__
 
 LOGGER = logging.getLogger(__name__)
 
 THISDIR = Path(__file__).parent.resolve()
 TEMPLATES = THISDIR / 'templates'
 SCHEMAS = THISDIR / 'schemas'
+
+
+def url_join(*parts: str) -> str:
+    """
+    helper function to join a URL from a number of parts/fragments.
+    Implemented because urllib.parse.urljoin strips subpaths from
+    host urls if they are specified
+
+    Per https://github.com/geopython/pygeoapi/issues/695
+
+    :param parts: list of parts to join
+
+    :returns: str of resulting URL
+    """
+
+    return '/'.join([str(p).strip().strip('/') for p in parts]).rstrip('/')
 
 
 def yaml_load(fh: IO) -> dict:
@@ -55,7 +69,46 @@ def yaml_load(fh: IO) -> dict:
     :returns: `dict` representation of YAML
     """
 
-    return yaml.load(fh, Loader=yaml.SafeLoader)
+    # support environment variables in config
+    # https://stackoverflow.com/a/55301129
+    path_matcher = re.compile(r'.*\$\{([^}^{]+)\}.*')
+
+    def path_constructor(loader, node):
+        env_var = path_matcher.match(node.value).group(1)
+        if env_var not in os.environ:
+            msg = f'Undefined environment variable {env_var} in config'
+            raise EnvironmentError(msg)
+        return get_typed_value(os.path.expandvars(node.value))
+
+    class EnvVarLoader(yaml.SafeLoader):
+        pass
+
+    EnvVarLoader.add_implicit_resolver('!path', path_matcher, None)
+    EnvVarLoader.add_constructor('!path', path_constructor)
+
+    return yaml.load(fh, Loader=EnvVarLoader)
+
+
+def get_typed_value(value: str) -> Union[float, int, str]:
+    """
+    Derive true type from data value
+
+    :param value: value
+
+    :returns: value as a native Python data type
+    """
+
+    try:
+        if '.' in value:  # float?
+            value2 = float(value)
+        elif len(value) > 1 and value.startswith('0'):
+            value2 = value
+        else:  # int?
+            value2 = int(value)
+    except ValueError:  # string (default)?
+        value2 = value
+
+    return value2
 
 
 def to_json(dict_: dict, pretty: bool = False) -> str:

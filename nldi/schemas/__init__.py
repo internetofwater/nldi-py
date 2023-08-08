@@ -27,7 +27,4 @@
 #
 # =================================================================
 
-import os
-
-NLDI_LOGLEVEL = os.getenv('nldiLogLevel', 'WARNING')
-NLDI_URL = os.getenv('nldiUrl')
+"""Module containing NLDI schema models"""
