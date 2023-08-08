@@ -49,6 +49,7 @@ if 'templates' in CONFIG['server']:
 
 
 APP = Flask(__name__, static_folder=STATIC_FOLDER, static_url_path='/static')
+APP.url_map.strict_slashes = False
 BLUEPRINT = Blueprint('nldi', __name__, static_folder=STATIC_FOLDER)
 
 API_ = API(CONFIG)
@@ -96,81 +97,8 @@ def openapi():
     return get_response(API_.get_openapi(request, openapi_))
 
 
-@BLUEPRINT.route('/linked-data')
-def sources():
-    """
-    Data sources endpoint
-
-    :returns: HTTP response
-    """
-    return get_response(API_.get_crawler_sources(request))
-
-
-@BLUEPRINT.route('/linked-data/comid/position')
-def get_comid_by_position():
-    """
-    NHDPv2 comid by position endpoint
-
-    :returns: HTTP response
-    """
-    return get_response(API_.get_comid_by_position(request))
-
-
-@BLUEPRINT.route('/linked-data/comid/<int:comid>')
-def get_comid_by_id(comid=None):
-    """
-    NHDPv2 comid by id endpoint
-
-    :returns: HTTP response
-    """
-    return get_response(API_.get_comid_by_id(request, comid))
-
-
-@BLUEPRINT.route('/linked-data/<path:source_name>')
-@BLUEPRINT.route('/linked-data/<path:source_name>/<path:identifier>')
-def get_source_features(source_name=None, identifier=None):
-    """
-    Data source endpoint
-
-    :param source_name: NLDI source name
-    :param identifier: NLDI Source feature identifier
-
-    :returns: HTTP response
-    """
-    return get_response(
-        API_.get_source_features(request, source_name, identifier))
-
-
-@BLUEPRINT.route('/linked-data/<path:source_name>/<path:identifier>/navigation')  # noqa
-@BLUEPRINT.route('/linked-data/<path:source_name>/<path:identifier>/navigation/<path:nav_mode>')  # noqa
-def get_navigation_info(source_name=None, identifier=None, nav_mode=None):
-    """
-    Data source navigation information endpoint
-
-    :param source_name: NLDI source name
-    :param identifier: NLDI Source feature identifier
-    :param nav_mode: NLDI Navigation mode
-
-    :returns: HTTP response
-    """
-    return get_response(
-        API_.get_navigation_info(request, source_name, identifier, nav_mode))
-
-
-@BLUEPRINT.route('/linked-data/<path:source_name>/<path:identifier>/navigation/<path:nav_mode>/<path:data_source>')  # noqa
-def get_navigation(source_name=None, identifier=None, nav_mode=None, data_source=None):  # noqa
-    """
-    Data source navigation endpoint
-
-    :param source_name: NLDI input source name
-    :param identifier: NLDI Source feature identifier
-    :param nav_mode: NLDI Navigation mode
-    :param data_source: NLDI output source name
-
-    :returns: HTTP response
-    """
-    return get_response(API_.get_navigation(
-        request, source_name, identifier, nav_mode, data_source))
-
+if CONFIG['server']['pygeoapi'] is True:
+    from pygeoapi.flask_app import BLUEPRINT as PYGEOAPI_BLUEPRINT
+    APP.register_blueprint(PYGEOAPI_BLUEPRINT, url_prefix='/pygeoapi')
 
 APP.register_blueprint(BLUEPRINT)

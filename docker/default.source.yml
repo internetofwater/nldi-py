@@ -30,6 +30,7 @@
 server:
   url: ${NLDI_URL}
   pretty_print: false
+  pygeoapi: true
   data:
     host: ${NLDI_DB_HOST}
     port: ${NLDI_DB_PORT}

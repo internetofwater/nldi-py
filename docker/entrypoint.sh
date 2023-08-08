@@ -35,7 +35,9 @@ set +e
 export NLDI_HOME=/nldi
 export NLDI_CONFIG="${NLDI_HOME}/local.source.yml"
 export NLDI_OPENAPI="${NLDI_HOME}/local.openapi.yml"
-export PYGEOAPI_CONFIG="${NLDI_CONFIG}"
+
+export PYGEOAPI_CONFIG="${NLDI_HOME}/pygeoapi.config.yml"
+export PYGEOAPI_OPENAPI="${NLDI_HOME}/pygeoapi.openapi.yml"
 
 # gunicorn env settings with defaults
 export SCRIPT_NAME=${NLDI_PATH:=/}
@@ -59,6 +61,7 @@ function error() {
 cd ${NLDI_HOME}
 
 echo "Trying to generate openapi.yml"
+pygeoapi openapi generate ${PYGEOAPI_CONFIG} --output-file ${PYGEOAPI_OPENAPI}
 nldi openapi generate ${NLDI_CONFIG} --output-file ${NLDI_OPENAPI}
 
 [[ $? -ne 0 ]] && error "openapi.yml could not be generated ERROR"
