@@ -28,7 +28,7 @@
 # =================================================================
 
 from geoalchemy2 import Geometry
-from sqlalchemy import MetaData, Column, Integer, String, Float
+from sqlalchemy import MetaData, Column, Integer, String, Float, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 
@@ -42,7 +42,7 @@ class CrawlerSourceModel(BaseModel):
 
     crawler_source_id = Column(Integer, primary_key=True)
     source_name = Column(String)
-    source_suffix = Column(String)
+    source_suffix = Column(String, server_default=text("lower(source_suffix)"))
     source_uri = Column(String)
     feature_id = Column(String)
     feature_name = Column(String)
@@ -78,5 +78,12 @@ FeatureSourceModel.mainstem_lookup = relationship(
     MainstemLookupModel,
     primaryjoin=FeatureSourceModel.comid == MainstemLookupModel.nhdpv2_comid,
     foreign_keys=[FeatureSourceModel.comid],
+    uselist=False,
+)
+
+FeatureSourceModel.crawler_source = relationship(
+    CrawlerSourceModel,
+    primaryjoin=FeatureSourceModel.crawler_source_id == CrawlerSourceModel.crawler_source_id,  # noqa
+    foreign_keys=[FeatureSourceModel.crawler_source_id],
     uselist=False,
 )
