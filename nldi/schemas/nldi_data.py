@@ -28,7 +28,7 @@
 # =================================================================
 
 from geoalchemy2 import Geometry
-from sqlalchemy import MetaData, Column, Integer, String, Float, text
+from sqlalchemy import MetaData, Column, Integer, String, Float, text, Text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 
@@ -41,29 +41,30 @@ class CrawlerSourceModel(BaseModel):
     __tablename__ = 'crawler_source'
 
     crawler_source_id = Column(Integer, primary_key=True)
-    source_name = Column(String)
-    source_suffix = Column(String, server_default=text("lower(source_suffix)"))
-    source_uri = Column(String)
-    feature_id = Column(String)
-    feature_name = Column(String)
-    feature_uri = Column(String)
-    feature_reach = Column(String, nullable=True)
-    feature_measure = Column(String, nullable=True)
-    ingest_type = Column(String)
-    feature_type = Column(String)
+    source_name = Column(String(500))
+    source_suffix = Column(String(10),
+                           server_default=text("lower(source_suffix)"))
+    source_uri = Column(String(256))
+    feature_id = Column(String(256))
+    feature_name = Column(String(256))
+    feature_uri = Column(String(256))
+    feature_reach = Column(String(256), nullable=True)
+    feature_measure = Column(String(256), nullable=True)
+    ingest_type = Column(String(5), nullable=True)
+    feature_type = Column(String(100), nullable=True)
 
 
 class FeatureSourceModel(BaseModel):
     __tablename__ = 'feature'
 
-    comid = Column(Integer, nullable=True)
-    identifier = Column(String, primary_key=True, nullable=True)
-    crawler_source_id = Column(Integer, nullable=True)
-    name = Column(String, nullable=True)
-    uri = Column(String, nullable=True)
-    reachcode = Column(String, nullable=True)
-    measure = Column(Float, nullable=True)
+    crawler_source_id = Column(Integer)
+    identifier = Column(String(256), primary_key=True, nullable=True)
+    name = Column(String(256), nullable=True)
+    uri = Column(String(256), nullable=True)
     location = Column(Geometry, nullable=True)
+    comid = Column(Integer, nullable=True)
+    reachcode = Column(String(14), nullable=True)
+    measure = Column(Float(38), nullable=True)
 
 
 class MainstemLookupModel(BaseModel):
@@ -71,7 +72,7 @@ class MainstemLookupModel(BaseModel):
 
     nhdpv2_comid = Column(Integer, primary_key=True, nullable=True)
     mainstem_id = Column(Integer, nullable=True)
-    uri = Column(String, nullable=True)
+    uri = Column(Text, nullable=True)
 
 
 FeatureSourceModel.mainstem_lookup = relationship(
