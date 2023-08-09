@@ -28,10 +28,12 @@
 # =================================================================
 
 import logging
+from psycopg2.errors import InsufficientPrivilege
 from sqlalchemy import func
+from sqlalchemy.exc import ProgrammingError
+from sqlalchemy.orm import Session
 
-
-from nldi.lookup.base import (BaseLookup,
+from nldi.lookup.base import (BaseLookup, ProviderQueryError,
                               ProviderItemNotFoundError)
 from nldi.schemas.nldi_data import CrawlerSourceModel
 
@@ -53,6 +55,30 @@ class CrawlerSourceLookup(BaseLookup):
         LOGGER.debug('Initialising Crawler Source.')
         super().__init__(provider_def)
         self.table_model = CrawlerSourceModel
+
+    def align_source(self, source: dict):
+        source_suffix = source['source_suffix'].lower()
+        source['source_suffix'] = source_suffix
+        with Session(self._engine) as session:
+            source_suffix_ = func.lower(CrawlerSourceModel.source_suffix)
+            item = (session
+                    .query(CrawlerSourceModel)
+                    .filter(source_suffix_ == source_suffix)
+                    .first())
+
+            try:
+                if item:
+                    LOGGER.debug(f'Source {source_suffix} exists, updating')
+                    for key, value in source.items():
+                        setattr(item, key, value)
+                else:
+                    LOGGER.debug(f'Source {source_suffix} doesn\'t exist, creating')  # noqa
+                    session.add(CrawlerSourceModel(**source))
+
+                session.commit()
+            except (InsufficientPrivilege, ProgrammingError) as err:
+                LOGGER.warning(err)
+                raise ProviderQueryError(err)
 
     def get(self, identifier: str):
         source_name = identifier.lower()
