@@ -27,8 +27,8 @@
 #
 # =================================================================
 
-import logging
 from geoalchemy2.shape import to_shape
+import logging
 import shapely
 from typing import Iterable
 
@@ -144,10 +144,10 @@ class FeatureLookup(BaseLookup):
             'properties': {
                 'identifier': item.identifier,
                 'name': item.name,
-                'source': self.source.get('source_suffix'),
-                'sourceName': self.source.get('source_name'),
+                'source': item.crawler_source.source_suffix,
+                'sourceName': item.crawler_source.source_name,
                 'comid': item.comid,
-                'type': self.source.get('feature_type'),
+                'type': item.crawler_source.feature_type,
                 'uri': item.uri,
                 'reachcode': item.reachcode,
                 'measure': item.measure,
