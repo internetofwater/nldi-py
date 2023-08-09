@@ -39,6 +39,9 @@ from nldi import __version__
 from nldi.log import setup_logger
 from nldi.lookup.base import (ProviderItemNotFoundError,
                               ProviderConnectionError, ProviderQueryError)
+from nldi.lookup.catchment import CatchmentLookup
+from nldi.lookup.flowline import FlowlineLookup
+from nldi.lookup.source import CrawlerSourceLookup
 from nldi.plugin import load_plugin
 
 from nldi.util import TEMPLATES, sort_sources, to_json, url_join
@@ -102,8 +105,12 @@ class API:
 
         setup_logger(cfg['logging'])
 
-    def load_plugin(self, plugin_name, **kwargs):
-        """Provide copy of database connection configuration"""
+    def load_plugin(self, plugin_name: str, **kwargs) -> Any:
+        """
+        Provide copy of database connection configuration
+
+        :param puglin_name: Name of plugin to load
+        """
         return load_plugin({
             'name': plugin_name,
             'database': self.connection_def,
@@ -112,34 +119,33 @@ class API:
         })
 
     @property
-    def connection_def(self):
+    def connection_def(self) -> dict:
         """Provide copy of database connection configuration"""
         return deepcopy(self.config['server']['data'])
 
     @property
-    def crawler_source(self):
+    def crawler_source(self) -> CrawlerSourceLookup:
         """Crawler Source Database Provider"""
         if self._nldi_data_crawler_source is None:
-            self._nldi_data_crawler_source = self.load_plugin('CrawlerSourceLookup')  # noqa
+            self._nldi_data_crawler_source = \
+                self.load_plugin('CrawlerSourceLookup')
         return self._nldi_data_crawler_source
 
     @property
-    def catchment_lookup(self):
+    def catchment_lookup(self) -> CatchmentLookup:
         """Catchment Lookup Database Provider"""
         if self._nhdplus_catchment_lookup is None:
-            self._nhdplus_catchment_lookup = self.load_plugin('CatchmentLookup')  # noqa
+            self._nhdplus_catchment_lookup = \
+                self.load_plugin('CatchmentLookup')
         return self._nhdplus_catchment_lookup
 
     @property
-    def flowline_lookup(self):
+    def flowline_lookup(self) -> FlowlineLookup:
         """Flowline Lookup Database Provider"""
         if self._nhdplus_flowline_lookup is None:
-            self._nhdplus_flowline_lookup = self.load_plugin('FlowlineLookup')  # noqa
+            self._nhdplus_flowline_lookup = \
+                self.load_plugin('FlowlineLookup')
         return self._nhdplus_flowline_lookup
-
-    @property
-    def sources(self):
-        return self.crawler_source.query()
 
     @pre_process
     def landing_page(self, request: Union[APIRequest, Any]
@@ -159,27 +165,35 @@ class API:
             'title': self.config['metadata']['identification']['title'],
             'description': self.config['metadata']['identification']['description'],  # noqa
             'links': [{
-                'rel': 'service-desc',
-                'type': 'application/vnd.oai.openapi+json;version=3.0',
-                'title': 'The OpenAPI definition as JSON',
-                'href': f'{self.base_url}/openapi?f=json'
+                'rel': 'data',
+                'type': 'application/json',
+                'title': 'Sources',
+                'href': f'{self.base_url}/linked-data'
             }, {
                 'rel': 'service-desc',
                 'type': 'text/html',
                 'title': 'The OpenAPI definition as HTML',
                 'href': f'{self.base_url}/openapi?f=html'
             }, {
-                'rel': 'data',
-                'type': 'application/json',
-                'title': 'Sources',
-                'href': f'{self.base_url}/linked-data'
+                'rel': 'service-desc',
+                'type': 'application/vnd.oai.openapi+json;version=3.0',
+                'title': 'The OpenAPI definition as JSON',
+                'href': f'{self.base_url}/openapi?f=json'
             }]
         }
+
+        if self.config['server']['pygeoapi'] is True:
+            content['links'].append({
+                'rel': 'data',
+                'type': 'text/html',
+                'title': 'pygeoapi for the NLDI',
+                'href': f'{self.base_url}/pygeoapi?f=html'
+            })
 
         return headers, HTTPStatus.OK, to_json(content, self.pretty_print)
 
     @pre_process
-    def get_openapi(self, request: Union[APIRequest, Any], openapi
+    def get_openapi(self, request: Union[APIRequest, Any], openapi: dict
                     ) -> Tuple[dict, int, str]:
         """
         Provide OpenAPI document
@@ -238,7 +252,20 @@ class API:
             'features': url_join(self.base_url, 'linked-data/comid/position')
         }]
 
-        for source in sort_sources(self.sources):
+        try:
+            sources = self.crawler_source.query()
+        except ProviderConnectionError:
+            msg = 'connection error (check logs)'
+            return self.get_exception(
+                HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
+                'NoApplicableCode', msg)
+        except ProviderQueryError:
+            msg = 'query error (check logs)'
+            return self.get_exception(
+                HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
+                'NoApplicableCode', msg)
+
+        for source in sort_sources(sources):
             src_id = source['source_suffix']
             content.append({
                 'source': src_id,
@@ -331,11 +358,6 @@ class API:
 
         try:
             content = self.flowline_lookup.get(identifier)
-        except ProviderConnectionError:
-            msg = 'connection error (check logs)'
-            return self.get_exception(
-                HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
-                'NoApplicableCode', msg)
         except ProviderQueryError:
             msg = 'query error (check logs)'
             return self.get_exception(
@@ -354,7 +376,7 @@ class API:
                             source_name: str, identifier: str
                             ) -> Tuple[dict, int, str]:
         """
-        Provide OpenAPI document
+        Provide Crawled Features
 
         :param request: A request object
         :param source_name: NLDI Source name
@@ -386,17 +408,9 @@ class API:
                 HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
                 'NoApplicableCode', msg)
 
-        feature_lookup = self.load_plugin('FeatureLookup', source=source)
+        plugin = self.load_plugin('FeatureLookup', source=source)
         try:
-            if identifier:
-                content = feature_lookup.get(identifier)
-            else:
-                content = feature_lookup.query()
-        except ProviderConnectionError:
-            msg = 'connection error (check logs)'
-            return self.get_exception(
-                HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
-                'NoApplicableCode', msg)
+            content = plugin.get(identifier) if identifier else plugin.query()
         except ProviderQueryError:
             msg = 'query error (check logs)'
             return self.get_exception(
@@ -415,8 +429,9 @@ class API:
                             source_name: str, identifier: str, nav_mode: str
                             ) -> Tuple[dict, int, str]:
         """
-        Provide OpenAPI document
+        Provide Navigation information
 
+        :param request: A request object
         :param source_name: NLDI source name
         :param identifier: NLDI Source feature identifier
         :param nav_mode: NLDI Navigation mode
@@ -451,7 +466,6 @@ class API:
         nav_url = url_join(self.base_url, 'linked-data',
                            source_name, identifier, 'navigation')
         if nav_mode is None:
-
             content = {
                 'upstreamMain': url_join(nav_url, 'UM'),
                 'upstreamTributaries': url_join(nav_url, 'UT'),
@@ -466,9 +480,18 @@ class API:
         content = [{
             'source': 'Flowlines',
             'sourceName': 'NHDPlus flowlines',
-            'features': url_join(nav_url, nav_mode, 'flowlines')}]
+            'features': url_join(nav_url, nav_mode, 'flowlines')
+        }]
 
-        for source in sort_sources(self.sources):
+        try:
+            sources = self.crawler_source.query()
+        except ProviderQueryError:
+            msg = 'query error (check logs)'
+            return self.get_exception(
+                HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
+                'NoApplicableCode', msg)
+
+        for source in sort_sources(sources):
             src_id = source['source_suffix']
             content.append({
                 'source': src_id,
@@ -484,8 +507,9 @@ class API:
                        nav_mode: str, data_source: str
                        ) -> Tuple[dict, int, str]:
         """
-        Provide OpenAPI document
+        Provide navigation query
 
+        :param request: A request object
         :param source_name: NLDI source name
         :param identifier: NLDI Source feature identifier
         :param nav_mode: NLDI Navigation mode
@@ -506,42 +530,37 @@ class API:
                 HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
                 'NoApplicableCode', msg)
 
+        start_comid = None
         source_name = source_name.lower()
-        try:
-            if source_name != 'comid':
-                source = self.crawler_source.get(source_name)
-            else:
-                self.flowline_lookup.get(identifier)
-        except ProviderConnectionError:
-            msg = 'connection error (check logs)'
-            return self.get_exception(
-                HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
-                'NoApplicableCode', msg)
-        except ProviderQueryError:
-            msg = 'query error (check logs)'
-            return self.get_exception(
-                HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
-                'NoApplicableCode', msg)
-        except ProviderItemNotFoundError:
-            msg = f'The feature source \'{source_name}\' does not exist.'
-            return self.get_exception(
-                HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
-                'NoApplicableCode', msg)
 
         if source_name == 'comid':
-            startcomid = int(identifier)
-        else:
-            feature_lookup = self.load_plugin('FeatureLookup', source=source)
             try:
-                content = feature_lookup.get(identifier)
-                startcomid = int(content['features'][0]['properties']['comid'])
-            except ProviderConnectionError:
-                msg = 'connection error (check logs)'
+                self.flowline_lookup.get(identifier)
+                start_comid = int(identifier)
+            except ProviderQueryError:
+                msg = 'query error (check logs)'
                 return self.get_exception(
                     HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
                     'NoApplicableCode', msg)
+            except ProviderItemNotFoundError:
+                msg = f'The comid source \'{identifier}\' does not exist.'
+                return self.get_exception(
+                    HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
+                    'NoApplicableCode', msg)
+
+        else:
+            try:
+                source = self.crawler_source.get(source_name)
+                plugin = self.load_plugin('FeatureLookup', source=source)  # noqa
+                start_comid = int(plugin.get(identifier)[
+                    'features'][0]['properties']['comid'])
             except ProviderQueryError:
                 msg = 'query error (check logs)'
+                return self.get_exception(
+                    HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
+                    'NoApplicableCode', msg)
+            except (KeyError, IndexError):
+                msg = f'The feature {identifier} from source \'{source_name}\' is not indexed.'  # noqa
                 return self.get_exception(
                     HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
                     'NoApplicableCode', msg)
@@ -552,17 +571,12 @@ class API:
                     'NoApplicableCode', msg)
 
         nav_results = self.flowline_lookup.navigate(
-            nav_mode, startcomid, distance)
+            nav_mode, start_comid, distance)
 
         source2_name = data_source.lower()
         if source2_name == 'flowlines':
             try:
                 content = self.flowline_lookup.lookup_navigation(nav_results)
-            except ProviderConnectionError:
-                msg = 'connection error (check logs)'
-                return self.get_exception(
-                    HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
-                    'NoApplicableCode', msg)
             except ProviderQueryError:
                 msg = 'query error (check logs)'
                 return self.get_exception(
@@ -576,42 +590,32 @@ class API:
         else:
             try:
                 source2 = self.crawler_source.get(source2_name)
+                plugin = self.load_plugin('FeatureLookup', source=source2)
+                content = plugin.lookup_navigation(nav_results)
             except ProviderQueryError:
                 msg = 'query error (check logs)'
                 return self.get_exception(
                     HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
                     'NoApplicableCode', msg)
             except ProviderItemNotFoundError:
-                msg = f'The feature source \'{source2_name}\' does not exist.'  # noqa
+                msg = f'The feature source \'{source2_name}\' does not exist.'
                 return self.get_exception(
                     HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
                     'NoApplicableCode', msg)
 
-            feature_lookup = self.load_plugin('FeatureLookup', source=source2)
-            try:
-                content = feature_lookup.lookup_navigation(nav_results)
-            except ProviderQueryError:
-                msg = 'query error (check logs)'
-                return self.get_exception(
-                    HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
-                    'NoApplicableCode', msg)
-            except ProviderItemNotFoundError:
-                msg = f'The feature source \'{source2_name}\' does not exist.'  # noqa
-                return self.get_exception(
-                    HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
-                    'NoApplicableCode', msg)
-
-        return headers, HTTPStatus.OK, to_json(content, self.pretty_print)  # noqa
+        return headers, HTTPStatus.OK, to_json(content, self.pretty_print)
 
     def get_exception(self, status, headers, format_, code,
                       description) -> Tuple[dict, int, str]:
         """
         Exception handler
+
         :param status: HTTP status code
         :param headers: dict of HTTP response headers
         :param format_: format string
         :param code: OGC API exception code
         :param description: OGC API exception code
+
         :returns: tuple of headers, status, and message
         """
 

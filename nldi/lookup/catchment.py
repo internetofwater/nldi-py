@@ -27,10 +27,9 @@
 #
 # =================================================================
 
-import logging
-
 from geoalchemy2.shape import to_shape
 from geoalchemy2.elements import WKTElement
+import logging
 import shapely
 from sqlalchemy import func
 from typing import Union
