@@ -103,6 +103,15 @@ class API:
 
         self.pretty_print = self.config['server']['pretty_print']
 
+        if self.config.get('sources'):
+            sources = deepcopy(self.config['sources'])
+            LOGGER.debug('Aligning configuration with crawler source table')
+            try:
+                self.crawler_source.align_sources(sources)
+            except ProviderQueryError:
+                msg = 'Insufficient permission to update Crawler source'
+                LOGGER.error(msg)
+
         setup_logger(cfg['logging'])
 
     def load_plugin(self, plugin_name: str, **kwargs) -> Any:
@@ -129,13 +138,6 @@ class API:
         if self._nldi_data_crawler_source is None:
             self._nldi_data_crawler_source = \
                 self.load_plugin('CrawlerSourceLookup')
-            sources = deepcopy(self.config['sources'])
-            LOGGER.debug('Aligning configured sources with source table')
-            try:
-                self._nldi_data_crawler_source.align_sources(sources)
-            except ProviderQueryError:
-                msg = 'Insufficient permission to update Crawler Source'
-                LOGGER.error(msg)
         return self._nldi_data_crawler_source
 
     @property
