@@ -49,7 +49,6 @@ def load_plugin(plugin_def: dict) -> Any:
 
     :param plugin_def: plugin definition
 
-
     :returns: plugin object
     """
 

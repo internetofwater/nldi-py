@@ -27,9 +27,8 @@
 #
 # =================================================================
 
-import logging
-
 from geoalchemy2.shape import to_shape
+import logging
 import shapely
 from typing import Iterable
 

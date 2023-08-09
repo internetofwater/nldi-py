@@ -32,6 +32,7 @@
 from enum import Enum
 import logging
 from sqlalchemy import text
+from typing import Any
 
 LOGGER = logging.getLogger(__name__)
 
@@ -44,7 +45,8 @@ class NavigationModes(str, Enum):
     PP = 'PP'
 
 
-def navigate(nav_mode, comid, distance=None, coastal_fcode=None):
+def navigate(nav_mode: str, comid: int, distance: float = None,
+             coastal_fcode: int = None) -> Any:
     LOGGER.debug(f'Doing navigation for {comid} with mode {nav_mode}')
     if nav_mode == NavigationModes.DM:
         return navigate_dm(comid, distance, coastal_fcode)

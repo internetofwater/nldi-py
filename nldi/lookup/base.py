@@ -27,14 +27,12 @@
 #
 # =================================================================
 
-
 from contextlib import contextmanager
 import logging
-from typing import Iterable
-
 from sqlalchemy import create_engine
 from sqlalchemy.engine import URL
 from sqlalchemy.orm import sessionmaker, Session
+from typing import Iterable
 
 from nldi.navigate import navigate
 
@@ -89,7 +87,7 @@ class BaseLookup:
 
     def navigate(self, nav_mode: str, comid: str, distance: float):
         """
-        do navigation
+        Perform navigation
 
         :param nav_mode: navigation mode
         :param comid: start comid
@@ -111,7 +109,7 @@ class BaseLookup:
 
     def lookup_navigation(self, comids: Iterable[str]):
         """
-        lookup navigation
+        Lookup navigation result from set of comids
 
         :returns: dict of 0..n GeoJSON features or coverage data
         """
