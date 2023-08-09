@@ -129,13 +129,13 @@ class API:
         if self._nldi_data_crawler_source is None:
             self._nldi_data_crawler_source = \
                 self.load_plugin('CrawlerSourceLookup')
+            sources = deepcopy(self.config['sources'])
+            LOGGER.debug('Aligning configured sources with source table')
             try:
-                LOGGER.debug('Aligning configured sources with source table')
-                [self._nldi_data_crawler_source.align_source(source)
-                 for source in self.config['sources']]
+                self._nldi_data_crawler_source.align_sources(sources)
             except ProviderQueryError:
                 msg = 'Insufficient permission to update Crawler Source'
-                LOGGER.warning(msg)
+                LOGGER.error(msg)
         return self._nldi_data_crawler_source
 
     @property

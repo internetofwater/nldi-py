@@ -28,7 +28,6 @@
 # =================================================================
 
 import logging
-from psycopg2.errors import InsufficientPrivilege
 from sqlalchemy import func
 from sqlalchemy.exc import ProgrammingError
 from sqlalchemy.orm import Session
@@ -56,30 +55,6 @@ class CrawlerSourceLookup(BaseLookup):
         super().__init__(provider_def)
         self.table_model = CrawlerSourceModel
 
-    def align_source(self, source: dict):
-        source_suffix = source['source_suffix'].lower()
-        source['source_suffix'] = source_suffix
-        with Session(self._engine) as session:
-            source_suffix_ = func.lower(CrawlerSourceModel.source_suffix)
-            item = (session
-                    .query(CrawlerSourceModel)
-                    .filter(source_suffix_ == source_suffix)
-                    .first())
-
-            try:
-                if item:
-                    LOGGER.debug(f'Source {source_suffix} exists, updating')
-                    for key, value in source.items():
-                        setattr(item, key, value)
-                else:
-                    LOGGER.debug(f'Source {source_suffix} doesn\'t exist, creating')  # noqa
-                    session.add(CrawlerSourceModel(**source))
-
-                session.commit()
-            except (InsufficientPrivilege, ProgrammingError) as err:
-                LOGGER.warning(err)
-                raise ProviderQueryError(err)
-
     def get(self, identifier: str):
         source_name = identifier.lower()
         LOGGER.debug(f'Fetching source information for: {source_name}')
@@ -103,6 +78,25 @@ class CrawlerSourceLookup(BaseLookup):
         with self.session() as session:
             return [self._sqlalchemy_to_feature(item)
                     for item in session.all()]
+
+    def align_sources(self, sources: list[dict]) -> bool:
+        with Session(self._engine) as session:
+            try:
+                session.query(CrawlerSourceModel).delete()
+                session.commit()
+                [self._align_source(session, source) for source in sources]
+            except ProgrammingError as err:
+                LOGGER.warning(err)
+                raise ProviderQueryError(err)
+
+        return True
+
+    def _align_source(self, session, source):
+        source_suffix = source['source_suffix'].lower()
+        source['source_suffix'] = source_suffix
+        LOGGER.debug(f'Creating source {source_suffix}')  # noqa
+        session.add(CrawlerSourceModel(**source))
+        session.commit()
 
     def _sqlalchemy_to_feature(self, item):
 
