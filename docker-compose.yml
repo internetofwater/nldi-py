@@ -2,24 +2,14 @@
 version: '3.3'
 
 services:
-  # db:
-  #   image: postgis/postgis:12-3.0
-  #   environment:
-  #     POSTGRES_PASSWORD: changeMe
-  #     POSTGRES_DB: nldi
-  #   container_name: nldi-db
-  #   networks:
-  #     - nldi
-
   nldi-db:
-    image: nldi-db-demo
+    image: ghcr.io/internetofwater/nldi-db:demo
     container_name: nldi-db
     environment:
       POSTGRES_PASSWORD: changeMe
-      POSTGRES_DB: nldi
-      NLDI_DATABASE_ADDRESS: nldi-db
+      NLDI_DATABASE_ADDRESS: localhost
       NLDI_DATABASE_NAME: nldi
-      NLDI_DB_OWNER_USERNAME: root
+      NLDI_DB_OWNER_USERNAME: nldi
       NLDI_DB_OWNER_PASSWORD: changeMe
       NLDI_SCHEMA_OWNER_USERNAME: nldi_schema_owner
       NLDI_SCHEMA_OWNER_PASSWORD: changeMe
@@ -28,18 +18,26 @@ services:
       NLDI_READ_ONLY_PASSWORD: changeMe
     networks:
       - nldi
+    volumes:
+      - data:/var/lib/postgresql/data
 
-  nldi:
+  nldi-py:
     build:
       context: .
-    container_name: nldi
+    container_name: nldi-py
+    ports:
+      - "8080:80"
     environment:
-      NLDI_URL: http://localhost:8081/api/nldi
       NLDI_PATH: /api/nldi
+      NLDI_URL: http://localhost:8081/api/nldi
+      NLDI_DB_HOST: nldi-db
+      NLDI_DB_PORT: 5432
+      NLDI_DB_NAME: nldi
+      NLDI_DB_USERNAME: read_only_user
+      NLDI_DB_PASSWORD: changeMe
+      pygeoapiUrl: "https://labs.waterdata.usgs.gov/api/nldi/pygeoapi/"
     networks:
       - nldi
-    ports:
-      - "8081:80"
 
   pgadmin:
     container_name: pgadmin4_container
@@ -55,3 +53,5 @@ services:
 
 networks:
   nldi:
+volumes:
+  data:

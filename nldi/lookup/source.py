@@ -29,9 +29,10 @@
 
 import logging
 from sqlalchemy import func
+from sqlalchemy.exc import ProgrammingError
+from sqlalchemy.orm import Session
 
-
-from nldi.lookup.base import (BaseLookup,
+from nldi.lookup.base import (BaseLookup, ProviderQueryError,
                               ProviderItemNotFoundError)
 from nldi.schemas.nldi_data import CrawlerSourceModel
 
@@ -77,6 +78,25 @@ class CrawlerSourceLookup(BaseLookup):
         with self.session() as session:
             return [self._sqlalchemy_to_feature(item)
                     for item in session.all()]
+
+    def align_sources(self, sources: list[dict]) -> bool:
+        with Session(self._engine) as session:
+            try:
+                session.query(CrawlerSourceModel).delete()
+                session.commit()
+                [self._align_source(session, source) for source in sources]
+            except ProgrammingError as err:
+                LOGGER.warning(err)
+                raise ProviderQueryError(err)
+
+        return True
+
+    def _align_source(self, session, source):
+        source_suffix = source['source_suffix'].lower()
+        source['source_suffix'] = source_suffix
+        LOGGER.debug(f'Creating source {source_suffix}')  # noqa
+        session.add(CrawlerSourceModel(**source))
+        session.commit()
 
     def _sqlalchemy_to_feature(self, item):
 
