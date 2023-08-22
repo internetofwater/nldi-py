@@ -41,6 +41,7 @@ from nldi.lookup.base import (ProviderItemNotFoundError,
                               ProviderConnectionError, ProviderQueryError)
 from nldi.lookup.catchment import CatchmentLookup
 from nldi.lookup.flowline import FlowlineLookup
+from nldi.lookup.pygeoapi import PygeoapiLookup
 from nldi.lookup.source import CrawlerSourceLookup
 from nldi.plugin import load_plugin
 
@@ -82,6 +83,7 @@ class API:
     _nldi_data_crawler_source = None
     _nhdplus_catchment_lookup = None
     _nhdplus_flowline_lookup = None
+    _pygeoapi_lookup = None
 
     def __init__(self, cfg):
         """
@@ -146,6 +148,15 @@ class API:
             self._nhdplus_flowline_lookup = \
                 self.load_plugin('FlowlineLookup')
         return self._nhdplus_flowline_lookup
+
+    @property
+    def pygeoapi_lookup(self) -> PygeoapiLookup:
+        """pygeoapi Lookup Provider"""
+        if self._pygeoapi_lookup is None:
+            self._pygeoapi_lookup = \
+                self.load_plugin('PygeoapiLookup',
+                                 catchment_lookup=self.catchment_lookup)
+        return self._pygeoapi_lookup
 
     @pre_process
     def landing_page(self, request: Union[APIRequest, Any]
@@ -313,6 +324,50 @@ class API:
                 'NoApplicableCode', msg)
 
         return headers, HTTPStatus.OK, to_json(content, self.pretty_print)
+
+    @pre_process
+    def get_hydrolocation(self, request: Union[APIRequest, Any]
+                          ) -> Tuple[dict, int, str]:
+        """
+        Provide hydrologic location by feature intersect
+
+        :param request: A request object
+
+        :returns: tuple of headers, status code, content
+        """
+
+        if not request.is_valid():
+            return self.get_exception(request)
+
+        headers = request.get_response_headers(**HEADERS)
+
+        try:
+            coords = request.params['coords']
+        except KeyError:
+            msg = 'Required request parameter \'coords\' is not present.'
+            return self.get_exception(
+                HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
+                'NoApplicableCode', msg)
+
+        try:
+            feature = self.pygeoapi_lookup.get_hydrolocation(coords)
+        except ProviderConnectionError:
+            msg = 'connection error (check logs)'
+            return self.get_exception(
+                HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
+                'NoApplicableCode', msg)
+        except ProviderQueryError:
+            msg = 'query error (check logs)'
+            return self.get_exception(
+                HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
+                'NoApplicableCode', msg)
+        except ProviderItemNotFoundError:
+            msg = f'No comid found at {coords}'
+            return self.get_exception(
+                HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
+                'NoApplicableCode', msg)
+
+        return headers, HTTPStatus.OK, to_json(feature, self.pretty_print)
 
     @pre_process
     def get_comid_by_position(self, request: Union[APIRequest, Any]

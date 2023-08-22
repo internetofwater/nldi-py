@@ -39,7 +39,8 @@ PLUGINS = {
     'CrawlerSourceLookup': 'nldi.lookup.source.CrawlerSourceLookup',
     'FeatureLookup': 'nldi.lookup.feature.FeatureLookup',
     'FlowlineLookup': 'nldi.lookup.flowline.FlowlineLookup',
-    'MainstemLookup': 'nldi.lookup.mainstem.MainstemLookup'
+    'MainstemLookup': 'nldi.lookup.mainstem.MainstemLookup',
+    'PygeoapiLookup': 'nldi.lookup.pygeoapi.PygeoapiLookup'
 }
 
 
