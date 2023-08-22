@@ -62,6 +62,7 @@ cd ${NLDI_HOME}
 
 echo "Trying to generate openapi.yml"
 pygeoapi openapi generate ${PYGEOAPI_CONFIG} --output-file ${PYGEOAPI_OPENAPI}
+nldi config align-sources ${NLDI_CONFIG}
 nldi openapi generate ${NLDI_CONFIG} --output-file ${NLDI_OPENAPI}
 
 [[ $? -ne 0 ]] && error "openapi.yml could not be generated ERROR"
