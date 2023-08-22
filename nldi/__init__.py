@@ -31,6 +31,7 @@ __version__ = '0.1.0'
 
 import click
 
+from nldi.config import config
 from nldi.openapi import openapi
 
 
@@ -40,4 +41,5 @@ def cli():
     pass
 
 
+cli.add_command(config)
 cli.add_command(openapi)
