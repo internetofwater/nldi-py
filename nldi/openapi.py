@@ -270,7 +270,7 @@ def get_oas(cfg):
                 }
             }
 
-        if src_id.lower() == 'comid':
+        if src_id == 'comid':
             src_by_pos = url_join('/', src_path, 'position')
             paths[src_by_pos] = {
                 'get': {
@@ -300,6 +300,21 @@ def get_oas(cfg):
         else:
             tags.append({'description': src_name, 'name': src_id})
 
+        parameters = [
+            {'$ref': '#/components/parameters/featureId'}
+        ]
+        if src_id == 'comid':
+            parameters[0] = {
+                'name': 'featureId',
+                'in': 'path',
+                'description': 'NHDPlus common identifier',
+                'required': True,
+                'schema': {
+                    'type': 'integer',
+                    'example': 13294314
+                }
+            }
+
         src_by_feature = url_join('/', src_path, '{featureId}')
         paths[src_by_feature] = {
             'get': {
@@ -308,9 +323,7 @@ def get_oas(cfg):
                                 'GeoJSON if it exists'),
                 'tags': [src_id],
                 'operationId': f'{src_title}ById',
-                'parameters': [
-                    {'$ref': '#/components/parameters/featureId'}
-                ],
+                'parameters': parameters,
                 'responses': {
                     '200': {
                         'description': 'OK',
@@ -358,7 +371,7 @@ def get_oas(cfg):
                 'tags': [src_id],
                 'operationId': f'{src_title}Basin',
                 'parameters': [
-                    {'$ref': '#/components/parameters/featureId'},
+                    *parameters,
                     {'$ref': '#/components/parameters/simplified'},
                     {'$ref': '#/components/parameters/splitCatchment'}
                 ],
@@ -390,9 +403,7 @@ def get_oas(cfg):
                 'description': 'returns valid navigation end points',
                 'tags': [src_id],
                 'operationId': f'{src_title}NavigationOptions',
-                'parameters': [
-                    {'$ref': '#/components/parameters/featureId'}
-                ],
+                'parameters': parameters,
                 'responses': {
                     '200': {
                         'description': 'OK',
@@ -420,7 +431,7 @@ def get_oas(cfg):
                 'tags': [src_id],
                 'operationId': f'{src_title}Navigation',
                 'parameters': [
-                    {'$ref': '#/components/parameters/featureId'},
+                    *parameters,
                     {'$ref': '#/components/parameters/navigationMode'}
                 ],
                 'responses': {
@@ -449,7 +460,7 @@ def get_oas(cfg):
                 'tags': [src_id],
                 'operationId': f'{src_title}NavigationDataSource',
                 'parameters': [
-                    {'$ref': '#/components/parameters/featureId'},
+                    *parameters,
                     {'$ref': '#/components/parameters/navigationModePP'},
                     {
                         'name': 'dataSource',
@@ -501,7 +512,7 @@ def get_oas(cfg):
                 'tags': [src_id],
                 'operationId': f'{src_title}NavigationFlowlines',
                 'parameters': [
-                    {'$ref': '#/components/parameters/featureId'},
+                    *parameters,
                     {'$ref': '#/components/parameters/navigationModePP'},
                     {'$ref': '#/components/parameters/distance'},
                     {'$ref': '#/components/parameters/stopComid'},
