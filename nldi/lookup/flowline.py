@@ -106,6 +106,11 @@ class FlowlineLookup(BaseLookup):
         else:
             geometry = None
 
+        try:
+            mainstem = item.mainstem_lookup.uri
+        except AttributeError:
+            mainstem = ''
+
         navigation = url_join(self.relative_url,
                               item.nhdplus_comid, 'navigation')
 
@@ -116,7 +121,7 @@ class FlowlineLookup(BaseLookup):
                 'source': 'comid',
                 'sourceName': 'NHDPlus comid',
                 'comid': item.nhdplus_comid,
-                'mainstem': item.mainstem_lookup.uri,
+                'mainstem': mainstem,
                 'navigation': navigation
             },
             'geometry': geometry

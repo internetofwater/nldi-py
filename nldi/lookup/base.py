@@ -95,9 +95,18 @@ class BaseLookup:
 
         :returns: iterator of navigated comid
         """
+        try:
+            distance = float(distance)
+        except ValueError:
+            msg = f'Invalid distance: {distance}'
+            LOGGER.error(msg)
+            raise ProviderInvalidQueryError(msg)
+
+        nav = navigate(nav_mode, comid, distance)
+        LOGGER.debug(nav.compile(self._engine))
+
         with Session(self._engine) as session:
-            # Retrieve data from database as feature]
-            nav = navigate(nav_mode, comid, distance, comid)
+            # Retrieve data from database as feature
             result = session.execute(nav)
 
             if result is None:

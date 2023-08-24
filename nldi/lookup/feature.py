@@ -110,9 +110,13 @@ class FeatureLookup(BaseLookup):
         return fc
 
     def lookup_navigation(self, comids: Iterable[str]):
+        crawler_source_id = self.source.get('crawler_source_id')
+        crawler_source_id_ = FeatureSourceModel.crawler_source_id
+
         with self.session() as session:
             # Retrieve data from database as feature
             query = (session
+                     .filter(crawler_source_id_ == crawler_source_id)
                      .filter(self.table_model.comid.in_(comids)))
             hits = query.count()
 
@@ -136,6 +140,11 @@ class FeatureLookup(BaseLookup):
         else:
             geometry = None
 
+        try:
+            mainstem = item.mainstem_lookup.uri
+        except AttributeError:
+            mainstem = ''
+
         navigation = \
             url_join(self.relative_url, item.identifier, 'navigation')
 
@@ -152,7 +161,7 @@ class FeatureLookup(BaseLookup):
                 'reachcode': item.reachcode,
                 'measure': item.measure,
                 'navigation': navigation,
-                'mainstem': item.mainstem_lookup.uri
+                'mainstem': mainstem
             },
             'geometry': geometry,
         }

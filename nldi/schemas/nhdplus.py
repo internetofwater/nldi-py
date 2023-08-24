@@ -93,7 +93,7 @@ class FlowlineModel(BaseModel):
 
 
 class FlowlineVAAModel(BaseModel):
-    __tablename__ = 'plusnhdflowlinevaa_np21'
+    __tablename__ = 'plusflowlinevaa_np21'
 
     objectid = Column(Integer)
     comid = Column(Integer, primary_key=True)
@@ -105,7 +105,7 @@ class FlowlineVAAModel(BaseModel):
     tonode = Column(Integer)
     hydroseq = Column(Integer)
     levelpathid = Column(Integer)
-    pathlenghth = Column(Float)
+    pathlength = Column(Float)
     terminalpathid = Column(Integer)
     arbolatesum = Column(Float, nullable=True)
     divergence = Column(SmallInteger, nullable=True)
