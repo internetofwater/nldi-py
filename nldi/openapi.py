@@ -471,8 +471,7 @@ def get_oas(cfg):
                             'type': 'string',
                             'example': 'nwissite',
                             'enum': _sources
-                        },
-                        'example': 'nwissite'
+                        }
                     },
                     {'$ref': '#/components/parameters/distance'},
                     {'$ref': '#/components/parameters/stopComid'},
