@@ -1,7 +1,8 @@
 ---
-featureId:
-  name: featureId
+identifier:
+  name: identifier
   in: path
+  description: Feature identifier
   required: true
   schema:
     type: string
@@ -63,7 +64,8 @@ stopComid:
   description: NHDPlus comid to stop at. Only used when navigationMode is PP
   required: false
   schema:
-    type: string
+    type: integer
+
 distance:
   name: distance
   in: query
@@ -72,25 +74,27 @@ distance:
     should not be executed in parallel
   required: true
   schema:
-    pattern: "^[0-9]{1,4}(\\.[0-9]+)?$|^$|^\\s$"
-    type: string
-    example: "10"
+    minimum: 0
+    exclusiveMinimum: true
+    maximum: 10000
+    exclusiveMaximum: true
+    type: number
+    example: 10
 
 trimStart:
   name: trimStart
   in: query
   required: false
   schema:
-    type: string
+    type: boolean
     example: false
-  example: false
 
 trimTolerance:
   name: trimTolerance
   in: query
   required: false
   schema:
-    type: string
+    type: number
     example: 0.1
   example: 0.1
 
@@ -99,7 +103,8 @@ legacy:
   in: query
   required: false
   schema:
-    type: string
+    type: boolean
+    example: false
 
 coords:
   name: coords

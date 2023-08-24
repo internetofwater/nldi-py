@@ -269,8 +269,14 @@ def get_oas(cfg):
                     }
                 }
             }
+            tags.append({'description': src_name, 'name': src_id})
 
-        if src_id == 'comid':
+            id_field = '{identifier}'
+            parameters = [
+                {'$ref': '#/components/parameters/identifier'}
+            ]
+
+        else:
             src_by_pos = url_join('/', src_path, 'position')
             paths[src_by_pos] = {
                 'get': {
@@ -297,15 +303,10 @@ def get_oas(cfg):
                     }
                 }
             }
-        else:
-            tags.append({'description': src_name, 'name': src_id})
 
-        parameters = [
-            {'$ref': '#/components/parameters/featureId'}
-        ]
-        if src_id == 'comid':
-            parameters[0] = {
-                'name': 'featureId',
+            id_field = '{comid}'
+            parameters = [{
+                'name': 'comid',
                 'in': 'path',
                 'description': 'NHDPlus common identifier',
                 'required': True,
@@ -313,9 +314,9 @@ def get_oas(cfg):
                     'type': 'integer',
                     'example': 13294314
                 }
-            }
+            }]
 
-        src_by_feature = url_join('/', src_path, '{featureId}')
+        src_by_feature = url_join('/', src_path, id_field)
         paths[src_by_feature] = {
             'get': {
                 'summary': f'{src_title}ById',
