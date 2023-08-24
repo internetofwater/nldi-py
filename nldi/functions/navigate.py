@@ -172,7 +172,7 @@ def navigate_um(comid, distance, coastal_fcode):
                 (x.hydroseq == nav.c.uphydroseq),
                 (x.levelpathid == nav.c.levelpathid),
                 (x.fcode != text(':coastal_fcode')),
-                (x.pathlength + x.lengthkm <= nav.c.stoplength)
+                (x.pathlength <= nav.c.stoplength)
             )
         )
     )

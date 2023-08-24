@@ -34,7 +34,7 @@ from sqlalchemy.engine import URL
 from sqlalchemy.orm import sessionmaker, Session
 from typing import Iterable
 
-from nldi.navigate import navigate
+from nldi.functions.navigate import navigate
 
 _ENGINE_STORE = {}
 LOGGER = logging.getLogger(__name__)

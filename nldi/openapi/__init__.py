@@ -40,17 +40,17 @@ from pygeoapi.models.openapi import OAPIFormat
 from pygeoapi.util import get_base_url
 
 from nldi import __version__
-from nldi.util import SCHEMAS, sort_sources, url_join, yaml_load, to_json
+from nldi.util import THISDIR, sort_sources, url_join, yaml_load, to_json
 
 LOGGER = logging.getLogger(__name__)
 
-with open(SCHEMAS / 'openapi' / 'schemas.yaml', 'r') as fh:
+with open(THISDIR / 'openapi' / 'schemas.yaml', 'r') as fh:
     OAS_SCHEMAS = yaml_load(fh)
 
-with open(SCHEMAS / 'openapi' / 'parameters.yaml', 'r') as fh:
+with open(THISDIR / 'openapi' / 'parameters.yaml', 'r') as fh:
     OAS_PARAMETERS = yaml_load(fh)
 
-with open(SCHEMAS / 'openapi' / 'responses.yaml', 'r') as fh:
+with open(THISDIR / 'openapi' / 'responses.yaml', 'r') as fh:
     OAS_RESPONSES = yaml_load(fh)
 
 RESPONSES = {
