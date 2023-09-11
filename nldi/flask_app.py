@@ -27,7 +27,9 @@
 #
 # =================================================================
 
-from flask import Blueprint, Flask, make_response, request
+from flask import (Blueprint, Flask, request,
+                   stream_with_context, Response, send_from_directory)
+from jinja2.environment import TemplateStream
 import logging
 import os
 
@@ -64,11 +66,20 @@ def get_response(result: tuple):
     """
 
     headers, status, content = result
-    response = make_response(content, status)
+    if isinstance(content, TemplateStream):
+        response = Response(stream_with_context(content), status)
+    else:
+        response = Response(content, status)
 
     if headers:
         response.headers = headers
     return response
+
+
+@BLUEPRINT.route('/favicon.ico')
+def favicon():
+    return send_from_directory(STATIC_FOLDER, 'favicon.ico',
+                               mimetype='image/vnd.microsoft.icon')
 
 
 @BLUEPRINT.route('/')

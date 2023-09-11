@@ -78,12 +78,7 @@ class FeatureLookup(BaseLookup):
                 msg = f'No such item: {self.id_field}={identifier}'
                 raise ProviderItemNotFoundError(msg)
 
-            fc = {
-                'type': 'FeatureCollection',
-                'features': [self._sqlalchemy_to_feature(item)]
-            }
-
-        return fc
+            yield self._sqlalchemy_to_feature(item)
 
     def query(self):
         crawler_source_id = self.source.get('crawler_source_id')
@@ -101,13 +96,8 @@ class FeatureLookup(BaseLookup):
                 raise ProviderItemNotFoundError(msg)
 
             LOGGER.debug(f'Returning {hits} hits')
-            fc = {
-                'type': 'FeatureCollection',
-                'features': [self._sqlalchemy_to_feature(item)
-                             for item in query.all()]
-            }
-
-        return fc
+            for item in query.all():
+                yield self._sqlalchemy_to_feature(item)
 
     def lookup_navigation(self, comids: Iterable[str]):
         crawler_source_id = self.source.get('crawler_source_id')
@@ -124,12 +114,8 @@ class FeatureLookup(BaseLookup):
                 raise ProviderItemNotFoundError('Not found')
 
             LOGGER.debug(f'Returning {hits} hits')
-            fc = {
-                'type': 'FeatureCollection',
-                'features': [self._sqlalchemy_to_feature(item)
-                             for item in query.all()]
-            }
-        return fc
+            for item in query.all():
+                yield self._sqlalchemy_to_feature(item)
 
     def _sqlalchemy_to_feature(self, item):
 
