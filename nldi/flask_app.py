@@ -152,6 +152,20 @@ def get_source_features(source_name=None, identifier=None):
         API_.get_source_features(request, source_name, identifier))
 
 
+@BLUEPRINT.route('/linked-data/<path:source_name>/<path:identifier>/basin')
+def get_basin(source_name=None, identifier=None):
+    """
+    Basin lookup endpoint
+
+    :param source_name: NLDI source name
+    :param identifier: NLDI Source feature identifier
+
+    :returns: HTTP response
+    """
+    return get_response(
+        API_.get_basin(request, source_name, identifier))
+
+
 @BLUEPRINT.route('/linked-data/<path:source_name>/<path:identifier>/navigation')  # noqa
 @BLUEPRINT.route('/linked-data/<path:source_name>/<path:identifier>/navigation/<path:nav_mode>')  # noqa
 def get_navigation_info(source_name=None, identifier=None, nav_mode=None):
