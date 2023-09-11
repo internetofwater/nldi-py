@@ -71,12 +71,7 @@ class FlowlineLookup(BaseLookup):
                 raise ProviderItemNotFoundError(msg)
 
             LOGGER.debug(f'Intersection with {item.nhdplus_comid}')
-            fc = {
-                'type': 'FeatureCollection',
-                'features': [self._sqlalchemy_to_feature(item)]
-            }
-
-        return fc
+            yield self._sqlalchemy_to_feature(item)
 
     def lookup_navigation(self, comids: Iterable[str]):
         with self.session() as session:
@@ -90,13 +85,8 @@ class FlowlineLookup(BaseLookup):
                 raise ProviderItemNotFoundError(msg)
 
             LOGGER.debug(f'Returning {hits} hits')
-            fc = {
-                'type': 'FeatureCollection',
-                'features': [self._sqlalchemy_to_feature(item)
-                             for item in query.all()]
-            }
-
-        return fc
+            for item in query.all():
+                yield self._sqlalchemy_to_feature(item)
 
     def _sqlalchemy_to_feature(self, item):
         if item.shape:

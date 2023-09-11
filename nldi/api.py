@@ -46,7 +46,8 @@ from nldi.lookup.pygeoapi import PygeoapiLookup
 from nldi.lookup.source import CrawlerSourceLookup
 from nldi.plugin import load_plugin
 
-from nldi.util import TEMPLATES, sort_sources, to_json, url_join
+from nldi.util import (TEMPLATES, sort_sources, to_json,
+                       url_join, stream_j2_template)
 
 LOGGER = logging.getLogger(__name__)
 HEADERS = {
@@ -480,7 +481,8 @@ class API:
                 HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
                 'NoApplicableCode', msg)
 
-        return headers, HTTPStatus.OK, to_json(content, self.pretty_print)
+        _ = stream_j2_template('FeatureCollection.j2', content)
+        return headers, HTTPStatus.OK, _
 
     @pre_process
     def get_basin(self, request: Union[APIRequest, Any],
@@ -505,11 +507,13 @@ class API:
             if source_name != 'comid':
                 source = self.crawler_source.get(source_name)
                 plugin = self.load_plugin('FeatureLookup', source=source)
-                _ = plugin.get(identifier)
-                start_comid = int(_['features'][0]['properties']['comid'])
+                feature = next(plugin.get(identifier))
+                start_comid = int(feature['properties']['comid'])
+                isPoint = feature['geometry']['type'] == 'Point'
             else:
-                _ = self.flowline_lookup.get(identifier)
+                self.flowline_lookup.get(identifier)
                 start_comid = int(identifier)
+                isPoint = False
         except ProviderConnectionError:
             msg = 'connection error (check logs)'
             return self.get_exception(
@@ -521,18 +525,19 @@ class API:
                 HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
                 'NoApplicableCode', msg)
         except ProviderItemNotFoundError:
-            msg = f'The feature source \'{source_name}\' does not exist.'
+            msg = f'The feature {identifier} does not exist for \'{source_name}\'.'  # noqa
             return self.get_exception(
                 HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
                 'NoApplicableCode', msg)
-
-        isPoint = _['features'][0]['geometry']['type'] == 'Point'  # noqa
 
         _ = request.params.get('simplified', 'True')
         simplified = _.lower() == 'true'
 
         _ = request.params.get('splitCatchment', 'False')
         splitCatchment = _.lower() == 'true'  # noqa
+
+        if isPoint and splitCatchment:
+            LOGGER.debug('Split Catchment')
 
         LOGGER.debug(f'Returning with simplified geometry: {simplified}')
         content = self.func.get_basin(start_comid, simplified)
@@ -666,9 +671,9 @@ class API:
         else:
             try:
                 source = self.crawler_source.get(source_name)
-                plugin = self.load_plugin('FeatureLookup', source=source)  # noqa
-                start_comid = int(plugin.get(identifier)[
-                    'features'][0]['properties']['comid'])
+                plugin = self.load_plugin('FeatureLookup', source=source)
+                feature = next(plugin.get(identifier))
+                start_comid = int(feature['properties']['comid'])
             except ProviderQueryError:
                 msg = 'query error (check logs)'
                 return self.get_exception(
@@ -718,7 +723,8 @@ class API:
                     HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
                     'NoApplicableCode', msg)
 
-        return headers, HTTPStatus.OK, to_json(content, self.pretty_print)
+        _ = stream_j2_template('FeatureCollection.j2', content)
+        return headers, HTTPStatus.OK, _
 
     def get_exception(self, status, headers, format_, code,
                       description) -> Tuple[dict, int, str]:
