@@ -76,6 +76,12 @@ def get_response(result: tuple):
     return response
 
 
+@BLUEPRINT.route('/favicon.ico')
+def favicon():
+    return send_from_directory(STATIC_FOLDER, 'favicon.ico',
+                               mimetype='image/vnd.microsoft.icon')
+
+
 @BLUEPRINT.route('/')
 def home():
     """
