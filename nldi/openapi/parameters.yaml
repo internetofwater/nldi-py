@@ -59,7 +59,7 @@ navigationModePP:
 stopComid:
   name: stopComid
   in: query
-  description: NHDPlus comid to stop at. Only used when navigationMode is PP
+  description: NHDPlus comid to stop at when navigationMode is PP
   required: false
   schema:
     type: integer

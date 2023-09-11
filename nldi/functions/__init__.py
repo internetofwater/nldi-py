@@ -28,3 +28,167 @@
 # =================================================================
 
 """Module containing NLDI function models"""
+
+import json
+import logging
+from sqlalchemy import create_engine
+from sqlalchemy.engine import URL
+from sqlalchemy.orm import Session
+
+from nldi.functions.basin import get_basin
+from nldi.functions.navigate import get_navigation
+
+_ENGINE_STORE = {}
+LOGGER = logging.getLogger(__name__)
+
+
+class Functions:
+    """Postgresql database functons for the Hydro Network Linked-Data Index"""
+
+    def __init__(self, provider_def):
+        """
+        Function Class constructor
+
+        :param provider_def: provider definitions from yml nldi-config.
+
+        :returns: nldi.functions.Functions
+        """
+        LOGGER.debug('Initialising Functions')
+
+        # Read table information from database
+        self._store_db_parameters(provider_def)
+        self._engine = self._get_engine()
+
+    def get_basin(self, comid: int, simplified: bool):
+        """
+        Perform basin navigation
+
+        :param comid: start comid
+        :param simplified: bool to simplify geometry
+
+        :returns: iterator of navigated basin
+        """
+
+        basin = get_basin(comid, simplified)
+        LOGGER.debug(basin.compile(self._engine))
+
+        with Session(self._engine) as session:
+            # Retrieve data from database as feature
+            result = session.execute(basin).fetchone()
+
+            if result is None:
+                msg = f'No such item: {self.id_field}={comid}'
+                raise FunctionItemNotFoundError(msg)
+
+            return {
+                'type': 'FeatureCollection',
+                'features': [
+                    {
+                        'type': 'Feature',
+                        'geometry': json.loads(result.the_geom),
+                        'properties': {}
+                    }
+                ]
+            }
+
+    def get_navigation(self, nav_mode: str, comid: int, distance: float):
+        """
+        Perform navigation
+
+        :param nav_mode: navigation mode
+        :param comid: start comid
+        :param distance: distance to navigate
+
+        :returns: iterator of navigated comid
+        """
+        try:
+            distance = float(distance)
+        except ValueError:
+            msg = f'Invalid distance: {distance}'
+            LOGGER.error(msg)
+            raise FunctionInvalidQueryError(msg)
+
+        nav = get_navigation(nav_mode, comid, distance)
+        LOGGER.debug(nav.compile(self._engine))
+
+        with Session(self._engine) as session:
+            # Retrieve data from database as feature
+            result = session.execute(nav)
+
+            if result is None:
+                msg = f'No such item: {self.id_field}={comid}'
+                raise FunctionItemNotFoundError(msg)
+
+            for item in result.fetchall():
+                yield item.comid
+
+    def _store_db_parameters(self, parameters):
+        self.db_user = parameters.get('user')
+        self.db_host = parameters.get('host')
+        self.db_port = parameters.get('port', 5432)
+        self.db_name = parameters.get('dbname')
+        self._db_password = parameters.get('password')
+
+    def _get_engine(self):
+        """
+        Create a SQL Alchemy engine for the database and reflect the table
+        model.  Use existing versions from stores if available to allow reuse
+        of Engine connection pool and save expensive table reflection.
+        """
+        # One long-lived engine is used per database URL:
+        # https://docs.sqlalchemy.org/en/14/core/connections.html#basic-usage
+        engine_store_key = (self.db_user, self.db_host, self.db_port,
+                            self.db_name)
+        try:
+            engine = _ENGINE_STORE[engine_store_key]
+        except KeyError:
+            LOGGER.debug('Storing engine connection')
+            conn_str = URL.create(
+                'postgresql+psycopg2',
+                username=self.db_user,
+                password=self._db_password,
+                host=self.db_host,
+                port=self.db_port,
+                database=self.db_name
+            )
+            engine = create_engine(
+                conn_str,
+                connect_args={'client_encoding': 'utf8',
+                              'application_name': 'nldi'},
+                pool_pre_ping=True)
+            _ENGINE_STORE[engine_store_key] = engine
+
+        return engine
+
+    def __repr__(self):
+        return '<Function>'
+
+
+class FunctionGenericError(Exception):
+    """function generic error"""
+    pass
+
+
+class FunctionConnectionError(FunctionGenericError):
+    """function connection error"""
+    pass
+
+
+class FunctionTypeError(FunctionGenericError):
+    """function type error"""
+    pass
+
+
+class FunctionInvalidQueryError(FunctionGenericError):
+    """function invalid query error"""
+    pass
+
+
+class FunctionQueryError(FunctionGenericError):
+    """function query error"""
+    pass
+
+
+class FunctionItemNotFoundError(FunctionGenericError):
+    """function item not found query error"""
+    pass

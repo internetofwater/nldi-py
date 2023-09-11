@@ -50,8 +50,8 @@ class NavigationModes(str, Enum):
     PP = 'PP'
 
 
-def navigate(nav_mode: str, comid: int, distance: float = None,
-             coastal_fcode: int = COASTAL_FCODE) -> Any:
+def get_navigation(nav_mode: str, comid: int, distance: float = None,
+                   coastal_fcode: int = COASTAL_FCODE) -> Any:
     LOGGER.debug(f'Doing navigation for {comid} with mode {nav_mode}')
     if nav_mode == NavigationModes.DM:
         return navigate_dm(comid, distance, coastal_fcode)

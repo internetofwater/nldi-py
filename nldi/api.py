@@ -36,6 +36,7 @@ from pygeoapi.api import APIRequest, FORMAT_TYPES, F_HTML, F_JSON
 from pygeoapi.util import get_base_url, render_j2_template
 
 from nldi import __version__
+from nldi.functions import Functions
 from nldi.log import setup_logger
 from nldi.lookup.base import (ProviderItemNotFoundError,
                               ProviderConnectionError, ProviderQueryError)
@@ -106,6 +107,8 @@ class API:
         self.pretty_print = self.config['server']['pretty_print']
 
         setup_logger(cfg['logging'])
+
+        self.func = Functions(self.connection_def)
 
     def load_plugin(self, plugin_name: str, **kwargs) -> Any:
         """
@@ -480,6 +483,63 @@ class API:
         return headers, HTTPStatus.OK, to_json(content, self.pretty_print)
 
     @pre_process
+    def get_basin(self, request: Union[APIRequest, Any],
+                  source_name: str, identifier: str
+                  ) -> Tuple[dict, int, str]:
+        """
+        Provide Basin information
+
+        :param request: A request object
+        :param source_name: NLDI source name
+        :param identifier: NLDI Source feature identifier
+
+        :returns: tuple of headers, status code, content
+        """
+        if not request.is_valid():
+            return self.get_exception(request)
+
+        headers = request.get_response_headers(**HEADERS)
+
+        source_name = source_name.lower()
+        try:
+            if source_name != 'comid':
+                source = self.crawler_source.get(source_name)
+                plugin = self.load_plugin('FeatureLookup', source=source)
+                _ = plugin.get(identifier)
+                start_comid = int(_['features'][0]['properties']['comid'])
+            else:
+                _ = self.flowline_lookup.get(identifier)
+                start_comid = int(identifier)
+        except ProviderConnectionError:
+            msg = 'connection error (check logs)'
+            return self.get_exception(
+                HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
+                'NoApplicableCode', msg)
+        except ProviderQueryError:
+            msg = 'query error (check logs)'
+            return self.get_exception(
+                HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
+                'NoApplicableCode', msg)
+        except ProviderItemNotFoundError:
+            msg = f'The feature source \'{source_name}\' does not exist.'
+            return self.get_exception(
+                HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
+                'NoApplicableCode', msg)
+
+        isPoint = _['features'][0]['geometry']['type'] == 'Point'  # noqa
+
+        _ = request.params.get('simplified', 'True')
+        simplified = _.lower() == 'true'
+
+        _ = request.params.get('splitCatchment', 'False')
+        splitCatchment = _.lower() == 'true'  # noqa
+
+        LOGGER.debug(f'Returning with simplified geometry: {simplified}')
+        content = self.func.get_basin(start_comid, simplified)
+
+        return headers, HTTPStatus.OK, to_json(content, self.pretty_print)
+
+    @pre_process
     def get_navigation_info(self, request: Union[APIRequest, Any],
                             source_name: str, identifier: str, nav_mode: str
                             ) -> Tuple[dict, int, str]:
@@ -625,7 +685,7 @@ class API:
                     HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
                     'NoApplicableCode', msg)
 
-        nav_results = self.flowline_lookup.navigate(
+        nav_results = self.func.get_navigation(
             nav_mode, start_comid, distance)
 
         source2_name = data_source.lower()

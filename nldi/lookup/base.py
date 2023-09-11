@@ -31,10 +31,8 @@ from contextlib import contextmanager
 import logging
 from sqlalchemy import create_engine
 from sqlalchemy.engine import URL
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.orm import sessionmaker
 from typing import Iterable
-
-from nldi.functions.navigate import navigate
 
 _ENGINE_STORE = {}
 LOGGER = logging.getLogger(__name__)
@@ -84,37 +82,6 @@ class BaseLookup:
         """
 
         raise NotImplementedError()
-
-    def navigate(self, nav_mode: str, comid: str, distance: float):
-        """
-        Perform navigation
-
-        :param nav_mode: navigation mode
-        :param comid: start comid
-        :param distance: distance to navigate
-
-        :returns: iterator of navigated comid
-        """
-        try:
-            distance = float(distance)
-        except ValueError:
-            msg = f'Invalid distance: {distance}'
-            LOGGER.error(msg)
-            raise ProviderInvalidQueryError(msg)
-
-        nav = navigate(nav_mode, comid, distance)
-        LOGGER.debug(nav.compile(self._engine))
-
-        with Session(self._engine) as session:
-            # Retrieve data from database as feature
-            result = session.execute(nav)
-
-            if result is None:
-                msg = f'No such item: {self.id_field}={comid}'
-                raise ProviderItemNotFoundError(msg)
-
-            for item in result.fetchall():
-                yield item.comid
 
     def lookup_navigation(self, comids: Iterable[str]):
         """
