@@ -193,6 +193,21 @@ def get_navigation_info(source_name=None, identifier=None, nav_mode=None):
         API_.get_navigation_info(request, source_name, identifier, nav_mode))
 
 
+@BLUEPRINT.route('/linked-data/<path:source_name>/<path:identifier>/navigation/<path:nav_mode>/flowlines')  # noqa
+def get_navigation(source_name=None, identifier=None, nav_mode=None):  # noqa
+    """
+    Data source flowline navigation endpoint
+
+    :param source_name: NLDI input source name
+    :param identifier: NLDI Source feature identifier
+    :param nav_mode: NLDI Navigation mode
+
+    :returns: HTTP response
+    """
+    return get_response(API_.get_fl_navigation(
+        request, source_name, identifier, nav_mode))
+
+
 @BLUEPRINT.route('/linked-data/<path:source_name>/<path:identifier>/navigation/<path:nav_mode>/<path:data_source>')  # noqa
 def get_navigation(source_name=None, identifier=None, nav_mode=None, data_source=None):  # noqa
     """
