@@ -61,7 +61,7 @@ class FeatureLookup(BaseLookup):
 
         super().__init__(provider_def)
         self.geom_field = FeatureSourceModel.location
-        self.id_field = 'identifier'
+        self.id_field = FeatureSourceModel.identifier
         self.table_model = FeatureSourceModel
         self.table_model.__tablename__ = f'feature_{self.source_name}'
 
@@ -72,7 +72,8 @@ class FeatureLookup(BaseLookup):
         with self.session() as session:
             # Retrieve data from database as feature
             item = (session
-                    .get(identifier))
+                    .filter(self.id_field == identifier)
+                    .first())
 
             if item is None:
                 msg = f'No such item: {self.id_field}={identifier}'

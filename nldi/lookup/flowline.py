@@ -57,20 +57,22 @@ class FlowlineLookup(BaseLookup):
 
         super().__init__(provider_def)
         self.geom_field = FlowlineModel.shape
-        self.id_field = 'featureid'
+        self.id_field = FlowlineModel.nhdplus_comid
         self.table_model = FlowlineModel
 
     def get(self, identifier: str):
         LOGGER.debug(f'Fetching comid with id: {identifier}')
         with self.session() as session:
             # Retrieve data from database as feature
-            item = session.get(identifier)
+            item = (session
+                    .filter(self.id_field == identifier)
+                    .first())
 
             if item is None:
                 msg = f'No comid found for: {identifier}.'
                 raise ProviderItemNotFoundError(msg)
 
-            LOGGER.debug(f'Intersection with {item.nhdplus_comid}')
+            LOGGER.debug(f'Intersection with {item[0].nhdplus_comid}')
             yield self._sqlalchemy_to_feature(item)
 
     def lookup_navigation(self, comids: Iterable[str]):

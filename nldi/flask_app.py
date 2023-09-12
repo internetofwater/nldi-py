@@ -194,7 +194,7 @@ def get_navigation_info(source_name=None, identifier=None, nav_mode=None):
 
 
 @BLUEPRINT.route('/linked-data/<path:source_name>/<path:identifier>/navigation/<path:nav_mode>/flowlines')  # noqa
-def get_navigation(source_name=None, identifier=None, nav_mode=None):  # noqa
+def get_flowline_navigation(source_name=None, identifier=None, nav_mode=None):  # noqa
     """
     Data source flowline navigation endpoint
 

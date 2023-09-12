@@ -327,7 +327,8 @@ class API:
                 HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
                 'NoApplicableCode', msg)
 
-        return headers, HTTPStatus.OK, to_json(content, self.pretty_print)
+        _ = stream_j2_template('FeatureCollection.j2', content)
+        return headers, HTTPStatus.OK, _
 
     @pre_process
     def get_hydrolocation(self, request: Union[APIRequest, Any]
@@ -428,7 +429,8 @@ class API:
                 HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
                 'NoApplicableCode', msg)
 
-        return headers, HTTPStatus.OK, to_json(content, self.pretty_print)
+        _ = stream_j2_template('FeatureCollection.j2', content)
+        return headers, HTTPStatus.OK, _
 
     @pre_process
     def get_source_features(self, request: Union[APIRequest, Any],
@@ -776,6 +778,7 @@ class API:
                     'NoApplicableCode', msg)
 
         nav_results = self.func.get_navigation(nav_mode, start_comid, distance)
+
         source2_name = data_source.lower()
         try:
             source2 = self.crawler_source.get(source2_name)

@@ -50,14 +50,17 @@ class MainstemLookup(BaseLookup):
         """
         LOGGER.debug('Initialising Mainstem Lookup.')
         super().__init__(provider_def)
-        self.id_field = 'nhdpv2_comid'
+        self.id_field = MainstemLookupModel.nhdpv2_comid
         self.table_model = MainstemLookupModel
 
     def get(self, identifier: str):
         LOGGER.debug(f'Fetching mainstem for: {identifier}')
         with self.session() as session:
             # Retrieve data from database as feature
-            item = session.get(identifier)
+            item = (session
+                    .filter(self.id_field == identifier)
+                    .first())
+
             if item is None:
                 msg = f'No mainstem found: {self.id_field}={identifier}.'
                 raise ProviderItemNotFoundError(msg)
