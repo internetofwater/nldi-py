@@ -43,7 +43,7 @@ class CrawlerSourceModel(BaseModel):
     crawler_source_id = Column(Integer, primary_key=True)
     source_name = Column(String(500))
     source_suffix = Column(String(10),
-                           server_default=text("lower(source_suffix)"))
+                           server_default=text('lower(source_suffix)'))
     source_uri = Column(String(256))
     feature_id = Column(String(256))
     feature_name = Column(String(256))

@@ -28,3 +28,5 @@
 # =================================================================
 
 """Module containing the models for the NLDI data lookup"""
+
+_ENGINE_STORE = {}

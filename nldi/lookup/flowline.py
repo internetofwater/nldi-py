@@ -27,9 +27,8 @@
 #
 # =================================================================
 
-from geoalchemy2.shape import to_shape
+import json
 import logging
-import shapely
 from typing import Iterable
 
 from nldi.lookup.base import BaseLookup, ProviderItemNotFoundError
@@ -57,6 +56,7 @@ class FlowlineLookup(BaseLookup):
         self.relative_url = url_join(self.base_url, 'linked-data/comid')
 
         super().__init__(provider_def)
+        self.geom_field = FlowlineModel.shape
         self.id_field = 'featureid'
         self.table_model = FlowlineModel
 
@@ -89,11 +89,11 @@ class FlowlineLookup(BaseLookup):
                 yield self._sqlalchemy_to_feature(item)
 
     def _sqlalchemy_to_feature(self, item):
-        if item.shape:
-            shapely_geom = to_shape(item.shape)
-            geojson_geom = shapely.geometry.mapping(shapely_geom)
-            geometry = geojson_geom
+        if self.geom_field:
+            (feature, geom) = item
+            geometry = json.loads(geom)
         else:
+            feature = item
             geometry = None
 
         try:
@@ -101,16 +101,16 @@ class FlowlineLookup(BaseLookup):
         except AttributeError:
             mainstem = ''
 
-        navigation = url_join(self.relative_url,
-                              item.nhdplus_comid, 'navigation')
+        navigation = url_join(
+            self.relative_url, feature.nhdplus_comid, 'navigation')
 
         return {
             'type': 'Feature',
             'properties': {
-                'identifier': item.permanent_identifier,
+                'identifier': feature.permanent_identifier,
                 'source': 'comid',
                 'sourceName': 'NHDPlus comid',
-                'comid': item.nhdplus_comid,
+                'comid': feature.nhdplus_comid,
                 'mainstem': mainstem,
                 'navigation': navigation
             },

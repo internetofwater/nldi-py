@@ -37,8 +37,8 @@ from sqlalchemy.orm import Session
 
 from nldi.functions.basin import get_basin
 from nldi.functions.navigate import get_navigation
+from nldi.lookup import _ENGINE_STORE
 
-_ENGINE_STORE = {}
 LOGGER = logging.getLogger(__name__)
 
 
