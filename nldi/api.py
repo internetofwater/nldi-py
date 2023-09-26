@@ -552,11 +552,11 @@ class API:
                 HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
                 'NoApplicableCode', msg)
 
-        _ = request.params.get('simplified', 'True')
-        simplified = _.lower() == 'true'
+        _ = request.params.get('simplified', 'True').lower() == 'true'
+        simplified = _
 
-        _ = request.params.get('splitCatchment', 'False')
-        splitCatchment = _.lower() == 'true'  # noqa
+        _ = request.params.get('splitCatchment', 'False').lower() == 'true'
+        splitCatchment = _
 
         if isPoint and splitCatchment:
             LOGGER.debug('Split Catchment')
@@ -614,8 +614,6 @@ class API:
                 'downstreamMain': url_join(nav_url, 'DM'),
                 'downstreamDiversions': url_join(nav_url, 'DD'),
             }
-            if source_name == 'comid':
-                content.update({'pointToPoint': url_join(nav_url, 'PP')})
 
             return headers, HTTPStatus.OK, to_json(content, self.pretty_print)
 
@@ -711,9 +709,14 @@ class API:
                     'NoApplicableCode', msg)
 
         try:
-            distance = request.params['distance']
+            distance = float(request.params['distance'])
         except KeyError:
             msg = 'Required request parameter \'distance\' is not present.'
+            return self.get_exception(
+                HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
+                'NoApplicableCode', msg)
+        except ValueError:
+            msg = 'Required request parameter \'distance\' must be a number.'
             return self.get_exception(
                 HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
                 'NoApplicableCode', msg)
@@ -809,9 +812,14 @@ class API:
                 'NoApplicableCode', msg)
 
         try:
-            distance = request.params['distance']
+            distance = float(request.params['distance'])
         except KeyError:
             msg = 'Required request parameter \'distance\' is not present.'
+            return self.get_exception(
+                HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
+                'NoApplicableCode', msg)
+        except ValueError:
+            msg = 'Required request parameter \'distance\' must be a number.'
             return self.get_exception(
                 HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
                 'NoApplicableCode', msg)

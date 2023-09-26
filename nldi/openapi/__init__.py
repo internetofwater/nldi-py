@@ -473,8 +473,7 @@ def get_oas(cfg):
                             'enum': _sources
                         }
                     },
-                    {'$ref': '#/components/parameters/distance'},
-                    {'$ref': '#/components/parameters/stopComid'}
+                    {'$ref': '#/components/parameters/distance'}
                 ],
                 'responses': {
                     '200': {
@@ -514,7 +513,6 @@ def get_oas(cfg):
                     *parameters,
                     {'$ref': '#/components/parameters/navigationMode'},
                     {'$ref': '#/components/parameters/distance'},
-                    {'$ref': '#/components/parameters/stopComid'},
                     {'$ref': '#/components/parameters/trimStart'},
                     {'$ref': '#/components/parameters/trimTolerance'}
                 ],
