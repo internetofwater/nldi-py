@@ -26,7 +26,7 @@ services:
       context: .
     container_name: nldi-py
     ports:
-      - "8080:80"
+      - "8081:80"
     environment:
       NLDI_PATH: /api/nldi
       NLDI_URL: http://localhost:8081/api/nldi
