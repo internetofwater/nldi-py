@@ -32,7 +32,7 @@ from http import HTTPStatus
 import logging
 from typing import Any, Tuple, Union
 
-from pygeoapi.api import APIRequest, FORMAT_TYPES, F_HTML, F_JSON
+from pygeoapi.api import APIRequest, FORMAT_TYPES, F_HTML, F_JSON, F_JSONLD
 from pygeoapi.util import get_base_url, render_j2_template
 
 from nldi import __version__
@@ -501,8 +501,13 @@ class API:
                     HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
                     'NoApplicableCode', msg)
 
-        #     content = stream_j2_template('FeatureGraph.j2', features)
-        content = stream_j2_template('FeatureCollection.j2', features)
+        if request.format == F_JSONLD:
+            if identifier:
+                content = stream_j2_template('FeatureGraph.j2', features)
+            else:
+                content = stream_j2_template('FeatureCollectionGraph.j2', features)  # noqa
+        else:
+            content = stream_j2_template('FeatureCollection.j2', features)
 
         return headers, HTTPStatus.OK, content
 
@@ -642,9 +647,9 @@ class API:
         return headers, HTTPStatus.OK, to_json(content, self.pretty_print)
 
     @pre_process
-    def get_fl_navigation(self, request: Union[APIRequest, Any],
-                          source_name: str, identifier: str, nav_mode: str
-                          ) -> Tuple[dict, int, str]:
+    def get_flowlines(self, request: Union[APIRequest, Any],
+                      source_name: str, identifier: str, nav_mode: str
+                      ) -> Tuple[dict, int, str]:
         """
         Provide navigation query
 
@@ -826,7 +831,11 @@ class API:
 
         nav_results = self.func.get_navigation(nav_mode, start_comid, distance)
         features = plugin.lookup_navigation(nav_results)
-        content = stream_j2_template('FeatureCollection.j2', features)
+
+        if request.format == F_JSONLD:
+            content = stream_j2_template('FeatureCollectionGraph.j2', features)
+        else:
+            content = stream_j2_template('FeatureCollection.j2', features)
 
         return headers, HTTPStatus.OK, content
 
