@@ -204,7 +204,7 @@ def get_flowline_navigation(source_name=None, identifier=None, nav_mode=None):  
 
     :returns: HTTP response
     """
-    return get_response(API_.get_fl_navigation(
+    return get_response(API_.get_flowlines(
         request, source_name, identifier, nav_mode))
 
 

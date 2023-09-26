@@ -262,6 +262,11 @@ def get_oas(cfg):
                                     'schema': {
                                         '$ref': '#/components/schemas/FeatureCollection'  # noqa
                                     }
+                                },
+                                'application/ld+json': {
+                                    'schema': {
+                                        '$ref': '#/components/schemas/FeatureCollection'  # noqa
+                                    }
                                 }
                             }
                         },
@@ -330,6 +335,11 @@ def get_oas(cfg):
                         'description': 'OK',
                         'content': {
                             'application/json': {
+                                'schema': {
+                                    '$ref': '#/components/schemas/FeatureCollection'  # noqa
+                                }
+                            },
+                            'application/ld+json': {
                                 'schema': {
                                     '$ref': '#/components/schemas/FeatureCollection'  # noqa
                                 }
@@ -511,10 +521,12 @@ def get_oas(cfg):
                 'operationId': f'{src_title}NavigationFlowlines',
                 'parameters': [
                     *parameters,
-                    {'$ref': '#/components/parameters/navigationMode'},
+                    {'$ref': '#/components/parameters/navigationModePP'},
                     {'$ref': '#/components/parameters/distance'},
+                    {'$ref': '#/components/parameters/stopComid'},
                     {'$ref': '#/components/parameters/trimStart'},
-                    {'$ref': '#/components/parameters/trimTolerance'}
+                    {'$ref': '#/components/parameters/trimTolerance'},
+                    {'$ref': '#/components/parameters/legacy'}
                 ],
                 'responses': {
                     '200': {
