@@ -462,7 +462,7 @@ def get_oas(cfg):
                 'operationId': f'{src_title}NavigationDataSource',
                 'parameters': [
                     *parameters,
-                    {'$ref': '#/components/parameters/navigationModePP'},
+                    {'$ref': '#/components/parameters/navigationMode'},
                     {
                         'name': 'dataSource',
                         'in': 'path',
@@ -473,9 +473,7 @@ def get_oas(cfg):
                             'enum': _sources
                         }
                     },
-                    {'$ref': '#/components/parameters/distance'},
-                    {'$ref': '#/components/parameters/stopComid'},
-                    {'$ref': '#/components/parameters/legacy'}
+                    {'$ref': '#/components/parameters/distance'}
                 ],
                 'responses': {
                     '200': {
@@ -513,12 +511,10 @@ def get_oas(cfg):
                 'operationId': f'{src_title}NavigationFlowlines',
                 'parameters': [
                     *parameters,
-                    {'$ref': '#/components/parameters/navigationModePP'},
+                    {'$ref': '#/components/parameters/navigationMode'},
                     {'$ref': '#/components/parameters/distance'},
-                    {'$ref': '#/components/parameters/stopComid'},
                     {'$ref': '#/components/parameters/trimStart'},
-                    {'$ref': '#/components/parameters/trimTolerance'},
-                    {'$ref': '#/components/parameters/legacy'}
+                    {'$ref': '#/components/parameters/trimTolerance'}
                 ],
                 'responses': {
                     '200': {

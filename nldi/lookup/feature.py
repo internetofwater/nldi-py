@@ -27,9 +27,8 @@
 #
 # =================================================================
 
-from geoalchemy2.shape import to_shape
+import json
 import logging
-import shapely
 from typing import Iterable
 
 
@@ -61,7 +60,8 @@ class FeatureLookup(BaseLookup):
             url_join(self.base_url, 'linked-data', self.source_name)
 
         super().__init__(provider_def)
-        self.id_field = 'identifier'
+        self.geom_field = FeatureSourceModel.location
+        self.id_field = FeatureSourceModel.identifier
         self.table_model = FeatureSourceModel
         self.table_model.__tablename__ = f'feature_{self.source_name}'
 
@@ -72,19 +72,20 @@ class FeatureLookup(BaseLookup):
         with self.session() as session:
             # Retrieve data from database as feature
             item = (session
-                    .get(identifier))
+                    .filter(self.id_field == identifier)
+                    .first())
 
             if item is None:
                 msg = f'No such item: {self.id_field}={identifier}'
                 raise ProviderItemNotFoundError(msg)
 
-            yield self._sqlalchemy_to_feature(item)
+            return self._sqlalchemy_to_feature(item)
 
     def query(self):
         crawler_source_id = self.source.get('crawler_source_id')
         crawler_source_id_ = FeatureSourceModel.crawler_source_id
 
-        LOGGER.debug(f'Feching features for: {crawler_source_id}')
+        LOGGER.debug(f'Fetching features for source id: {crawler_source_id}')
         with self.session() as session:
             # Retrieve data from database as feature
             query = (session
@@ -118,36 +119,35 @@ class FeatureLookup(BaseLookup):
                 yield self._sqlalchemy_to_feature(item)
 
     def _sqlalchemy_to_feature(self, item):
-
-        if item.location:
-            shapely_geom = to_shape(item.location)
-            geojson_geom = shapely.geometry.mapping(shapely_geom)
-            geometry = geojson_geom
+        if self.geom_field:
+            (feature, geom) = item
+            geometry = json.loads(geom)
         else:
+            feature = item
             geometry = None
 
         try:
-            mainstem = item.mainstem_lookup.uri
+            mainstem = feature.mainstem_lookup.uri
         except AttributeError:
             mainstem = ''
 
         navigation = \
-            url_join(self.relative_url, item.identifier, 'navigation')
+            url_join(self.relative_url, feature.identifier, 'navigation')
 
         return {
             'type': 'Feature',
             'properties': {
-                'identifier': item.identifier,
-                'name': item.name,
-                'source': item.crawler_source.source_suffix,
-                'sourceName': item.crawler_source.source_name,
-                'comid': item.comid,
-                'type': item.crawler_source.feature_type,
-                'uri': item.uri,
-                'reachcode': item.reachcode,
-                'measure': item.measure,
+                'identifier': feature.identifier,
+                'name': feature.name,
+                'source': feature.crawler_source.source_suffix,
+                'sourceName': feature.crawler_source.source_name,
+                'comid': feature.comid,
+                'type': feature.crawler_source.feature_type,
+                'uri': feature.uri,
+                'reachcode': feature.reachcode,
+                'measure': feature.measure,
                 'navigation': navigation,
                 'mainstem': mainstem
             },
-            'geometry': geometry,
+            'geometry': geometry
         }

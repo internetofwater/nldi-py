@@ -29,12 +29,13 @@
 
 from contextlib import contextmanager
 import logging
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, func
 from sqlalchemy.engine import URL
 from sqlalchemy.orm import sessionmaker
 from typing import Iterable
 
-_ENGINE_STORE = {}
+from nldi.lookup import _ENGINE_STORE
+
 LOGGER = logging.getLogger(__name__)
 
 
@@ -57,6 +58,7 @@ class BaseLookup:
         LOGGER.debug('Initialising BaseLookup')
 
         # Read table information from database
+        self.geom_field = None
         self.id_field = None
         self.table_model = None
         self.db_search_path = []
@@ -97,7 +99,11 @@ class BaseLookup:
         try:
             Session = sessionmaker(bind=self._engine)
             session = Session()
-            yield session.query(self.table_model)
+            if self.geom_field:
+                geom = func.ST_AsGeoJSON(self.geom_field).label('geom')
+                yield session.query(self.table_model, geom)
+            else:
+                yield session.query(self.table_model)
         finally:
             session.close()
 

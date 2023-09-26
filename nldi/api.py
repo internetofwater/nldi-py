@@ -310,7 +310,8 @@ class API:
         headers = request.get_response_headers(**HEADERS)
 
         try:
-            content = self.flowline_lookup.get(identifier)
+            feature = self.flowline_lookup.get(identifier)
+            features = [feature, ]
         except ProviderConnectionError:
             msg = 'connection error (check logs)'
             return self.get_exception(
@@ -327,7 +328,8 @@ class API:
                 HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
                 'NoApplicableCode', msg)
 
-        return headers, HTTPStatus.OK, to_json(content, self.pretty_print)
+        content = stream_j2_template('FeatureCollection.j2', features)
+        return headers, HTTPStatus.OK, content
 
     @pre_process
     def get_hydrolocation(self, request: Union[APIRequest, Any]
@@ -416,7 +418,8 @@ class API:
                 'NoApplicableCode', msg)
 
         try:
-            content = self.flowline_lookup.get(identifier)
+            feature = self.flowline_lookup.get(identifier)
+            features = [feature, ]
         except ProviderQueryError:
             msg = 'query error (check logs)'
             return self.get_exception(
@@ -428,7 +431,8 @@ class API:
                 HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
                 'NoApplicableCode', msg)
 
-        return headers, HTTPStatus.OK, to_json(content, self.pretty_print)
+        content = stream_j2_template('FeatureCollection.j2', features)
+        return headers, HTTPStatus.OK, content
 
     @pre_process
     def get_source_features(self, request: Union[APIRequest, Any],
@@ -468,21 +472,39 @@ class API:
                 'NoApplicableCode', msg)
 
         plugin = self.load_plugin('FeatureLookup', source=source)
-        try:
-            content = plugin.get(identifier) if identifier else plugin.query()
-        except ProviderQueryError:
-            msg = 'query error (check logs)'
-            return self.get_exception(
-                HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
-                'NoApplicableCode', msg)
-        except ProviderItemNotFoundError:
-            msg = f'The feature source \'{source_name}\' has not been crawled.'
-            return self.get_exception(
-                HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
-                'NoApplicableCode', msg)
+        if identifier:
+            try:
+                feature = plugin.get(identifier)
+                features = [feature, ]
+            except ProviderQueryError:
+                msg = 'query error (check logs)'
+                return self.get_exception(
+                    HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
+                    'NoApplicableCode', msg)
+            except ProviderItemNotFoundError:
+                msg = f'The source \'{source_name}\' has no item {identifier}.'
+                return self.get_exception(
+                    HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
+                    'NoApplicableCode', msg)
 
-        _ = stream_j2_template('FeatureCollection.j2', content)
-        return headers, HTTPStatus.OK, _
+        else:
+            try:
+                features = plugin.query()
+            except ProviderQueryError:
+                msg = 'query error (check logs)'
+                return self.get_exception(
+                    HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
+                    'NoApplicableCode', msg)
+            except ProviderItemNotFoundError:
+                msg = f'The source \'{source_name}\' has not been crawled.'
+                return self.get_exception(
+                    HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
+                    'NoApplicableCode', msg)
+
+        #     content = stream_j2_template('FeatureGraph.j2', features)
+        content = stream_j2_template('FeatureCollection.j2', features)
+
+        return headers, HTTPStatus.OK, content
 
     @pre_process
     def get_basin(self, request: Union[APIRequest, Any],
@@ -530,11 +552,11 @@ class API:
                 HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
                 'NoApplicableCode', msg)
 
-        _ = request.params.get('simplified', 'True')
-        simplified = _.lower() == 'true'
+        _ = request.params.get('simplified', 'True').lower() == 'true'
+        simplified = _
 
-        _ = request.params.get('splitCatchment', 'False')
-        splitCatchment = _.lower() == 'true'  # noqa
+        _ = request.params.get('splitCatchment', 'False').lower() == 'true'
+        splitCatchment = _
 
         if isPoint and splitCatchment:
             LOGGER.debug('Split Catchment')
@@ -592,8 +614,6 @@ class API:
                 'downstreamMain': url_join(nav_url, 'DM'),
                 'downstreamDiversions': url_join(nav_url, 'DD'),
             }
-            if source_name == 'comid':
-                content.update({'pointToPoint': url_join(nav_url, 'PP')})
 
             return headers, HTTPStatus.OK, to_json(content, self.pretty_print)
 
@@ -622,6 +642,92 @@ class API:
         return headers, HTTPStatus.OK, to_json(content, self.pretty_print)
 
     @pre_process
+    def get_fl_navigation(self, request: Union[APIRequest, Any],
+                          source_name: str, identifier: str, nav_mode: str
+                          ) -> Tuple[dict, int, str]:
+        """
+        Provide navigation query
+
+        :param request: A request object
+        :param source_name: NLDI source name
+        :param identifier: NLDI Source feature identifier
+        :param nav_mode: NLDI Navigation mode
+
+        :returns: tuple of headers, status code, content
+        """
+        if not request.is_valid():
+            return self.get_exception(request)
+
+        headers = request.get_response_headers(**HEADERS)
+
+        start_comid = None
+        source_name = source_name.lower()
+
+        if source_name == 'comid':
+            try:
+                self.flowline_lookup.get(identifier)
+            except ProviderQueryError:
+                msg = 'query error (check logs)'
+                return self.get_exception(
+                    HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
+                    'NoApplicableCode', msg)
+            except ProviderItemNotFoundError:
+                msg = f'The comid source \'{identifier}\' does not exist.'
+                return self.get_exception(
+                    HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
+                    'NoApplicableCode', msg)
+
+            start_comid = int(identifier)
+
+        else:
+            try:
+                source = self.crawler_source.get(source_name)
+            except ProviderItemNotFoundError:
+                msg = f'The feature source \'{source_name}\' does not exist.'
+                return self.get_exception(
+                    HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
+                    'NoApplicableCode', msg)
+
+            plugin = self.load_plugin('FeatureLookup', source=source)
+            try:
+                feature = plugin.get(identifier)
+                start_comid = int(feature['properties']['comid'])
+            except ProviderQueryError:
+                msg = 'query error (check logs)'
+                return self.get_exception(
+                    HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
+                    'NoApplicableCode', msg)
+            except (KeyError, IndexError):
+                msg = f'The feature {identifier} from source \'{source_name}\' is not indexed.'  # noqa
+                return self.get_exception(
+                    HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
+                    'NoApplicableCode', msg)
+            except ProviderItemNotFoundError:
+                msg = f'The source \'{source_name}\' has no item {identifier}.'
+                return self.get_exception(
+                    HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
+                    'NoApplicableCode', msg)
+
+        try:
+            distance = float(request.params['distance'])
+        except KeyError:
+            msg = 'Required request parameter \'distance\' is not present.'
+            return self.get_exception(
+                HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
+                'NoApplicableCode', msg)
+        except ValueError:
+            msg = 'Required request parameter \'distance\' must be a number.'
+            return self.get_exception(
+                HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
+                'NoApplicableCode', msg)
+
+        nav_results = self.func.get_navigation(nav_mode, start_comid, distance)
+        features = self.flowline_lookup.lookup_navigation(nav_results)
+        content = stream_j2_template('FeatureCollection.j2', features)
+
+        return headers, HTTPStatus.OK, content
+
+    @pre_process
     def get_navigation(self, request: Union[APIRequest, Any],
                        source_name: str, identifier: str,
                        nav_mode: str, data_source: str
@@ -642,21 +748,12 @@ class API:
 
         headers = request.get_response_headers(**HEADERS)
 
-        try:
-            distance = request.params['distance']
-        except KeyError:
-            msg = 'Required request parameter \'distance\' is not present.'
-            return self.get_exception(
-                HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
-                'NoApplicableCode', msg)
-
         start_comid = None
         source_name = source_name.lower()
 
         if source_name == 'comid':
             try:
                 self.flowline_lookup.get(identifier)
-                start_comid = int(identifier)
             except ProviderQueryError:
                 msg = 'query error (check logs)'
                 return self.get_exception(
@@ -668,11 +765,20 @@ class API:
                     HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
                     'NoApplicableCode', msg)
 
+            start_comid = int(identifier)
+
         else:
             try:
                 source = self.crawler_source.get(source_name)
-                plugin = self.load_plugin('FeatureLookup', source=source)
-                feature = next(plugin.get(identifier))
+            except ProviderItemNotFoundError:
+                msg = f'The feature source \'{source_name}\' does not exist.'
+                return self.get_exception(
+                    HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
+                    'NoApplicableCode', msg)
+
+            plugin = self.load_plugin('FeatureLookup', source=source)
+            try:
+                feature = plugin.get(identifier)
                 start_comid = int(feature['properties']['comid'])
             except ProviderQueryError:
                 msg = 'query error (check logs)'
@@ -685,46 +791,44 @@ class API:
                     HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
                     'NoApplicableCode', msg)
             except ProviderItemNotFoundError:
-                msg = f'The feature source \'{source_name}\' does not exist.'
+                msg = f'The source \'{source_name}\' has no item {identifier}.'
                 return self.get_exception(
                     HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
                     'NoApplicableCode', msg)
-
-        nav_results = self.func.get_navigation(
-            nav_mode, start_comid, distance)
 
         source2_name = data_source.lower()
-        if source2_name == 'flowlines':
-            try:
-                content = self.flowline_lookup.lookup_navigation(nav_results)
-            except ProviderQueryError:
-                msg = 'query error (check logs)'
-                return self.get_exception(
-                    HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
-                    'NoApplicableCode', msg)
-            except ProviderItemNotFoundError:
-                msg = f'The feature source \'{source2_name}\' does not exist.'
-                return self.get_exception(
-                    HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
-                    'NoApplicableCode', msg)
-        else:
-            try:
-                source2 = self.crawler_source.get(source2_name)
-                plugin = self.load_plugin('FeatureLookup', source=source2)
-                content = plugin.lookup_navigation(nav_results)
-            except ProviderQueryError:
-                msg = 'query error (check logs)'
-                return self.get_exception(
-                    HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
-                    'NoApplicableCode', msg)
-            except ProviderItemNotFoundError:
-                msg = f'The feature source \'{source2_name}\' does not exist.'
-                return self.get_exception(
-                    HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
-                    'NoApplicableCode', msg)
+        try:
+            source2 = self.crawler_source.get(source2_name)
+            plugin = self.load_plugin('FeatureLookup', source=source2)
+        except ProviderQueryError:
+            msg = 'query error (check logs)'
+            return self.get_exception(
+                HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
+                'NoApplicableCode', msg)
+        except ProviderItemNotFoundError:
+            msg = f'The feature source \'{source2_name}\' does not exist.'
+            return self.get_exception(
+                HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
+                'NoApplicableCode', msg)
 
-        _ = stream_j2_template('FeatureCollection.j2', content)
-        return headers, HTTPStatus.OK, _
+        try:
+            distance = float(request.params['distance'])
+        except KeyError:
+            msg = 'Required request parameter \'distance\' is not present.'
+            return self.get_exception(
+                HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
+                'NoApplicableCode', msg)
+        except ValueError:
+            msg = 'Required request parameter \'distance\' must be a number.'
+            return self.get_exception(
+                HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
+                'NoApplicableCode', msg)
+
+        nav_results = self.func.get_navigation(nav_mode, start_comid, distance)
+        features = plugin.lookup_navigation(nav_results)
+        content = stream_j2_template('FeatureCollection.j2', features)
+
+        return headers, HTTPStatus.OK, content
 
     def get_exception(self, status, headers, format_, code,
                       description) -> Tuple[dict, int, str]:
