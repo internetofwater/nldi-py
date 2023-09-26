@@ -79,7 +79,7 @@ class FeatureLookup(BaseLookup):
                 msg = f'No such item: {self.id_field}={identifier}'
                 raise ProviderItemNotFoundError(msg)
 
-            yield self._sqlalchemy_to_feature(item)
+            return self._sqlalchemy_to_feature(item)
 
     def query(self):
         crawler_source_id = self.source.get('crawler_source_id')

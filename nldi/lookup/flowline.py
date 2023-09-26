@@ -73,7 +73,7 @@ class FlowlineLookup(BaseLookup):
                 raise ProviderItemNotFoundError(msg)
 
             LOGGER.debug(f'Intersection with {item[0].nhdplus_comid}')
-            yield self._sqlalchemy_to_feature(item)
+            return self._sqlalchemy_to_feature(item)
 
     def lookup_navigation(self, comids: Iterable[str]):
         with self.session() as session:
