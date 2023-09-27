@@ -31,11 +31,11 @@
 
 from enum import Enum
 import logging
-from sqlalchemy import select, text, and_, or_
+from sqlalchemy import select, text, and_, or_, case, func
 from sqlalchemy.orm import aliased
 from typing import Any
 
-from nldi.schemas.nhdplus import FlowlineVAAModel
+from nldi.schemas.nhdplus import FlowlineVAAModel, FlowlineModel
 
 LOGGER = logging.getLogger(__name__)
 
@@ -47,7 +47,45 @@ class NavigationModes(str, Enum):
     DD = 'DD'
     UM = 'UM'
     UT = 'UT'
-    PP = 'PP'
+
+
+def trim_navigation(nav_mode: str, comid: int,
+                    trim_tolerance: float, measure: float):
+    scaled_measure = (1 - (
+        (measure - FlowlineModel.fmeasure) /
+        (FlowlineModel.tmeasure - FlowlineModel.fmeasure)))
+
+    if nav_mode in [NavigationModes.DD, NavigationModes.DM]:
+        geom = func.ST_AsGeoJSON(
+            func.ST_LineSubstring(
+                FlowlineModel.shape, scaled_measure, 1), 9, 0
+        )
+    elif nav_mode in [NavigationModes.UT, NavigationModes.UM]:
+        geom = func.ST_AsGeoJSON(
+            func.ST_LineSubstring(
+                FlowlineModel.shape, 0, scaled_measure), 9, 0
+        )
+
+    if 100 - measure >= trim_tolerance:
+        LOGGER.debug('Forming trim query')
+        nav_trim = case(
+            (FlowlineModel.nhdplus_comid == text(':comid'), geom),
+            else_=func.ST_AsGeoJSON(FlowlineModel.shape, 9, 0)
+        )
+
+        query = select([
+            FlowlineModel.nhdplus_comid.label('comid'),
+            nav_trim.label('geom')
+        ])
+    else:
+        query = select([
+            FlowlineModel.nhdplus_comid.label('comid'),
+            func.ST_AsGeoJSON(FlowlineModel.shape, 9, 0).label('geom')
+        ])
+
+    return query.params(
+        comid=comid
+    )
 
 
 def get_navigation(nav_mode: str, comid: int, distance: float = None,

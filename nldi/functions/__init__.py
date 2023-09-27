@@ -36,9 +36,9 @@ from sqlalchemy.engine import URL
 from sqlalchemy.orm import Session
 
 from nldi.functions.basin import get_basin
-from nldi.functions.navigate import get_navigation
+from nldi.functions.navigate import get_navigation, trim_navigation
 from nldi.functions.lookup import (
-    get_point_on_flowline,
+    get_point_on_flowline, estimate_measure,
     get_closest_point_on_flowline,
     get_distance_from_flowline)
 from nldi.lookup import _ENGINE_STORE
@@ -90,6 +90,24 @@ class Functions:
                 'properties': {}
             }
 
+    def trim_navigation(self, nav_mode: str, comid: int,
+                        trim_tolerance: float, measure: float):
+        """
+        Trim navigation
+
+        :param nav: navigation query
+        :param nav_mode: navigation mode
+        :param comid: start comid
+        :param trim_tolerance: trim tolerance
+        :param measure: calculated measure
+
+        :returns: string of trimmed navigation query
+        """
+
+        trim = trim_navigation(nav_mode, comid, trim_tolerance, measure)
+        LOGGER.debug(trim.compile(self._engine))
+        return trim
+
     def get_navigation(self, nav_mode: str, comid: int, distance: float):
         """
         Perform navigation
@@ -98,7 +116,7 @@ class Functions:
         :param comid: start comid
         :param distance: distance to navigate
 
-        :returns: iterator of navigated comid
+        :returns: string of navigation query
         """
         try:
             distance = float(distance)
@@ -109,17 +127,7 @@ class Functions:
 
         nav = get_navigation(nav_mode, comid, distance)
         LOGGER.debug(nav.compile(self._engine))
-
-        with Session(self._engine) as session:
-            # Retrieve data from database as feature
-            result = session.execute(nav)
-
-            if result is None:
-                msg = f'No such item: {self.id_field}={comid}'
-                raise FunctionItemNotFoundError(msg)
-
-            for item in result.fetchall():
-                yield item.comid
+        return nav
 
     def get_point(self, feature_id: str, feature_source: str):
         """
@@ -142,6 +150,27 @@ class Functions:
             else:
                 return result
 
+    def estimate_measure(self, feature_id: str, feature_source: str):
+        """
+        Perform flowline approximation
+
+        :param feature_id: Feature indentifier
+        :param feature_source: Feature source
+
+        :returns: Point on flowline
+        """
+        measure = estimate_measure(feature_id, feature_source)
+        LOGGER.debug(measure.compile(self._engine))
+
+        with Session(self._engine) as session:
+            # Retrieve data from database as feature
+            result = session.execute(measure).scalar()
+
+            if result is None:
+                LOGGER.warning('Not on flowline')
+            else:
+                return result
+
     def get_closest(self, feature_id: str, feature_source: str):
         """
         Perform flowline approximation
@@ -158,7 +187,7 @@ class Functions:
             # Retrieve data from database as feature
             result = session.execute(point).fetchone()
 
-            if result is None or None in result:
+            if None in result:
                 LOGGER.warning('Not on flowline')
             else:
                 return result
@@ -177,12 +206,12 @@ class Functions:
 
         with Session(self._engine) as session:
             # Retrieve data from database as feature
-            result = session.execute(point).fetchone()
+            result = session.execute(point).scalar()
 
-            if result is None or None in result:
+            if result is None:
                 LOGGER.warning('Not on flowline')
             else:
-                return result[0]
+                return result
 
     def _store_db_parameters(self, parameters):
         self.db_user = parameters.get('user')

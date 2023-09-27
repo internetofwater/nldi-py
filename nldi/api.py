@@ -759,8 +759,53 @@ class API:
                 HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
                 'NoApplicableCode', msg)
 
-        nav_results = self.func.get_navigation(nav_mode, start_comid, distance)
-        features = self.flowline_lookup.lookup_navigation(nav_results)
+        nav = self.func.get_navigation(nav_mode, start_comid, distance)
+
+        try:
+            trim_start = str(request.params['trimStart']).lower() == 'true'
+        except (KeyError, TypeError):
+            trim_start = False
+
+        try:
+            trim_tolerance = request.params.get('trimTolerance')
+        except KeyError:
+            trim_tolerance = 0
+
+        LOGGER.debug(trim_start)
+        if trim_start is True:
+            LOGGER.debug(f'Trimming flowline with tolerance: {trim_tolerance}')
+            try:
+                trim_tolerance = float(trim_tolerance)
+            except ValueError:
+                msg = 'Request parameter \'trimTolerance\' must be a number.'
+                return self.get_exception(
+                    HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
+                    'NoApplicableCode', msg)
+
+            try:
+                measure = feature['properties']['measure']
+                if not measure:
+                    measure = \
+                        self.func.estimate_measure(identifier, source_name)
+                measure = float(measure)
+                LOGGER.debug(f'measure {measure}')
+            except KeyError:
+                msg = 'Required field \'measure\' is not present.'
+                return self.get_exception(
+                    HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
+                    'NoApplicableCode', msg)
+            except ValueError:
+                msg = 'Required field \'measure\' must be a number.'
+                return self.get_exception(
+                    HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
+                    'NoApplicableCode', msg)
+
+            trim_nav = self.func.trim_navigation(nav_mode, start_comid,
+                                                 trim_tolerance, measure)
+            features = self.flowline_lookup.trim_navigation(nav, trim_nav)
+        else:
+            features = self.flowline_lookup.lookup_navigation(nav)
+
         content = stream_j2_template('FeatureCollection.j2', features)
 
         return headers, HTTPStatus.OK, content

@@ -100,15 +100,20 @@ class FeatureLookup(BaseLookup):
             for item in query.all():
                 yield self._sqlalchemy_to_feature(item)
 
-    def lookup_navigation(self, comids: Iterable[str]):
+    def lookup_navigation(self, nav: str):
         crawler_source_id = self.source.get('crawler_source_id')
         crawler_source_id_ = FeatureSourceModel.crawler_source_id
 
         with self.session() as session:
             # Retrieve data from database as feature
-            query = (session
-                     .filter(crawler_source_id_ == crawler_source_id)
-                     .filter(self.table_model.comid.in_(comids)))
+            query = (
+                session
+                .join(
+                    nav, self.table_model.comid == nav.c.comid
+                ).filter(
+                    crawler_source_id_ == crawler_source_id
+                )
+            )
             hits = query.count()
 
             if hits is None:
