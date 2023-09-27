@@ -150,6 +150,33 @@ class PygeoapiLookup(BaseLookup):
         }
         return fc
 
+    def get_split_catchment(self, coords: str) -> dict:
+        """
+        query split catchment
+
+        :param coords: WKT of point element
+
+        :returns: GeoJSON features
+        """
+        LOGGER.debug(f'Extracting geom from WKT: {coords}')
+        point = wkt.loads(coords)
+        data = {
+            'inputs': [
+                {'id': 'lon', 'type': 'text/plain', 'value': f'{point.x}'},
+                {'id': 'lat', 'type': 'text/plain', 'value': f'{point.y}'},
+                {'id': 'upstream', 'type': 'text/plain', 'value': 'true'}
+            ]
+        }
+
+        LOGGER.debug('Making OGC API - Processes request')
+        url = url_join(self.pygeoapi_url, 'processes/nldi-splitcatchment/execution')  # noqa
+        response = self._get_response(url, data=data)
+
+        for feature in response['features']:
+            if feature['id'] == 'mergedCatchment':
+                feature.pop('id')
+                yield feature
+
     def _get_response(self, url: str, data: dict = {}) -> dict:
         """
         Private function: Get pygeoapi response

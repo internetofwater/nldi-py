@@ -37,6 +37,10 @@ from sqlalchemy.orm import Session
 
 from nldi.functions.basin import get_basin
 from nldi.functions.navigate import get_navigation
+from nldi.functions.lookup import (
+    get_point_on_flowline,
+    get_closest_point_on_flowline,
+    get_distance_from_flowline)
 from nldi.lookup import _ENGINE_STORE
 
 LOGGER = logging.getLogger(__name__)
@@ -80,15 +84,10 @@ class Functions:
                 msg = f'No such item: {self.id_field}={comid}'
                 raise FunctionItemNotFoundError(msg)
 
-            return {
-                'type': 'FeatureCollection',
-                'features': [
-                    {
-                        'type': 'Feature',
-                        'geometry': json.loads(result.the_geom),
-                        'properties': {}
-                    }
-                ]
+            yield {
+                'type': 'Feature',
+                'geometry': json.loads(result.the_geom),
+                'properties': {}
             }
 
     def get_navigation(self, nav_mode: str, comid: int, distance: float):
@@ -121,6 +120,69 @@ class Functions:
 
             for item in result.fetchall():
                 yield item.comid
+
+    def get_point(self, feature_id: str, feature_source: str):
+        """
+        Perform flowline lookup
+
+        :param feature_id: Feature indentifier
+        :param feature_source: Feature source
+
+        :returns: Point on flowline
+        """
+        point = get_point_on_flowline(feature_id, feature_source)
+        LOGGER.debug(point.compile(self._engine))
+
+        with Session(self._engine) as session:
+            # Retrieve data from database as feature
+            result = session.execute(point).fetchone()
+
+            if result is None or None in result:
+                LOGGER.warning('Not on flowline')
+            else:
+                return result
+
+    def get_closest(self, feature_id: str, feature_source: str):
+        """
+        Perform flowline approximation
+
+        :param feature_id: Feature indentifier
+        :param feature_source: Feature source
+
+        :returns: Point on flowline
+        """
+        point = get_closest_point_on_flowline(feature_id, feature_source)
+        LOGGER.debug(point.compile(self._engine))
+
+        with Session(self._engine) as session:
+            # Retrieve data from database as feature
+            result = session.execute(point).fetchone()
+
+            if result is None or None in result:
+                LOGGER.warning('Not on flowline')
+            else:
+                return result
+
+    def get_distance(self, feature_id: str, feature_source: str):
+        """
+        Perform flowline distance
+
+        :param feature_id: Feature indentifier
+        :param feature_source: Feature source
+
+        :returns: Distance from nearest flowline
+        """
+        point = get_distance_from_flowline(feature_id, feature_source)
+        LOGGER.debug(point.compile(self._engine))
+
+        with Session(self._engine) as session:
+            # Retrieve data from database as feature
+            result = session.execute(point).fetchone()
+
+            if result is None or None in result:
+                LOGGER.warning('Not on flowline')
+            else:
+                return result[0]
 
     def _store_db_parameters(self, parameters):
         self.db_user = parameters.get('user')

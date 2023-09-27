@@ -55,6 +55,7 @@ HEADERS = {
     'X-Powered-By': f'nldi {__version__}'
 }
 FORMAT_TYPES.move_to_end(F_JSON, last=False)
+SPLIT_CATCHMENT_THRESHOLD = 200
 
 
 def pre_process(func):
@@ -542,7 +543,7 @@ class API:
             if source_name != 'comid':
                 source = self.crawler_source.get(source_name)
                 plugin = self.load_plugin('FeatureLookup', source=source)
-                feature = next(plugin.get(identifier))
+                feature = plugin.get(identifier)
                 start_comid = int(feature['properties']['comid'])
                 isPoint = feature['geometry']['type'] == 'Point'
             else:
@@ -572,12 +573,36 @@ class API:
         splitCatchment = _
 
         if isPoint and splitCatchment:
-            LOGGER.debug('Split Catchment')
+            LOGGER.debug('Performing Split Catchment')
+            point = self.func.get_point(identifier, source_name)
 
-        LOGGER.debug(f'Returning with simplified geometry: {simplified}')
-        content = self.func.get_basin(start_comid, simplified)
+            if point is None:
+                distance = self.func.get_distance(identifier, source_name)
+                LOGGER.debug(distance)
 
-        return headers, HTTPStatus.OK, to_json(content, self.pretty_print)
+                if distance <= SPLIT_CATCHMENT_THRESHOLD:
+                    point = self.func.get_closest(identifier, source_name)
+                else:
+                    [lon, lat] = feature['geometry']['coordinates']
+                    wkt_geom = f'POINT({lon} {lat})'
+                    response = self.pygeoapi_lookup.get_hydrolocation(wkt_geom)
+                    point = response['features'][0]['geometry']['coordinates']
+
+            if point is None:
+                msg = 'Unable to retrieve point on flowline for catchment splitting.'  # noqa
+                return self.get_exception(
+                    HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
+                    'NoApplicableCode', msg)
+
+            [lon, lat] = point
+            wkt_geom = f'POINT({lon} {lat})'
+            features = self.pygeoapi_lookup.get_split_catchment(wkt_geom)
+        else:
+            LOGGER.debug(f'Returning with simplified geometry: {simplified}')
+            features = self.func.get_basin(start_comid, simplified)
+
+        content = stream_j2_template('FeatureCollection.j2', features)
+        return headers, HTTPStatus.OK, content
 
     @pre_process
     def get_navigation_info(self, request: Union[APIRequest, Any],
