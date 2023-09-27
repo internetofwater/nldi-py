@@ -75,11 +75,35 @@ class FlowlineLookup(BaseLookup):
             LOGGER.debug(f'Intersection with {item[0].nhdplus_comid}')
             return self._sqlalchemy_to_feature(item)
 
-    def lookup_navigation(self, comids: Iterable[str]):
+    def lookup_navigation(self, nav: str):
+
         with self.session() as session:
             # Retrieve data from database as feature
             query = (session
-                     .filter(FlowlineModel.nhdplus_comid.in_(comids)))
+                     .join(
+                         nav, FlowlineModel.nhdplus_comid == nav.c.comid
+                     ))
+            hits = query.count()
+
+            if hits is None:
+                msg = 'Not found'
+                raise ProviderItemNotFoundError(msg)
+
+            LOGGER.debug(f'Returning {hits} hits')
+            for item in query.all():
+                yield self._sqlalchemy_to_feature(item)
+
+    def trim_navigation(self, nav, nav_trim):
+
+        with self.session(raw=True) as session:
+            # Retrieve data from database as feature
+            query = (session
+                     .query(self.table_model, nav_trim.c.geom)
+                     .join(
+                         nav, FlowlineModel.nhdplus_comid == nav.c.comid
+                     ).join(
+                         nav_trim, FlowlineModel.nhdplus_comid == nav_trim.c.comid  # noqa
+                     ))
             hits = query.count()
 
             if hits is None:

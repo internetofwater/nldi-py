@@ -85,7 +85,7 @@ class BaseLookup:
 
         raise NotImplementedError()
 
-    def lookup_navigation(self, comids: Iterable[str]):
+    def lookup_navigation(self, nav: str):
         """
         Lookup navigation result from set of comids
 
@@ -95,11 +95,13 @@ class BaseLookup:
         raise NotImplementedError()
 
     @contextmanager
-    def session(self):
+    def session(self, raw=False):
         try:
             Session = sessionmaker(bind=self._engine)
             session = Session()
-            if self.geom_field:
+            if raw is True:
+                yield session
+            elif self.geom_field:
                 geom = func.ST_AsGeoJSON(self.geom_field).label('geom')
                 yield session.query(self.table_model, geom)
             else:

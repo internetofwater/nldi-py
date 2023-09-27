@@ -239,7 +239,6 @@ def get_oas(cfg):
     }
     sources = [comid, *sort_sources(cfg['sources'])]
     _sources = [_src['source_suffix'] for _src in cfg['sources']]
-    _sources.insert(0, 'flowlines')
     for src in sources:
         src_id = src['source_suffix'].lower()
         src_name = src['source_name']
@@ -511,6 +510,11 @@ def get_oas(cfg):
             }
         }
 
+        extra = []
+        if src_id != 'comid':
+            extra = [{'$ref': '#/components/parameters/trimStart'},
+                     {'$ref': '#/components/parameters/trimTolerance'}]
+
         src_by_nav_fl = url_join('/', src_by_nav_md, 'flowlines')
         paths[src_by_nav_fl] = {
             'get': {
@@ -521,12 +525,9 @@ def get_oas(cfg):
                 'operationId': f'{src_title}NavigationFlowlines',
                 'parameters': [
                     *parameters,
-                    {'$ref': '#/components/parameters/navigationModePP'},
+                    {'$ref': '#/components/parameters/navigationMode'},
                     {'$ref': '#/components/parameters/distance'},
-                    {'$ref': '#/components/parameters/stopComid'},
-                    {'$ref': '#/components/parameters/trimStart'},
-                    {'$ref': '#/components/parameters/trimTolerance'},
-                    {'$ref': '#/components/parameters/legacy'}
+                    *extra
                 ],
                 'responses': {
                     '200': {
