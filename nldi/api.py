@@ -157,9 +157,14 @@ class API:
     def pygeoapi_lookup(self) -> PygeoapiLookup:
         """pygeoapi Lookup Provider"""
         if self._pygeoapi_lookup is None:
+            try:
+                PYGEOAPI_URL = self.config['pygeoapi']['gdp_url']
+            except KeyError:
+                PYGEOAPI_URL = 'https://labs.waterdata.usgs.gov/api/nldi/pygeoapi'  # noqa
             self._pygeoapi_lookup = \
                 self.load_plugin('PygeoapiLookup',
-                                 catchment_lookup=self.catchment_lookup)
+                                 catchment_lookup=self.catchment_lookup,
+                                 pygeoapi_url=PYGEOAPI_URL)
         return self._pygeoapi_lookup
 
     @pre_process

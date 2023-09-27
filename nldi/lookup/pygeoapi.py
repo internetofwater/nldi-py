@@ -29,7 +29,6 @@
 
 import json
 import logging
-import os
 from requests import Session as HTTPSession
 from shapely import wkt
 from sqlalchemy import func
@@ -42,8 +41,6 @@ from nldi.util import url_join
 
 LOGGER = logging.getLogger(__name__)
 
-PYGEOAPI_URL = os.getenv(
-    'PYGEOAPI_URL', 'https://labs.waterdata.usgs.gov/api/nldi/pygeoapi')
 DEFAULT_PROPS = {
     'identifier': '', 'navigation': '', 'measure': '',
     'reachcode': '', 'name': '', 'source': 'provided',
@@ -66,6 +63,7 @@ class PygeoapiLookup(BaseLookup):
         """
         LOGGER.debug('Initialising Pygeoapi Lookup.')
         self.catchment_lookup = provider_def['catchment_lookup']
+        self.pygeoapi_url = provider_def['pygeoapi_url']
         self.base_url = provider_def['base_url']
         self.http = HTTPSession()
 
@@ -90,7 +88,7 @@ class PygeoapiLookup(BaseLookup):
         }
 
         LOGGER.debug('Making OGC API - Processes request')
-        url = url_join(PYGEOAPI_URL, 'processes/nldi-flowtrace/execution')
+        url = url_join(self.pygeoapi_url, 'processes/nldi-flowtrace/execution')
         response = self._get_response(url, data=data)
 
         LOGGER.debug('Getting feature intersection')

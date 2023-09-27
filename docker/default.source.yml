@@ -30,13 +30,16 @@
 server:
   url: ${NLDI_URL}
   pretty_print: false
-  pygeoapi: true
   data:
     host: ${NLDI_DB_HOST}
     port: ${NLDI_DB_PORT}
     dbname: ${NLDI_DB_NAME}
     user: ${NLDI_DB_USERNAME}
     password: ${NLDI_DB_PASSWORD}
+
+pygeoapi: 
+  enabled: true
+  gdp_url: ${PYGEOAPI_URL}
 
 logging:
   level: ERROR
