@@ -759,22 +759,23 @@ class API:
                 HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
                 'NoApplicableCode', msg)
 
+        LOGGER.debug(f'Doing navigation {nav_mode} for {distance}')
         nav = self.func.get_navigation(nav_mode, start_comid, distance)
 
+        trim_start = False
         try:
             trim_start = str(request.params['trimStart']).lower() == 'true'
         except (KeyError, TypeError):
-            trim_start = False
-
-        try:
-            trim_tolerance = request.params.get('trimTolerance')
-        except KeyError:
-            trim_tolerance = 0
+            if request.params.get('trimStart'):
+                msg = 'Request parameter \'trimStart\' must be a boolean.'
+                return self.get_exception(
+                    HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
+                    'NoApplicableCode', msg)
 
         LOGGER.debug(trim_start)
         if trim_start is True:
-            LOGGER.debug(f'Trimming flowline with tolerance: {trim_tolerance}')
             try:
+                trim_tolerance = request.params.get('trimTolerance', 0)
                 trim_tolerance = float(trim_tolerance)
             except ValueError:
                 msg = 'Request parameter \'trimTolerance\' must be a number.'
@@ -782,6 +783,7 @@ class API:
                     HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
                     'NoApplicableCode', msg)
 
+            LOGGER.debug(f'Trimming flowline with tolerance: {trim_tolerance}')
             try:
                 measure = feature['properties']['measure']
                 if not measure:

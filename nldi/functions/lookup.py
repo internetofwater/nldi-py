@@ -32,27 +32,53 @@
 import logging
 from sqlalchemy import select, text, and_, func
 
-from nldi.schemas.nhdplus import FlowlineModel
-from nldi.schemas.nldi_data import FeatureSourceModel, CrawlerSourceModel
+from nldi.schemas.nhdplus import FlowlineModel as Flow
+from nldi.schemas.nldi_data import FeatureSourceModel as Feature
+from nldi.schemas.nldi_data import CrawlerSourceModel as Crawler
 
 LOGGER = logging.getLogger(__name__)
 
 
-def get_distance_from_flowline(feature_id: str, feature_source: str):
-    x = select([
-        FlowlineModel.shape,
-        FeatureSourceModel.location
+def estimate_measure(feature_id: str, feature_source: str):
+    query = select([
+        Flow.fmeasure +
+        (1 - func.ST_LineLocatePoint(Flow.shape, Feature.location)) *
+        (Flow.tmeasure - Flow.fmeasure).label('measure')
     ]).join(
-        FeatureSourceModel,
+        Feature,
         and_(
-            FeatureSourceModel.comid == FlowlineModel.nhdplus_comid,
-            FeatureSourceModel.identifier == text(':feature_id'),
+            Feature.comid == Flow.nhdplus_comid,
+            Feature.identifier == text(':feature_id'),
         )
     ).join(
-        CrawlerSourceModel,
+        Crawler,
         and_(
-            CrawlerSourceModel.source_suffix == text(':feature_source'),
-            FeatureSourceModel.crawler_source_id == CrawlerSourceModel.crawler_source_id  # noqa
+            Crawler.source_suffix == text(':feature_source'),
+            Feature.crawler_source_id == Crawler.crawler_source_id  # noqa
+        )
+    )
+
+    return query.params(
+        feature_id=feature_id,
+        feature_source=feature_source
+    )
+
+
+def get_distance_from_flowline(feature_id: str, feature_source: str):
+    x = select([
+        Flow.shape,
+        Feature.location
+    ]).join(
+        Feature,
+        and_(
+            Feature.comid == Flow.nhdplus_comid,
+            Feature.identifier == text(':feature_id'),
+        )
+    ).join(
+        Crawler,
+        and_(
+            Crawler.source_suffix == text(':feature_source'),
+            Feature.crawler_source_id == Crawler.crawler_source_id  # noqa
         )
     )
 
@@ -68,10 +94,10 @@ def get_distance_from_flowline(feature_id: str, feature_source: str):
 
 def get_point_on_flowline(feature_id: str, feature_source: str):
     point = func.ST_LineInterpolatePoint(
-        FlowlineModel.shape,
+        Flow.shape,
         (1 - (
-            (FeatureSourceModel.measure - FlowlineModel.fmeasure) /
-            (FlowlineModel.tmeasure - FlowlineModel.fmeasure))
+            (Feature.measure - Flow.fmeasure) /
+            (Flow.tmeasure - Flow.fmeasure))
          )
     )
 
@@ -79,16 +105,16 @@ def get_point_on_flowline(feature_id: str, feature_source: str):
         func.ST_X(point).label('lon'),
         func.ST_Y(point).label('lat')
     ]).join(
-        FeatureSourceModel,
+        Feature,
         and_(
-            FeatureSourceModel.comid == FlowlineModel.nhdplus_comid,
-            FeatureSourceModel.identifier == text(':feature_id'),
+            Feature.comid == Flow.nhdplus_comid,
+            Feature.identifier == text(':feature_id'),
         )
     ).join(
-        CrawlerSourceModel,
+        Crawler,
         and_(
-            CrawlerSourceModel.source_suffix == text(':feature_source'),
-            FeatureSourceModel.crawler_source_id == CrawlerSourceModel.crawler_source_id  # noqa
+            Crawler.source_suffix == text(':feature_source'),
+            Feature.crawler_source_id == Crawler.crawler_source_id  # noqa
         )
     )
 
@@ -100,19 +126,19 @@ def get_point_on_flowline(feature_id: str, feature_source: str):
 
 def get_closest_point_on_flowline(feature_id: str, feature_source: str):
     x = select([
-        FlowlineModel.shape.label('shape'),
-        FeatureSourceModel.location.label('location')
+        Flow.shape.label('shape'),
+        Feature.location.label('location')
     ]).join(
-        FeatureSourceModel,
+        Feature,
         and_(
-            FeatureSourceModel.comid == FlowlineModel.nhdplus_comid,
-            FeatureSourceModel.identifier == text(':feature_id'),
+            Feature.comid == Flow.nhdplus_comid,
+            Feature.identifier == text(':feature_id'),
         )
     ).join(
-        CrawlerSourceModel,
+        Crawler,
         and_(
-            CrawlerSourceModel.source_suffix == text(':feature_source'),
-            FeatureSourceModel.crawler_source_id == CrawlerSourceModel.crawler_source_id  # noqa
+            Crawler.source_suffix == text(':feature_source'),
+            Feature.crawler_source_id == Crawler.crawler_source_id
         )
     ).alias('x')
 
