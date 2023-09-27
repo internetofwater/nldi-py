@@ -202,13 +202,16 @@ class API:
             }]
         }
 
-        if self.config['server']['pygeoapi'] is True:
-            content['links'].append({
-                'rel': 'data',
-                'type': 'text/html',
-                'title': 'pygeoapi for the NLDI',
-                'href': f'{self.base_url}/pygeoapi?f=html'
-            })
+        try:
+            if self.config['pygeoapi']['enabled'] is True:
+                content['links'].append({
+                    'rel': 'data',
+                    'type': 'text/html',
+                    'title': 'pygeoapi for the NLDI',
+                    'href': f'{self.base_url}/pygeoapi?f=html'
+                })
+        except KeyError:
+            LOGGER.debug('Omitting pygeoapi link')
 
         return headers, HTTPStatus.OK, to_json(content, self.pretty_print)
 
