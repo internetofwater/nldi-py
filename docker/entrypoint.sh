@@ -53,31 +53,44 @@ entry_cmd=${1:-run}
 
 # Shorthand
 function error() {
-	echo "ERROR: $@"
-	exit -1
+        echo "ERROR: $@"
+        exit -1
 }
 
 # Workdir
 cd ${NLDI_HOME}
 
-echo "Trying to generate openapi.yml"
-pygeoapi openapi generate ${PYGEOAPI_CONFIG} --output-file ${PYGEOAPI_OPENAPI}
-nldi config align-sources ${NLDI_CONFIG}
-nldi openapi generate ${NLDI_CONFIG} --output-file ${NLDI_OPENAPI}
+case ${entry_cmd} in
+# Align source table
+align)
+        nldi config align-sources ${NLDI_CONFIG}
+        ;;
 
-[[ $? -ne 0 ]] && error "openapi.yml could not be generated ERROR"
+# Run NLDI Server
+run)
+        echo "Trying to generate openapi.yml"
+        pygeoapi openapi generate ${PYGEOAPI_CONFIG} --output-file ${PYGEOAPI_OPENAPI}
+        nldi openapi generate ${NLDI_CONFIG} --output-file ${NLDI_OPENAPI}
 
-echo "openapi.yml generated continue to nldi"
+        [[ $? -ne 0 ]] && error "openapi.yml could not be generated ERROR"
 
-# SCRIPT_NAME should not have value '/'
-[[ "${SCRIPT_NAME}" = '/' ]] && export SCRIPT_NAME="" && echo "make SCRIPT_NAME empty from /"
+        echo "openapi.yml generated continue to nldi"
 
-echo "Start gunicorn name=${CONTAINER_NAME} on ${CONTAINER_HOST}:${CONTAINER_PORT} with ${WSGI_WORKERS} workers and SCRIPT_NAME=${SCRIPT_NAME}"
-exec gunicorn --workers ${WSGI_WORKERS} \
-        --worker-class=${WSGI_WORKER_CLASS} \
-        --timeout ${WSGI_WORKER_TIMEOUT} \
-        --name=${CONTAINER_NAME} \
-        --bind ${CONTAINER_HOST}:${CONTAINER_PORT} \
-        nldi.flask_app:APP
+        # SCRIPT_NAME should not have value '/'
+        [[ "${SCRIPT_NAME}" = '/' ]] && export SCRIPT_NAME="" && echo "make SCRIPT_NAME empty from /"
+
+        echo "Start gunicorn name=${CONTAINER_NAME} on ${CONTAINER_HOST}:${CONTAINER_PORT} with ${WSGI_WORKERS} workers and SCRIPT_NAME=${SCRIPT_NAME}"
+        exec gunicorn --workers ${WSGI_WORKERS} \
+                --worker-class=${WSGI_WORKER_CLASS} \
+                --timeout ${WSGI_WORKER_TIMEOUT} \
+                --name=${CONTAINER_NAME} \
+                --bind ${CONTAINER_HOST}:${CONTAINER_PORT} \
+                nldi.flask_app:APP
+        ;;
+
+*)
+        error "unknown command arg: must be run (default) or align"
+        ;;
+esac
 
 echo "END /entrypoint.sh"

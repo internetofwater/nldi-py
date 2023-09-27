@@ -33,9 +33,9 @@ services:
       NLDI_DB_HOST: nldi-db
       NLDI_DB_PORT: 5432
       NLDI_DB_NAME: nldi
-      NLDI_DB_USERNAME: read_only_user
+      NLDI_DB_USERNAME: nldi
       NLDI_DB_PASSWORD: changeMe
-      pygeoapiUrl: "https://labs.waterdata.usgs.gov/api/nldi/pygeoapi/"
+      PYGEOAPI_URL: https://labs.waterdata.usgs.gov/api/nldi/pygeoapi/
     networks:
       - nldi
 
