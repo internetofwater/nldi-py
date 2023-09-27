@@ -157,9 +157,14 @@ class API:
     def pygeoapi_lookup(self) -> PygeoapiLookup:
         """pygeoapi Lookup Provider"""
         if self._pygeoapi_lookup is None:
+            try:
+                PYGEOAPI_URL = self.config['pygeoapi']['gdp_url']
+            except KeyError:
+                PYGEOAPI_URL = 'https://labs.waterdata.usgs.gov/api/nldi/pygeoapi'  # noqa
             self._pygeoapi_lookup = \
                 self.load_plugin('PygeoapiLookup',
-                                 catchment_lookup=self.catchment_lookup)
+                                 catchment_lookup=self.catchment_lookup,
+                                 pygeoapi_url=PYGEOAPI_URL)
         return self._pygeoapi_lookup
 
     @pre_process
@@ -197,13 +202,16 @@ class API:
             }]
         }
 
-        if self.config['server']['pygeoapi'] is True:
-            content['links'].append({
-                'rel': 'data',
-                'type': 'text/html',
-                'title': 'pygeoapi for the NLDI',
-                'href': f'{self.base_url}/pygeoapi?f=html'
-            })
+        try:
+            if self.config['pygeoapi']['enabled'] is True:
+                content['links'].append({
+                    'rel': 'data',
+                    'type': 'text/html',
+                    'title': 'pygeoapi for the NLDI',
+                    'href': f'{self.base_url}/pygeoapi?f=html'
+                })
+        except KeyError:
+            LOGGER.debug('Omitting pygeoapi link')
 
         return headers, HTTPStatus.OK, to_json(content, self.pretty_print)
 

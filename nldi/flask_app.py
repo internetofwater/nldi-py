@@ -224,8 +224,11 @@ def get_navigation(source_name=None, identifier=None, nav_mode=None, data_source
         request, source_name, identifier, nav_mode, data_source))
 
 
-if CONFIG['server']['pygeoapi'] is True:
-    from pygeoapi.flask_app import BLUEPRINT as PYGEOAPI_BLUEPRINT
-    APP.register_blueprint(PYGEOAPI_BLUEPRINT, url_prefix='/pygeoapi')
+try:
+    if CONFIG['pygeoapi']['enabled'] is True:
+        from pygeoapi.flask_app import BLUEPRINT as PYGEOAPI_BLUEPRINT
+        APP.register_blueprint(PYGEOAPI_BLUEPRINT, url_prefix='/pygeoapi')
+except KeyError:
+    LOGGER.info('Not including pygeoapi templates')
 
 APP.register_blueprint(BLUEPRINT)
