@@ -31,52 +31,47 @@ FROM ubuntu:jammy
 
 LABEL maintainer="Benjamin Webb <bwebb@lincolninst.edu>"
 
-ARG ADD_DEB_PACKAGES="\
-  python3-gdal \
-  python3-psycopg2 \
-  python3-rasterio"
+# ARG ADD_DEB_PACKAGES="\
+#   python3-gdal \
+#   python3-psycopg2 \
+#   python3-rasterio"
 
 # ENV settings
 ENV TZ=${TZ} \
   LANG=${LANG} \
+  PIP_NO_CACHE_DIR=1 \
   DEBIAN_FRONTEND="noninteractive" \
   DEB_BUILD_DEPS="\
   curl \
-  gcc \
+  #gcc \
   unzip" \
   DEB_PACKAGES="\
   locales \
   tzdata \
-  gunicorn \
-  python3-dateutil \
-  python3-flask \
-  python3-flask-cors \
-  python3-gevent \
-  python3-greenlet \
+  python3-psycopg2 \
   python3-pip \
-  python3-tz \
-  python3-unicodecsv \
-  python3-yaml \
   ${ADD_DEB_PACKAGES}"
 
 
-ADD . /nldi
-WORKDIR /nldi
 
 # Install operating system dependencies
 RUN \
   apt-get update -y \
   && apt-get upgrade -y \
   && apt-get --no-install-recommends install -y ${DEB_PACKAGES} ${DEB_BUILD_DEPS}  \
-  # Install nldi
-  && pip3 install --no-deps https://github.com/geopython/pygeoapi/archive/refs/heads/master.zip \
-  && pip3 install -r requirements-docker.txt \
-  && pip3 install -e . \
   # Cleanup
   && apt-get remove --purge -y ${DEB_BUILD_DEPS} \
   && apt-get clean \
   && apt autoremove -y  \
-  && rm -rf /var/lib/apt/lists/* \
+  && rm -rf /var/lib/apt/lists/*
+
+ADD . /nldi
+WORKDIR /nldi
+
+RUN \
+  pip install --no-deps https://github.com/geopython/pygeoapi/archive/refs/heads/master.zip \
+  && pip install -r requirements-docker.txt \
+  && pip install -e . \
   # Set default config and entrypoint for Docker Image
   && cp /nldi/docker/default.source.yml /nldi/local.source.yml \
   && cp /nldi/docker/pygeoapi.config.yml /nldi/pygeoapi.config.yml \

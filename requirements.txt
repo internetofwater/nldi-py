@@ -1,5 +1,7 @@
 click>7,<=8
 Flask
+flask-cors
+gunicorn
 geoalchemy
 psycopg2
 pygeoapi
@@ -9,3 +11,6 @@ PyYAML
 requests
 SQLAlchemy
 unicodecsv
+gevent
+rasterio
+psycopg2
