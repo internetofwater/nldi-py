@@ -12,5 +12,4 @@ requests
 SQLAlchemy
 unicodecsv
 gevent
-rasterio
 psycopg2

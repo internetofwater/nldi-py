@@ -27,52 +27,43 @@
 #
 # =================================================================
 
-FROM ubuntu:jammy
+FROM python:3.11-alpine as build
 
 LABEL maintainer="Benjamin Webb <bwebb@lincolninst.edu>"
-
-# ARG ADD_DEB_PACKAGES="\
-#   python3-gdal \
-#   python3-psycopg2 \
-#   python3-rasterio"
-
+LABEL description="Docker image for the NLDI API"
 # ENV settings
 ENV TZ=${TZ} \
   LANG=${LANG} \
-  PIP_NO_CACHE_DIR=1 \
-  DEBIAN_FRONTEND="noninteractive" \
-  DEB_BUILD_DEPS="\
-  curl \
-  #gcc \
-  unzip" \
-  DEB_PACKAGES="\
-  locales \
-  tzdata \
-  python3-psycopg2 \
-  python3-pip \
-  ${ADD_DEB_PACKAGES}"
-
-
+  PIP_NO_CACHE_DIR=1
 
 # Install operating system dependencies
 RUN \
-  apt-get update -y \
-  && apt-get upgrade -y \
-  && apt-get --no-install-recommends install -y ${DEB_PACKAGES} ${DEB_BUILD_DEPS}  \
-  # Cleanup
-  && apt-get remove --purge -y ${DEB_BUILD_DEPS} \
-  && apt-get clean \
-  && apt autoremove -y  \
-  && rm -rf /var/lib/apt/lists/*
+  apk update && apk add curl build-base libpq-dev proj-util proj-dev gdal-dev geos-dev
 
+COPY ./requirements-docker.txt ./requirements.txt ./req/
+
+
+RUN pip install --no-cache-dir -r ./req/requirements.txt
+RUN pip install --no-cache-dir -r ./req/requirements-docker.txt
+
+
+
+FROM python:3.11-alpine as nldi
+RUN apk update && apk add --no-cache gcompat libstdc++ curl proj-util libpq-dev
 ADD . /nldi
 WORKDIR /nldi
+COPY --from=build /usr/local/lib/python3.11/site-packages/ /usr/local/lib/python3.11/site-packages/
+COPY --from=build /usr/lib/libgdal.so.35 /usr/lib/libgeos.so.3.12.2 /usr/lib/libproj.so.25 /usr/lib/libgeos_c.so.1.18.2 /usr/lib/
+COPY --from=build /usr/local/bin/pygeoapi /usr/local/bin/gunicorn /usr/local/bin/
 
 RUN \
-  pip install --no-deps https://github.com/geopython/pygeoapi/archive/refs/heads/master.zip \
-  && pip install -r requirements-docker.txt \
-  && pip install -e . \
-  # Set default config and entrypoint for Docker Image
+  ln -s /usr/lib/libgdal.so.35 /usr/lib/libgdal.so \
+  && ln -s /usr/lib/libgeos.so.3.12.2 /usr/lib/libgeos.so \
+#  && ln -s /usr/lib/libproj.so.25 /usr/lib/libproj.so \
+  && ln -s /usr/lib/libgeos_c.so.1.18.2 /usr/lib/libgeos_c.so.1 \
+  && ln -s /usr/lib/libgeos_c.so.1 /usr/lib/libgeos_c.so
+
+RUN pip install -e . \
   && cp /nldi/docker/default.source.yml /nldi/local.source.yml \
   && cp /nldi/docker/pygeoapi.config.yml /nldi/pygeoapi.config.yml \
   && cp /nldi/docker/entrypoint.sh /entrypoint.sh
