@@ -27,11 +27,12 @@
 #
 # =================================================================
 
-from flask import Blueprint, Flask, request, stream_with_context, Response, send_from_directory
-from flask_cors import CORS
-from jinja2.environment import TemplateStream
 import logging
 import os
+
+from flask import Blueprint, Flask, Response, request, send_from_directory, stream_with_context
+from flask_cors import CORS
+from jinja2.environment import TemplateStream
 
 from nldi.api import API
 from nldi.util import yaml_load
@@ -60,12 +61,12 @@ API_ = API(CONFIG)
 
 def get_response(result: tuple):
     """
-    Creates a Flask Response object and updates matching headers.
+    Create a Flask Response object and update matching headers.
+
     :param result: The result of the API call.
                    This should be a tuple of (headers, status, content).
     :returns: A Response instance.
     """
-
     headers, status, content = result
     if isinstance(content, TemplateStream):
         response = Response(stream_with_context(content), status)
@@ -112,7 +113,6 @@ def openapi():
 def sources():
     """
     Data sources endpoint
-
     :returns: HTTP response
     """
     return get_response(API_.get_crawler_sources(request))
@@ -122,7 +122,6 @@ def sources():
 def hydrolocation():
     """
     Hydrolocation endpoint
-
     :returns: HTTP response
     """
     return get_response(API_.get_hydrolocation(request))
@@ -153,10 +152,8 @@ def get_comid_by_id(comid=None):
 def get_source_features(source_name=None, identifier=None):
     """
     Data source endpoint
-
     :param source_name: NLDI source name
     :param identifier: NLDI Source feature identifier
-
     :returns: HTTP response
     """
     return get_response(API_.get_source_features(request, source_name, identifier))
@@ -166,7 +163,6 @@ def get_source_features(source_name=None, identifier=None):
 def get_basin(source_name=None, identifier=None):
     """
     Basin lookup endpoint
-
     :param source_name: NLDI source name
     :param identifier: NLDI Source feature identifier
 
@@ -184,7 +180,6 @@ def get_navigation_info(source_name=None, identifier=None, nav_mode=None):
     :param source_name: NLDI source name
     :param identifier: NLDI Source feature identifier
     :param nav_mode: NLDI Navigation mode
-
     :returns: HTTP response
     """
     return get_response(API_.get_navigation_info(request, source_name, identifier, nav_mode))
@@ -207,7 +202,7 @@ def get_flowline_navigation(source_name=None, identifier=None, nav_mode=None):  
 @BLUEPRINT.route("/linked-data/<path:source_name>/<path:identifier>/navigation/<path:nav_mode>/<path:data_source>")  # noqa
 def get_navigation(source_name=None, identifier=None, nav_mode=None, data_source=None):  # noqa
     """
-    Data source navigation endpoint
+    Data source navigation endpoint.
 
     :param source_name: NLDI input source name
     :param identifier: NLDI Source feature identifier

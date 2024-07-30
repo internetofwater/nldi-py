@@ -27,25 +27,24 @@
 #
 # =================================================================
 
+import logging
 from copy import deepcopy
 from http import HTTPStatus
-import logging
 from typing import Any, Tuple, Union
 
-from pygeoapi.api import APIRequest, FORMAT_TYPES, F_HTML, F_JSON, F_JSONLD
+from pygeoapi.api import F_HTML, F_JSON, F_JSONLD, FORMAT_TYPES, APIRequest
 from pygeoapi.util import get_base_url, render_j2_template
 
 from nldi import __version__
 from nldi.functions import Functions
 from nldi.log import setup_logger
-from nldi.lookup.base import ProviderItemNotFoundError, ProviderConnectionError, ProviderQueryError
+from nldi.lookup.base import ProviderConnectionError, ProviderItemNotFoundError, ProviderQueryError
 from nldi.lookup.catchment import CatchmentLookup
 from nldi.lookup.flowline import FlowlineLookup
 from nldi.lookup.pygeoapi import PygeoapiLookup
 from nldi.lookup.source import CrawlerSourceLookup
 from nldi.plugin import load_plugin
-
-from nldi.util import TEMPLATES, sort_sources, to_json, url_join, stream_j2_template
+from nldi.util import TEMPLATES, sort_sources, stream_j2_template, to_json, url_join
 
 LOGGER = logging.getLogger(__name__)
 HEADERS = {"force_type": "application/json", "X-Powered-By": f"nldi {__version__}"}
@@ -55,16 +54,12 @@ SPLIT_CATCHMENT_THRESHOLD = 200
 
 def pre_process(func):
     """
-    Decorator that transforms an incoming Request instance specific to the
-    web framework (i.e. Flask, Starlette or Django) into a generic
+    Transform an incoming Request instance specific to the web framework into a generic.
 
     :class:`APIRequest` instance.
-
     :param func: decorated function
-
     :returns: `func`
     """
-
     def inner(*args):
         cls, req_in = args[:2]
         req_out = APIRequest.with_data(req_in, ["en-US"])
@@ -72,7 +67,7 @@ def pre_process(func):
             return func(cls, req_out, *args[2:])
         else:
             return func(cls, req_out)
-
+            
     return inner
 
 

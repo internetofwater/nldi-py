@@ -30,13 +30,14 @@
 """Generic util functions used in the code"""
 
 import json
-from jinja2 import Environment, FileSystemLoader, select_autoescape
 import logging
 import os
-from pathlib import Path
 import re
+from pathlib import Path
 from typing import IO, Union
+
 import yaml
+from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 LOGGER = logging.getLogger(__name__)
 
@@ -47,29 +48,26 @@ SCHEMAS = THISDIR / "schemas"
 
 def url_join(*parts: str) -> str:
     """
-    helper function to join a URL from a number of parts/fragments.
+    Join a URL from a number of parts/fragments.
+
     Implemented because urllib.parse.urljoin strips subpaths from
-    host urls if they are specified
+    host urls if they are specified.
 
     Per https://github.com/geopython/pygeoapi/issues/695
 
     :param parts: list of parts to join
-
     :returns: str of resulting URL
     """
-
     return "/".join([str(p).strip().strip("/") for p in parts]).rstrip("/")
 
 
 def yaml_load(fh: IO) -> dict:
     """
-    serializes a YAML files into a pyyaml object
+    Serialize a YAML file into a pyyaml object.
 
     :param fh: file handle
-
     :returns: `dict` representation of YAML
     """
-
     # support environment variables in config
     # https://stackoverflow.com/a/55301129
     path_matcher = re.compile(r".*\$\{([^}^{]+)\}.*")
@@ -77,8 +75,7 @@ def yaml_load(fh: IO) -> dict:
     def path_constructor(loader, node):
         env_var = path_matcher.match(node.value).group(1)
         if env_var not in os.environ:
-            msg = f"Undefined environment variable {env_var} in config"
-            raise EnvironmentError(msg)
+            raise EnvironmentError(f"Undefined environment variable {env_var} in config file.")
         return get_typed_value(os.path.expandvars(node.value))
 
     class EnvVarLoader(yaml.SafeLoader):
@@ -87,8 +84,12 @@ def yaml_load(fh: IO) -> dict:
     EnvVarLoader.add_implicit_resolver("!path", path_matcher, None)
     EnvVarLoader.add_constructor("!path", path_constructor)
 
-    return yaml.load(fh, Loader=EnvVarLoader)
-
+    try:
+        _cfg = yaml.load(fh, Loader=EnvVarLoader)  # noqa: S506
+    except EnvironmentError as err:
+        LOGGER.error(err)
+        return {}
+    return _cfg
 
 def get_typed_value(value: str) -> Union[float, int, str]:
     """

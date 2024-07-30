@@ -27,20 +27,19 @@
 #
 # =================================================================
 
-from copy import deepcopy
 import io
 import logging
+from copy import deepcopy
 from pathlib import Path
 from typing import Union
 
 import click
 import yaml
-
 from pygeoapi.models.openapi import OAPIFormat
 from pygeoapi.util import get_base_url
 
 from nldi import __version__
-from nldi.util import THISDIR, sort_sources, url_join, yaml_load, to_json
+from nldi.util import THISDIR, sort_sources, to_json, url_join, yaml_load
 
 LOGGER = logging.getLogger(__name__)
 
@@ -61,15 +60,13 @@ RESPONSES = {
 }
 
 
-def get_oas(cfg):
+def get_oas(cfg) -> dict:
     """
-    Generates an OpenAPI 3.0 Document
+    Generate an OpenAPI 3.0 Document.
 
     :param cfg: pygeoapi-like configuration object
-
     :returns: OpenAPI definition YAML dict
     """
-
     cfg = deepcopy(cfg)
 
     LOGGER.debug("Generating OpenAPI document")
@@ -147,29 +144,6 @@ def get_oas(cfg):
             },
         }
     }
-
-    # paths['/lookups'] = {
-    #     'get': {
-    #         'summary': 'getLookups',
-    #         'description': 'Returns characteristics types',
-    #         'tags': ['nldi'],
-    #         'operationId': 'getLookups',
-    #         'responses': RESPONSES
-    #     }
-    # }
-
-    # paths['/lookups/{characteristicType}/characteristics'] = {
-    #     'get': {
-    #         'summary': 'getLookupsCharacteristics',
-    #         'description': 'Returns available characteristics metadata',
-    #         'tags': ['nldi'],
-    #         'operationId': 'getLookupsCharacteristics',
-    #         'parameters': [
-    #             {'$ref': '#/components/parameters/characteristicType'}
-    #         ],
-    #         'responses': RESPONSES
-    #     }
-    # }
 
     paths["/linked-data"] = {
         "get": {
@@ -316,22 +290,6 @@ def get_oas(cfg):
             }
         }
 
-        # src_by_char = url_join('/', src_by_feature, '{characteristicType}')
-        # paths[src_by_char] = {
-        #     'get': {
-        #         'summary': f'{src_title}Characteristics',
-        #         'description': ('returns all characteristics of the given '
-        #                         'type for the specified feature'),
-        #         'tags': [src_id],
-        #         'operationId': f'{src_title}Characteristics',
-        #         'parameters': [
-        #             {'$ref': '#/components/parameters/featureId'},
-        #             {'$ref': '#/components/parameters/characteristicType'},
-        #             {'$ref': '#/components/parameters/characteristicId'}
-        #         ],
-        #         'responses': RESPONSES
-        #     }
-        # }
 
         src_by_basin = url_join("/", src_by_feature, "basin")
         paths[src_by_basin] = {
@@ -537,7 +495,7 @@ def openapi():
     pass
 
 
-@click.command()
+@openapi.command()
 @click.pass_context
 @click.argument("config_file", type=click.File(encoding="utf-8"))
 @click.option(
@@ -546,7 +504,7 @@ def openapi():
     "format_",
     type=click.Choice(["json", "yaml"]),  # noqa
     default="yaml",
-    help="output format (json|yaml)",
+    help="Output format [json|yaml]",
 )
 @click.option(
     "--output-file",
@@ -555,8 +513,7 @@ def openapi():
     help="Name of output file",
 )
 def generate(ctx, config_file, output_file, format_="yaml"):
-    """Generate OpenAPI Document"""
-
+    """Generate OpenAPI Document."""
     if config_file is None:
         raise click.ClickException("--config/-c required")
 
@@ -569,5 +526,3 @@ def generate(ctx, config_file, output_file, format_="yaml"):
         output_file.write(content)
         click.echo("Done")
 
-
-openapi.add_command(generate)
