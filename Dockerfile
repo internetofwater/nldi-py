@@ -68,4 +68,4 @@ RUN pip install -e . \
   && cp /nldi/docker/pygeoapi.config.yml /nldi/pygeoapi.config.yml \
   && cp /nldi/docker/entrypoint.sh /entrypoint.sh
 
-ENTRYPOINT ["/entrypoint.sh"]
+# ENTRYPOINT ["/entrypoint.sh"]
