@@ -44,11 +44,12 @@ class PyTest(Command):
 
     def run(self):
         import subprocess
-        errno = subprocess.call(['pytest'])
+
+        errno = subprocess.call(["pytest"])
         raise SystemExit(errno)
 
 
-def read(filename, encoding='utf-8'):
+def read(filename, encoding="utf-8"):
     """read file contents"""
     full_path = os.path.join(os.path.dirname(__file__), filename)
     with io.open(full_path, encoding=encoding) as fh:
@@ -58,73 +59,65 @@ def read(filename, encoding='utf-8'):
 
 def get_package_version():
     """get version from top-level package init"""
-    version_file = read('nldi/__init__.py')
-    version_match = re.search(r"^__version__ = ['\"]([^'\"]*)['\"]",
-                              version_file, re.M)
+    version_file = read("nldi/__init__.py")
+    version_match = re.search(r"^__version__ = ['\"]([^'\"]*)['\"]", version_file, re.M)
     if version_match:
         return version_match.group(1)
     raise RuntimeError("Unable to find version string.")
 
 
-KEYWORDS = [
-    'usgs',
-    'nldi',
-    'nhgf',
-    'nhd'
-]
+KEYWORDS = ["usgs", "nldi", "nhgf", "nhd"]
 
-DESCRIPTION = ('The Hydro Network Linked Data Index (NLDI) '
-               'puts a restful application programming interface (API) '
-               'in front of the National Hydrolography dataset (NHD). '
-               'Now, instead of needing to be a GIS professional, '
-               'any web developer can build tools against the core '
-               'data in the NHD in a scalable, workable way.')
+DESCRIPTION = (
+    "The Hydro Network Linked Data Index (NLDI) "
+    "puts a restful application programming interface (API) "
+    "in front of the National Hydrolography dataset (NHD). "
+    "Now, instead of needing to be a GIS professional, "
+    "any web developer can build tools against the core "
+    "data in the NHD in a scalable, workable way."
+)
 
 
 # ensure a fresh MANIFEST file is generated
-if (os.path.exists('MANIFEST')):
-    os.unlink('MANIFEST')
+if os.path.exists("MANIFEST"):
+    os.unlink("MANIFEST")
 
 
 setup(
-    name='nldi',
+    name="nldi",
     version=get_package_version(),
     description=DESCRIPTION.strip(),
-    long_description=read('README.md'),
-    long_description_content_type='text/markdown',
-    license='CC0 1.0 Universal (CC0 1.0) Public Domain Dedication',
-    platforms='all',
-    keywords=' '.join(KEYWORDS),
-    author='Benjamin Webb',
-    author_email='bwebb@lincolninst.edu',
-    maintainer='Benjamin Webb',
-    maintainer_email='bwebb@lincolninst.edu',
-    url='https://github.com/internetofwater/nldi-py',
-    install_requires=read('requirements.txt').splitlines(),
+    long_description=read("README.md"),
+    long_description_content_type="text/markdown",
+    license="CC0 1.0 Universal (CC0 1.0) Public Domain Dedication",
+    platforms="all",
+    keywords=" ".join(KEYWORDS),
+    author="Benjamin Webb",
+    author_email="bwebb@lincolninst.edu",
+    maintainer="Benjamin Webb",
+    maintainer_email="bwebb@lincolninst.edu",
+    url="https://github.com/internetofwater/nldi-py",
+    install_requires=read("requirements.txt").splitlines(),
     packages=find_packages(),
     include_package_data=True,
-    entry_points={
-        'console_scripts': [
-            'nldi=nldi:cli'
-        ]
-    },
+    entry_points={"console_scripts": ["nldi=nldi:cli"]},
     classifiers=[
-        'Development Status :: 4 - Beta',
-        'Environment :: Console',
-        'Intended Audience :: Developers',
-        'Intended Audience :: Science/Research',
-        'License :: CC0 1.0 Universal (CC0 1.0) Public Domain Dedication',
-        'Operating System :: OS Independent',
-        'Programming Language :: Python',
-        'Topic :: Scientific/Engineering :: Atmospheric Science',
-        'Topic :: Scientific/Engineering :: GIS',
-        'Topic :: Scientific/Engineering :: Information Analysis'
+        "Development Status :: 4 - Beta",
+        "Environment :: Console",
+        "Intended Audience :: Developers",
+        "Intended Audience :: Science/Research",
+        "License :: CC0 1.0 Universal (CC0 1.0) Public Domain Dedication",
+        "Operating System :: OS Independent",
+        "Programming Language :: Python",
+        "Topic :: Scientific/Engineering :: Atmospheric Science",
+        "Topic :: Scientific/Engineering :: GIS",
+        "Topic :: Scientific/Engineering :: Information Analysis",
     ],
     project_urls={
-        'Homepage': 'https://github.com/internetofwater/nldi-py',
-        'Source Code': 'https://github.com/internetofwater/nldi-py',
-        'Issue Tracker': 'https://github.com/internetofwater/nldi-py/issues' # noqa
+        "Homepage": "https://github.com/internetofwater/nldi-py",
+        "Source Code": "https://github.com/internetofwater/nldi-py",
+        "Issue Tracker": "https://github.com/internetofwater/nldi-py/issues",  # noqa
     },
-    cmdclass={'test': PyTest},
-    test_suite='tests.run_tests'
+    cmdclass={"test": PyTest},
+    test_suite="tests.run_tests",
 )

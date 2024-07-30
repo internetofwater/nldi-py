@@ -33,17 +33,16 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 
 # Define the SQLAlchemy model based on the CrawlerSource model
-metadata = MetaData(schema='nldi_data')
+metadata = MetaData(schema="nldi_data")
 BaseModel = declarative_base(metadata=metadata)
 
 
 class CrawlerSourceModel(BaseModel):
-    __tablename__ = 'crawler_source'
+    __tablename__ = "crawler_source"
 
     crawler_source_id = Column(Integer, primary_key=True)
     source_name = Column(String(500))
-    source_suffix = Column(String(10),
-                           server_default=text('lower(source_suffix)'))
+    source_suffix = Column(String(10), server_default=text("lower(source_suffix)"))
     source_uri = Column(String(256))
     feature_id = Column(String(256))
     feature_name = Column(String(256))
@@ -55,7 +54,7 @@ class CrawlerSourceModel(BaseModel):
 
 
 class FeatureSourceModel(BaseModel):
-    __tablename__ = 'feature'
+    __tablename__ = "feature"
 
     crawler_source_id = Column(Integer)
     identifier = Column(String(256), primary_key=True, nullable=True)
@@ -68,7 +67,7 @@ class FeatureSourceModel(BaseModel):
 
 
 class MainstemLookupModel(BaseModel):
-    __tablename__ = 'mainstem_lookup'
+    __tablename__ = "mainstem_lookup"
 
     nhdpv2_comid = Column(Integer, primary_key=True, nullable=True)
     mainstem_id = Column(Integer, nullable=True)

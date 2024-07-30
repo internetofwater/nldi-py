@@ -41,8 +41,8 @@ import yaml
 LOGGER = logging.getLogger(__name__)
 
 THISDIR = Path(__file__).parent.resolve()
-TEMPLATES = THISDIR / 'templates'
-SCHEMAS = THISDIR / 'schemas'
+TEMPLATES = THISDIR / "templates"
+SCHEMAS = THISDIR / "schemas"
 
 
 def url_join(*parts: str) -> str:
@@ -58,7 +58,7 @@ def url_join(*parts: str) -> str:
     :returns: str of resulting URL
     """
 
-    return '/'.join([str(p).strip().strip('/') for p in parts]).rstrip('/')
+    return "/".join([str(p).strip().strip("/") for p in parts]).rstrip("/")
 
 
 def yaml_load(fh: IO) -> dict:
@@ -72,20 +72,20 @@ def yaml_load(fh: IO) -> dict:
 
     # support environment variables in config
     # https://stackoverflow.com/a/55301129
-    path_matcher = re.compile(r'.*\$\{([^}^{]+)\}.*')
+    path_matcher = re.compile(r".*\$\{([^}^{]+)\}.*")
 
     def path_constructor(loader, node):
         env_var = path_matcher.match(node.value).group(1)
         if env_var not in os.environ:
-            msg = f'Undefined environment variable {env_var} in config'
+            msg = f"Undefined environment variable {env_var} in config"
             raise EnvironmentError(msg)
         return get_typed_value(os.path.expandvars(node.value))
 
     class EnvVarLoader(yaml.SafeLoader):
         pass
 
-    EnvVarLoader.add_implicit_resolver('!path', path_matcher, None)
-    EnvVarLoader.add_constructor('!path', path_constructor)
+    EnvVarLoader.add_implicit_resolver("!path", path_matcher, None)
+    EnvVarLoader.add_constructor("!path", path_constructor)
 
     return yaml.load(fh, Loader=EnvVarLoader)
 
@@ -100,9 +100,9 @@ def get_typed_value(value: str) -> Union[float, int, str]:
     """
 
     try:
-        if '.' in value:  # float?
+        if "." in value:  # float?
             value2 = float(value)
-        elif len(value) > 1 and value.startswith('0'):
+        elif len(value) > 1 and value.startswith("0"):
             value2 = value
         else:  # int?
             value2 = int(value)
@@ -140,15 +140,15 @@ def stream_j2_template(template: Path, data: dict) -> str:
     :returns: string of rendered template
     """
 
-    template_paths = [TEMPLATES, '.']
+    template_paths = [TEMPLATES, "."]
 
-    LOGGER.debug(f'using templates: {TEMPLATES}')
+    LOGGER.debug(f"using templates: {TEMPLATES}")
 
-    env = Environment(loader=FileSystemLoader(template_paths),
-                      extensions=['jinja2.ext.i18n'],
-                      autoescape=select_autoescape())
+    env = Environment(
+        loader=FileSystemLoader(template_paths), extensions=["jinja2.ext.i18n"], autoescape=select_autoescape()
+    )
 
-    env.filters['to_json'] = to_json
+    env.filters["to_json"] = to_json
     env.globals.update(to_json=to_json)
 
     template = env.get_template(template)
@@ -168,4 +168,4 @@ def sort_sources(dict_: list) -> dict:
     :returns: filtered ``dict``
     """
 
-    return sorted(dict_, key=lambda d: d['crawler_source_id'])
+    return sorted(dict_, key=lambda d: d["crawler_source_id"])

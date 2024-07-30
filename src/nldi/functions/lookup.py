@@ -40,118 +40,104 @@ LOGGER = logging.getLogger(__name__)
 
 
 def estimate_measure(feature_id: str, feature_source: str):
-    query = select([
-        Flow.fmeasure +
-        (1 - func.ST_LineLocatePoint(Flow.shape, Feature.location)) *
-        (Flow.tmeasure - Flow.fmeasure).label('measure')
-    ]).join(
-        Feature,
-        and_(
-            Feature.comid == Flow.nhdplus_comid,
-            Feature.identifier == text(':feature_id'),
+    query = (
+        select(
+            [
+                Flow.fmeasure
+                + (1 - func.ST_LineLocatePoint(Flow.shape, Feature.location))
+                * (Flow.tmeasure - Flow.fmeasure).label("measure")
+            ]
         )
-    ).join(
-        Crawler,
-        and_(
-            Crawler.source_suffix == text(':feature_source'),
-            Feature.crawler_source_id == Crawler.crawler_source_id  # noqa
+        .join(
+            Feature,
+            and_(
+                Feature.comid == Flow.nhdplus_comid,
+                Feature.identifier == text(":feature_id"),
+            ),
+        )
+        .join(
+            Crawler,
+            and_(
+                Crawler.source_suffix == text(":feature_source"),
+                Feature.crawler_source_id == Crawler.crawler_source_id,  # noqa
+            ),
         )
     )
 
-    return query.params(
-        feature_id=feature_id,
-        feature_source=feature_source
-    )
+    return query.params(feature_id=feature_id, feature_source=feature_source)
 
 
 def get_distance_from_flowline(feature_id: str, feature_source: str):
-    x = select([
-        Flow.shape,
-        Feature.location
-    ]).join(
-        Feature,
-        and_(
-            Feature.comid == Flow.nhdplus_comid,
-            Feature.identifier == text(':feature_id'),
+    x = (
+        select([Flow.shape, Feature.location])
+        .join(
+            Feature,
+            and_(
+                Feature.comid == Flow.nhdplus_comid,
+                Feature.identifier == text(":feature_id"),
+            ),
         )
-    ).join(
-        Crawler,
-        and_(
-            Crawler.source_suffix == text(':feature_source'),
-            Feature.crawler_source_id == Crawler.crawler_source_id  # noqa
+        .join(
+            Crawler,
+            and_(
+                Crawler.source_suffix == text(":feature_source"),
+                Feature.crawler_source_id == Crawler.crawler_source_id,  # noqa
+            ),
         )
     )
 
-    query = select([
-        func.ST_Distance(x.c.location, x.c.shape, False)
-    ])
+    query = select([func.ST_Distance(x.c.location, x.c.shape, False)])
 
-    return query.params(
-        feature_id=feature_id,
-        feature_source=feature_source
-    )
+    return query.params(feature_id=feature_id, feature_source=feature_source)
 
 
 def get_point_on_flowline(feature_id: str, feature_source: str):
     point = func.ST_LineInterpolatePoint(
-        Flow.shape,
-        (1 - (
-            (Feature.measure - Flow.fmeasure) /
-            (Flow.tmeasure - Flow.fmeasure))
-         )
+        Flow.shape, (1 - ((Feature.measure - Flow.fmeasure) / (Flow.tmeasure - Flow.fmeasure)))
     )
 
-    query = select([
-        func.ST_X(point).label('lon'),
-        func.ST_Y(point).label('lat')
-    ]).join(
-        Feature,
-        and_(
-            Feature.comid == Flow.nhdplus_comid,
-            Feature.identifier == text(':feature_id'),
+    query = (
+        select([func.ST_X(point).label("lon"), func.ST_Y(point).label("lat")])
+        .join(
+            Feature,
+            and_(
+                Feature.comid == Flow.nhdplus_comid,
+                Feature.identifier == text(":feature_id"),
+            ),
         )
-    ).join(
-        Crawler,
-        and_(
-            Crawler.source_suffix == text(':feature_source'),
-            Feature.crawler_source_id == Crawler.crawler_source_id  # noqa
+        .join(
+            Crawler,
+            and_(
+                Crawler.source_suffix == text(":feature_source"),
+                Feature.crawler_source_id == Crawler.crawler_source_id,  # noqa
+            ),
         )
     )
 
-    return query.params(
-        feature_id=feature_id,
-        feature_source=feature_source
-    )
+    return query.params(feature_id=feature_id, feature_source=feature_source)
 
 
 def get_closest_point_on_flowline(feature_id: str, feature_source: str):
-    x = select([
-        Flow.shape.label('shape'),
-        Feature.location.label('location')
-    ]).join(
-        Feature,
-        and_(
-            Feature.comid == Flow.nhdplus_comid,
-            Feature.identifier == text(':feature_id'),
+    x = (
+        select([Flow.shape.label("shape"), Feature.location.label("location")])
+        .join(
+            Feature,
+            and_(
+                Feature.comid == Flow.nhdplus_comid,
+                Feature.identifier == text(":feature_id"),
+            ),
         )
-    ).join(
-        Crawler,
-        and_(
-            Crawler.source_suffix == text(':feature_source'),
-            Feature.crawler_source_id == Crawler.crawler_source_id
+        .join(
+            Crawler,
+            and_(
+                Crawler.source_suffix == text(":feature_source"), Feature.crawler_source_id == Crawler.crawler_source_id
+            ),
         )
-    ).alias('x')
-
-    point = select([
-        func.ST_Closestpoint(x.c.shape, x.c.location).label('point')
-    ]).alias('point')
-
-    query = select([
-        func.ST_X(point.c.point).label('lon'),
-        func.ST_Y(point.c.point).label('lat')
-    ]).alias('result')
-
-    return query.params(
-        feature_id=feature_id,
-        feature_source=feature_source
+        .alias("x")
     )
+
+    point = select([func.ST_Closestpoint(x.c.shape, x.c.location).label("point")]).alias("point")
+
+    query = select([func.ST_X(point.c.point).label("lon"), func.ST_Y(point.c.point).label("lat")]).alias("result")
+
+    return query.params(feature_id=feature_id, feature_source=feature_source)

@@ -35,12 +35,12 @@ from typing import Any
 LOGGER = logging.getLogger(__name__)
 
 PLUGINS = {
-    'CatchmentLookup': 'nldi.lookup.catchment.CatchmentLookup',
-    'CrawlerSourceLookup': 'nldi.lookup.source.CrawlerSourceLookup',
-    'FeatureLookup': 'nldi.lookup.feature.FeatureLookup',
-    'FlowlineLookup': 'nldi.lookup.flowline.FlowlineLookup',
-    'MainstemLookup': 'nldi.lookup.mainstem.MainstemLookup',
-    'PygeoapiLookup': 'nldi.lookup.pygeoapi.PygeoapiLookup'
+    "CatchmentLookup": "nldi.lookup.catchment.CatchmentLookup",
+    "CrawlerSourceLookup": "nldi.lookup.source.CrawlerSourceLookup",
+    "FeatureLookup": "nldi.lookup.feature.FeatureLookup",
+    "FlowlineLookup": "nldi.lookup.flowline.FlowlineLookup",
+    "MainstemLookup": "nldi.lookup.mainstem.MainstemLookup",
+    "PygeoapiLookup": "nldi.lookup.pygeoapi.PygeoapiLookup",
 }
 
 
@@ -53,22 +53,22 @@ def load_plugin(plugin_def: dict) -> Any:
     :returns: plugin object
     """
 
-    name = plugin_def['name']
+    name = plugin_def["name"]
 
-    LOGGER.debug(f'Plugins: {PLUGINS}')
+    LOGGER.debug(f"Plugins: {PLUGINS}")
 
-    if '.' not in name and name not in PLUGINS.keys():
-        msg = f'Plugin {name} not found'
+    if "." not in name and name not in PLUGINS.keys():
+        msg = f"Plugin {name} not found"
         LOGGER.exception(msg)
         raise InvalidPluginError(msg)
 
-    if '.' in name:  # dotted path
-        packagename, classname = name.rsplit('.', 1)
+    if "." in name:  # dotted path
+        packagename, classname = name.rsplit(".", 1)
     else:  # core formatter
-        packagename, classname = PLUGINS[name].rsplit('.', 1)
+        packagename, classname = PLUGINS[name].rsplit(".", 1)
 
-    LOGGER.debug(f'package name: {packagename}')
-    LOGGER.debug(f'class name: {classname}')
+    LOGGER.debug(f"package name: {packagename}")
+    LOGGER.debug(f"class name: {classname}")
 
     module = importlib.import_module(packagename)
     class_ = getattr(module, classname)
@@ -79,4 +79,5 @@ def load_plugin(plugin_def: dict) -> Any:
 
 class InvalidPluginError(Exception):
     """Invalid plugin"""
+
     pass

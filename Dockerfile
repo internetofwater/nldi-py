@@ -38,15 +38,15 @@ ENV TZ=${TZ} \
 
 # Install operating system dependencies
 RUN \
-  apk update && apk add curl build-base libpq-dev proj-util proj-dev gdal-dev geos-dev
+  apk update && apk add --no-cache curl build-base libpq-dev proj-util proj-dev gdal-dev geos-dev
+RUN pip install poetry
 
-COPY ./requirements-docker.txt ./requirements.txt ./req/
-
-
-RUN pip install --no-cache-dir -r ./req/requirements.txt
-RUN pip install --no-cache-dir -r ./req/requirements-docker.txt
-
-
+ADD . /nldi
+WORKDIR /nldi
+RUN /bin/true\
+    && poetry config virtualenvs.create false \
+    && poetry install --no-interaction --no-root \
+    && rm -rf /root/.cache/pypoetry
 
 FROM python:3.11-alpine as nldi
 RUN apk update && apk add --no-cache gcompat libstdc++ curl proj-util libpq-dev
@@ -63,9 +63,8 @@ RUN \
   && ln -s /usr/lib/libgeos_c.so.1.18.2 /usr/lib/libgeos_c.so.1 \
   && ln -s /usr/lib/libgeos_c.so.1 /usr/lib/libgeos_c.so
 
-RUN pip install -e . \
-  && cp /nldi/docker/default.source.yml /nldi/local.source.yml \
-  && cp /nldi/docker/pygeoapi.config.yml /nldi/pygeoapi.config.yml \
-  && cp /nldi/docker/entrypoint.sh /entrypoint.sh
+RUN cp /nldi/docker/default.source.yml /nldi/local.source.yml \
+    && cp /nldi/docker/pygeoapi.config.yml /nldi/pygeoapi.config.yml \
+    && cp /nldi/docker/entrypoint.sh /entrypoint.sh
 
 # ENTRYPOINT ["/entrypoint.sh"]

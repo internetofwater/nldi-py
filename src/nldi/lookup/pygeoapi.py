@@ -34,18 +34,23 @@ from shapely import wkt
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from nldi.lookup.base import (BaseLookup, ProviderItemNotFoundError,
-                              ProviderConnectionError, ProviderQueryError)
+from nldi.lookup.base import BaseLookup, ProviderItemNotFoundError, ProviderConnectionError, ProviderQueryError
 from nldi.schemas.nhdplus import FlowlineModel
 from nldi.util import url_join
 
 LOGGER = logging.getLogger(__name__)
 
 DEFAULT_PROPS = {
-    'identifier': '', 'navigation': '', 'measure': '',
-    'reachcode': '', 'name': '', 'source': 'provided',
-    'sourceName': 'Provided via API call', 'comid': '',
-    'type': 'point', 'uri': ''
+    "identifier": "",
+    "navigation": "",
+    "measure": "",
+    "reachcode": "",
+    "name": "",
+    "source": "provided",
+    "sourceName": "Provided via API call",
+    "comid": "",
+    "type": "point",
+    "uri": "",
 }
 
 
@@ -61,10 +66,10 @@ class PygeoapiLookup(BaseLookup):
 
         :returns: nldi.lookup.pygeoapi.PygeoapiLookip
         """
-        LOGGER.debug('Initialising Pygeoapi Lookup.')
-        self.catchment_lookup = provider_def['catchment_lookup']
-        self.pygeoapi_url = provider_def['pygeoapi_url']
-        self.base_url = provider_def['base_url']
+        LOGGER.debug("Initialising Pygeoapi Lookup.")
+        self.catchment_lookup = provider_def["catchment_lookup"]
+        self.pygeoapi_url = provider_def["pygeoapi_url"]
+        self.base_url = provider_def["base_url"]
         self.http = HTTPSession()
 
         super().__init__(provider_def)
@@ -77,76 +82,73 @@ class PygeoapiLookup(BaseLookup):
 
         :returns: dict of 2 GeoJSON features
         """
-        LOGGER.debug(f'Extracting geom from WKT: {coords}')
+        LOGGER.debug(f"Extracting geom from WKT: {coords}")
         point = wkt.loads(coords)
         data = {
-            'inputs': [
-                {'id': 'lon', 'type': 'text/plain', 'value': point.x},
-                {'id': 'lat', 'type': 'text/plain', 'value': point.y},
-                {'id': 'direction', 'type': 'text/plain', 'value': 'none'}
+            "inputs": [
+                {"id": "lon", "type": "text/plain", "value": point.x},
+                {"id": "lat", "type": "text/plain", "value": point.y},
+                {"id": "direction", "type": "text/plain", "value": "none"},
             ]
         }
 
-        LOGGER.debug('Making OGC API - Processes request')
-        url = url_join(self.pygeoapi_url, 'processes/nldi-flowtrace/execution')
+        LOGGER.debug("Making OGC API - Processes request")
+        url = url_join(self.pygeoapi_url, "processes/nldi-flowtrace/execution")
         response = self._get_response(url, data=data)
 
-        LOGGER.debug('Getting feature intersection')
-        [lon, lat] = response['features'][0]['properties']['intersection_point']  # noqa
-        wkt_geom = f'POINT({lon} {lat})'
+        LOGGER.debug("Getting feature intersection")
+        [lon, lat] = response["features"][0]["properties"]["intersection_point"]  # noqa
+        wkt_geom = f"POINT({lon} {lat})"
         nhdplus_comid = self.catchment_lookup.query(wkt_geom)
-        nav_url = url_join(self.base_url, 'linked-data/comid',
-                           nhdplus_comid, 'navigation')
+        nav_url = url_join(self.base_url, "linked-data/comid", nhdplus_comid, "navigation")
 
-        LOGGER.debug(f'Getting measure for {nhdplus_comid}')
-        measure = (FlowlineModel.fmeasure +
-                   (1 - func.ST_LineLocatePoint(FlowlineModel.shape, func.ST_GeomFromText(wkt_geom, 4269))  # noqa
-                    ) * (FlowlineModel.tmeasure - FlowlineModel.fmeasure)
-                   ).label('measure')
+        LOGGER.debug(f"Getting measure for {nhdplus_comid}")
+        measure = (
+            FlowlineModel.fmeasure
+            + (
+                1 - func.ST_LineLocatePoint(FlowlineModel.shape, func.ST_GeomFromText(wkt_geom, 4269))  # noqa
+            )
+            * (FlowlineModel.tmeasure - FlowlineModel.fmeasure)
+        ).label("measure")
         with Session(self._engine) as session:
-            result = (session
-                      .query(measure, FlowlineModel.reachcode)
-                      .filter(FlowlineModel.nhdplus_comid == nhdplus_comid)
-                      .first())
+            result = (
+                session.query(measure, FlowlineModel.reachcode)
+                .filter(FlowlineModel.nhdplus_comid == nhdplus_comid)
+                .first()
+            )
 
             if result is None:
-                msg = f'No measure found for: {coords}.'
+                msg = f"No measure found for: {coords}."
                 raise ProviderItemNotFoundError(msg)
 
             computed_measure = result.measure
             computed_reach = result.reachcode
 
         fc = {
-            'type': 'FeatureCollection',
-            'features': [
+            "type": "FeatureCollection",
+            "features": [
                 {
-                    'type': 'Feature',
-                    'geometry': {
-                        'type': 'Point',
-                        'coordinates': [lon, lat]
+                    "type": "Feature",
+                    "geometry": {"type": "Point", "coordinates": [lon, lat]},
+                    "properties": {
+                        "identifier": "",
+                        "navigation": nav_url,
+                        "measure": computed_measure,
+                        "reachcode": computed_reach,
+                        "name": "",
+                        "source": "indexed",
+                        "sourceName": "Automatically indexed by the NLDI",
+                        "comid": nhdplus_comid,
+                        "type": "hydrolocation",
+                        "uri": "",
                     },
-                    'properties': {
-                        'identifier': '',
-                        'navigation': nav_url,
-                        'measure': computed_measure,
-                        'reachcode': computed_reach,
-                        'name': '',
-                        'source': 'indexed',
-                        'sourceName': 'Automatically indexed by the NLDI',
-                        'comid': nhdplus_comid,
-                        'type': 'hydrolocation',
-                        'uri': ''
-                    }
                 },
                 {
-                    'type': 'Feature',
-                    'geometry': {
-                        'type': 'Point',
-                        'coordinates': [point.x, point.y]
-                    },
-                    'properties': DEFAULT_PROPS
-                }
-            ]
+                    "type": "Feature",
+                    "geometry": {"type": "Point", "coordinates": [point.x, point.y]},
+                    "properties": DEFAULT_PROPS,
+                },
+            ],
         }
         return fc
 
@@ -158,23 +160,23 @@ class PygeoapiLookup(BaseLookup):
 
         :returns: GeoJSON features
         """
-        LOGGER.debug(f'Extracting geom from WKT: {coords}')
+        LOGGER.debug(f"Extracting geom from WKT: {coords}")
         point = wkt.loads(coords)
         data = {
-            'inputs': [
-                {'id': 'lon', 'type': 'text/plain', 'value': f'{point.x}'},
-                {'id': 'lat', 'type': 'text/plain', 'value': f'{point.y}'},
-                {'id': 'upstream', 'type': 'text/plain', 'value': 'true'}
+            "inputs": [
+                {"id": "lon", "type": "text/plain", "value": f"{point.x}"},
+                {"id": "lat", "type": "text/plain", "value": f"{point.y}"},
+                {"id": "upstream", "type": "text/plain", "value": "true"},
             ]
         }
 
-        LOGGER.debug('Making OGC API - Processes request')
-        url = url_join(self.pygeoapi_url, 'processes/nldi-splitcatchment/execution')  # noqa
+        LOGGER.debug("Making OGC API - Processes request")
+        url = url_join(self.pygeoapi_url, "processes/nldi-splitcatchment/execution")  # noqa
         response = self._get_response(url, data=data)
 
-        for feature in response['features']:
-            if feature['id'] == 'mergedCatchment':
-                feature.pop('id')
+        for feature in response["features"]:
+            if feature["id"] == "mergedCatchment":
+                feature.pop("id")
                 yield feature
 
     def _get_response(self, url: str, data: dict = {}) -> dict:
@@ -190,13 +192,13 @@ class PygeoapiLookup(BaseLookup):
         r = self.http.post(url, json=data)
 
         if not r.ok:
-            LOGGER.error('Bad http response code')
-            raise ProviderConnectionError('Bad http response code')
+            LOGGER.error("Bad http response code")
+            raise ProviderConnectionError("Bad http response code")
 
         try:
             response = r.json()
         except json.JSONDecodeError as err:
-            LOGGER.error('JSON decode error')
+            LOGGER.error("JSON decode error")
             raise ProviderQueryError(err)
 
         return response

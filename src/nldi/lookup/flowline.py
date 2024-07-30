@@ -39,7 +39,6 @@ LOGGER = logging.getLogger(__name__)
 
 
 class FlowlineLookup(BaseLookup):
-
     def __init__(self, provider_def):
         """
         FlowlineLookup Class constructor
@@ -51,9 +50,9 @@ class FlowlineLookup(BaseLookup):
 
         :returns: nldi.lookup.flowline.FlowlineLookup
         """
-        LOGGER.debug('Initialising Flowline Lookup')
-        self.base_url = provider_def['base_url']
-        self.relative_url = url_join(self.base_url, 'linked-data/comid')
+        LOGGER.debug("Initialising Flowline Lookup")
+        self.base_url = provider_def["base_url"]
+        self.relative_url = url_join(self.base_url, "linked-data/comid")
 
         super().__init__(provider_def)
         self.geom_field = FlowlineModel.shape
@@ -61,56 +60,50 @@ class FlowlineLookup(BaseLookup):
         self.table_model = FlowlineModel
 
     def get(self, identifier: str):
-        LOGGER.debug(f'Fetching comid with id: {identifier}')
+        LOGGER.debug(f"Fetching comid with id: {identifier}")
         with self.session() as session:
             # Retrieve data from database as feature
-            item = (session
-                    .filter(self.id_field == identifier)
-                    .first())
+            item = session.filter(self.id_field == identifier).first()
 
             if item is None:
-                msg = f'No comid found for: {identifier}.'
+                msg = f"No comid found for: {identifier}."
                 raise ProviderItemNotFoundError(msg)
 
-            LOGGER.debug(f'Intersection with {item[0].nhdplus_comid}')
+            LOGGER.debug(f"Intersection with {item[0].nhdplus_comid}")
             return self._sqlalchemy_to_feature(item)
 
     def lookup_navigation(self, nav: str):
-
         with self.session() as session:
             # Retrieve data from database as feature
-            query = (session
-                     .join(
-                         nav, FlowlineModel.nhdplus_comid == nav.c.comid
-                     ))
+            query = session.join(nav, FlowlineModel.nhdplus_comid == nav.c.comid)
             hits = query.count()
 
             if hits is None:
-                msg = 'Not found'
+                msg = "Not found"
                 raise ProviderItemNotFoundError(msg)
 
-            LOGGER.debug(f'Returning {hits} hits')
+            LOGGER.debug(f"Returning {hits} hits")
             for item in query.all():
                 yield self._sqlalchemy_to_feature(item)
 
     def trim_navigation(self, nav, nav_trim):
-
         with self.session(raw=True) as session:
             # Retrieve data from database as feature
-            query = (session
-                     .query(self.table_model, nav_trim.c.geom)
-                     .join(
-                         nav, FlowlineModel.nhdplus_comid == nav.c.comid
-                     ).join(
-                         nav_trim, FlowlineModel.nhdplus_comid == nav_trim.c.comid  # noqa
-                     ))
+            query = (
+                session.query(self.table_model, nav_trim.c.geom)
+                .join(nav, FlowlineModel.nhdplus_comid == nav.c.comid)
+                .join(
+                    nav_trim,
+                    FlowlineModel.nhdplus_comid == nav_trim.c.comid,  # noqa
+                )
+            )
             hits = query.count()
 
             if hits is None:
-                msg = 'Not found'
+                msg = "Not found"
                 raise ProviderItemNotFoundError(msg)
 
-            LOGGER.debug(f'Returning {hits} hits')
+            LOGGER.debug(f"Returning {hits} hits")
             for item in query.all():
                 yield self._sqlalchemy_to_feature(item)
 
@@ -125,20 +118,19 @@ class FlowlineLookup(BaseLookup):
         try:
             mainstem = item.mainstem_lookup.uri
         except AttributeError:
-            mainstem = ''
+            mainstem = ""
 
-        navigation = url_join(
-            self.relative_url, feature.nhdplus_comid, 'navigation')
+        navigation = url_join(self.relative_url, feature.nhdplus_comid, "navigation")
 
         return {
-            'type': 'Feature',
-            'properties': {
-                'identifier': feature.permanent_identifier,
-                'source': 'comid',
-                'sourceName': 'NHDPlus comid',
-                'comid': feature.nhdplus_comid,
-                'mainstem': mainstem,
-                'navigation': navigation
+            "type": "Feature",
+            "properties": {
+                "identifier": feature.permanent_identifier,
+                "source": "comid",
+                "sourceName": "NHDPlus comid",
+                "comid": feature.nhdplus_comid,
+                "mainstem": mainstem,
+                "navigation": navigation,
             },
-            'geometry': geometry
+            "geometry": geometry,
         }

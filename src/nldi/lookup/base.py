@@ -55,14 +55,14 @@ class BaseLookup:
 
         :returns: nldi.lookup.base.BaseLookup
         """
-        LOGGER.debug('Initialising BaseLookup')
+        LOGGER.debug("Initialising BaseLookup")
 
         # Read table information from database
         self.geom_field = None
         self.id_field = None
         self.table_model = None
         self.db_search_path = []
-        self._store_db_parameters(provider_def['database'])
+        self._store_db_parameters(provider_def["database"])
         self._engine = self._get_engine()
 
     def get(self, identifier, **kwargs):
@@ -102,7 +102,7 @@ class BaseLookup:
             if raw is True:
                 yield session
             elif self.geom_field:
-                geom = func.ST_AsGeoJSON(self.geom_field).label('geom')
+                geom = func.ST_AsGeoJSON(self.geom_field).label("geom")
                 yield session.query(self.table_model, geom)
             else:
                 yield session.query(self.table_model)
@@ -110,11 +110,11 @@ class BaseLookup:
             session.close()
 
     def _store_db_parameters(self, parameters):
-        self.db_user = parameters.get('user')
-        self.db_host = parameters.get('host')
-        self.db_port = parameters.get('port', 5432)
-        self.db_name = parameters.get('dbname')
-        self._db_password = parameters.get('password')
+        self.db_user = parameters.get("user")
+        self.db_host = parameters.get("host")
+        self.db_port = parameters.get("port", 5432)
+        self.db_name = parameters.get("dbname")
+        self._db_password = parameters.get("password")
 
     def _get_engine(self):
         """
@@ -124,58 +124,61 @@ class BaseLookup:
         """
         # One long-lived engine is used per database URL:
         # https://docs.sqlalchemy.org/en/14/core/connections.html#basic-usage
-        engine_store_key = (self.db_user, self.db_host, self.db_port,
-                            self.db_name)
+        engine_store_key = (self.db_user, self.db_host, self.db_port, self.db_name)
         try:
             engine = _ENGINE_STORE[engine_store_key]
         except KeyError:
-            LOGGER.debug('Storing engine connection')
+            LOGGER.debug("Storing engine connection")
             conn_str = URL.create(
-                'postgresql+psycopg2',
+                "postgresql+psycopg2",
                 username=self.db_user,
                 password=self._db_password,
                 host=self.db_host,
                 port=self.db_port,
-                database=self.db_name
+                database=self.db_name,
             )
             engine = create_engine(
-                conn_str,
-                connect_args={'client_encoding': 'utf8',
-                              'application_name': 'nldi'},
-                pool_pre_ping=True)
+                conn_str, connect_args={"client_encoding": "utf8", "application_name": "nldi"}, pool_pre_ping=True
+            )
             _ENGINE_STORE[engine_store_key] = engine
 
         return engine
 
     def __repr__(self):
-        return '<BaseLookup>'
+        return "<BaseLookup>"
 
 
 class ProviderGenericError(Exception):
     """provider generic error"""
+
     pass
 
 
 class ProviderConnectionError(ProviderGenericError):
     """provider connection error"""
+
     pass
 
 
 class ProviderTypeError(ProviderGenericError):
     """provider type error"""
+
     pass
 
 
 class ProviderInvalidQueryError(ProviderGenericError):
     """provider invalid query error"""
+
     pass
 
 
 class ProviderQueryError(ProviderGenericError):
     """provider query error"""
+
     pass
 
 
 class ProviderItemNotFoundError(ProviderGenericError):
     """provider item not found query error"""
+
     pass

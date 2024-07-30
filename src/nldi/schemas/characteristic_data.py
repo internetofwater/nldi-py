@@ -32,12 +32,12 @@ from sqlalchemy import MetaData, Column, Integer, SmallInteger, Numeric
 from sqlalchemy.ext.declarative import declarative_base
 
 # Define the SQLAlchemy model based on the CrawlerSource Pydantic model
-metadata = MetaData(schema='characteristic_data')
+metadata = MetaData(schema="characteristic_data")
 BaseModel = declarative_base(metadata=metadata)
 
 
 class CatchmentModel(BaseModel):
-    __tablename__ = 'catchmentsp'
+    __tablename__ = "catchmentsp"
 
     ogc_fid = Column(Integer, primary_key=True)
     featureid = Column(Integer, nullable=True)
@@ -45,7 +45,7 @@ class CatchmentModel(BaseModel):
 
 
 class FlowlineVAAModel(BaseModel):
-    __tablename__ = 'plusflowlinevaa_np21'
+    __tablename__ = "plusflowlinevaa_np21"
 
     comid = Column(Integer)
     hydroseq = Column(Numeric(11), primary_key=True)

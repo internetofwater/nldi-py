@@ -38,9 +38,11 @@ from sqlalchemy.orm import Session
 from nldi.functions.basin import get_basin
 from nldi.functions.navigate import get_navigation, trim_navigation
 from nldi.functions.lookup import (
-    get_point_on_flowline, estimate_measure,
+    get_point_on_flowline,
+    estimate_measure,
     get_closest_point_on_flowline,
-    get_distance_from_flowline)
+    get_distance_from_flowline,
+)
 from nldi.lookup import _ENGINE_STORE
 
 LOGGER = logging.getLogger(__name__)
@@ -57,7 +59,7 @@ class Functions:
 
         :returns: nldi.functions.Functions
         """
-        LOGGER.debug('Initialising Functions')
+        LOGGER.debug("Initialising Functions")
 
         # Read table information from database
         self._store_db_parameters(provider_def)
@@ -81,17 +83,12 @@ class Functions:
             result = session.execute(basin).fetchone()
 
             if result is None:
-                msg = f'No such item: {self.id_field}={comid}'
+                msg = f"No such item: {self.id_field}={comid}"
                 raise FunctionItemNotFoundError(msg)
 
-            yield {
-                'type': 'Feature',
-                'geometry': json.loads(result.the_geom),
-                'properties': {}
-            }
+            yield {"type": "Feature", "geometry": json.loads(result.the_geom), "properties": {}}
 
-    def trim_navigation(self, nav_mode: str, comid: int,
-                        trim_tolerance: float, measure: float):
+    def trim_navigation(self, nav_mode: str, comid: int, trim_tolerance: float, measure: float):
         """
         Trim navigation
 
@@ -121,7 +118,7 @@ class Functions:
         try:
             distance = float(distance)
         except ValueError:
-            msg = f'Invalid distance: {distance}'
+            msg = f"Invalid distance: {distance}"
             LOGGER.error(msg)
             raise FunctionInvalidQueryError(msg)
 
@@ -146,7 +143,7 @@ class Functions:
             result = session.execute(point).fetchone()
 
             if result is None or None in result:
-                LOGGER.warning('Not on flowline')
+                LOGGER.warning("Not on flowline")
             else:
                 return result
 
@@ -167,7 +164,7 @@ class Functions:
             result = session.execute(measure).scalar()
 
             if result is None:
-                LOGGER.warning('Not on flowline')
+                LOGGER.warning("Not on flowline")
             else:
                 return result
 
@@ -188,7 +185,7 @@ class Functions:
             result = session.execute(point).fetchone()
 
             if None in result:
-                LOGGER.warning('Not on flowline')
+                LOGGER.warning("Not on flowline")
             else:
                 return result
 
@@ -209,16 +206,16 @@ class Functions:
             result = session.execute(point).scalar()
 
             if result is None:
-                LOGGER.warning('Not on flowline')
+                LOGGER.warning("Not on flowline")
             else:
                 return result
 
     def _store_db_parameters(self, parameters):
-        self.db_user = parameters.get('user')
-        self.db_host = parameters.get('host')
-        self.db_port = parameters.get('port', 5432)
-        self.db_name = parameters.get('dbname')
-        self._db_password = parameters.get('password')
+        self.db_user = parameters.get("user")
+        self.db_host = parameters.get("host")
+        self.db_port = parameters.get("port", 5432)
+        self.db_name = parameters.get("dbname")
+        self._db_password = parameters.get("password")
 
     def _get_engine(self):
         """
@@ -228,58 +225,61 @@ class Functions:
         """
         # One long-lived engine is used per database URL:
         # https://docs.sqlalchemy.org/en/14/core/connections.html#basic-usage
-        engine_store_key = (self.db_user, self.db_host, self.db_port,
-                            self.db_name)
+        engine_store_key = (self.db_user, self.db_host, self.db_port, self.db_name)
         try:
             engine = _ENGINE_STORE[engine_store_key]
         except KeyError:
-            LOGGER.debug('Storing engine connection')
+            LOGGER.debug("Storing engine connection")
             conn_str = URL.create(
-                'postgresql+psycopg2',
+                "postgresql+psycopg2",
                 username=self.db_user,
                 password=self._db_password,
                 host=self.db_host,
                 port=self.db_port,
-                database=self.db_name
+                database=self.db_name,
             )
             engine = create_engine(
-                conn_str,
-                connect_args={'client_encoding': 'utf8',
-                              'application_name': 'nldi'},
-                pool_pre_ping=True)
+                conn_str, connect_args={"client_encoding": "utf8", "application_name": "nldi"}, pool_pre_ping=True
+            )
             _ENGINE_STORE[engine_store_key] = engine
 
         return engine
 
     def __repr__(self):
-        return '<Function>'
+        return "<Function>"
 
 
 class FunctionGenericError(Exception):
     """function generic error"""
+
     pass
 
 
 class FunctionConnectionError(FunctionGenericError):
     """function connection error"""
+
     pass
 
 
 class FunctionTypeError(FunctionGenericError):
     """function type error"""
+
     pass
 
 
 class FunctionInvalidQueryError(FunctionGenericError):
     """function invalid query error"""
+
     pass
 
 
 class FunctionQueryError(FunctionGenericError):
     """function query error"""
+
     pass
 
 
 class FunctionItemNotFoundError(FunctionGenericError):
     """function item not found query error"""
+
     pass

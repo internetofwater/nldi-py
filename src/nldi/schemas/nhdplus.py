@@ -28,20 +28,19 @@
 # =================================================================
 
 from geoalchemy2 import Geometry
-from sqlalchemy import (MetaData, Column, Integer, String,
-                        Float, DateTime, SmallInteger)
+from sqlalchemy import MetaData, Column, Integer, String, Float, DateTime, SmallInteger
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 
 from nldi.schemas.nldi_data import MainstemLookupModel
 
 # Define the SQLAlchemy model based on the CrawlerSource Pydantic model
-metadata = MetaData(schema='nhdplus')
+metadata = MetaData(schema="nhdplus")
 BaseModel = declarative_base(metadata=metadata)
 
 
 class CatchmentModel(BaseModel):
-    __tablename__ = 'catchmentsp'
+    __tablename__ = "catchmentsp"
 
     ogc_fid = Column(Integer, primary_key=True, nullable=True)
     the_geom = Column(Geometry, nullable=True)
@@ -54,7 +53,7 @@ class CatchmentModel(BaseModel):
 
 
 class FlowlineModel(BaseModel):
-    __tablename__ = 'nhdflowline_np21'
+    __tablename__ = "nhdflowline_np21"
 
     objectid = Column(Integer)
     permanent_identifier = Column(String)
@@ -93,7 +92,7 @@ class FlowlineModel(BaseModel):
 
 
 class FlowlineVAAModel(BaseModel):
-    __tablename__ = 'plusflowlinevaa_np21'
+    __tablename__ = "plusflowlinevaa_np21"
 
     objectid = Column(Integer)
     comid = Column(Integer, primary_key=True)

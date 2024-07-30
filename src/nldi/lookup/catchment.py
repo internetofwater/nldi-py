@@ -42,7 +42,6 @@ LOGGER = logging.getLogger(__name__)
 
 
 class CatchmentLookup(BaseLookup):
-
     def __init__(self, provider_def):
         """
         CatchmentLookup Class constructor
@@ -54,9 +53,9 @@ class CatchmentLookup(BaseLookup):
 
         :returns: nldi.lookup.catchment.CatchmentLookup
         """
-        LOGGER.debug('Initialising Catchment Lookup.')
+        LOGGER.debug("Initialising Catchment Lookup.")
         super().__init__(provider_def)
-        self.id_field = 'featureid'
+        self.id_field = "featureid"
         self.table_model = CatchmentModel
 
     def query(self, coords: str, asGeoJSON: bool = False) -> Union[dict, int]:
@@ -65,20 +64,18 @@ class CatchmentLookup(BaseLookup):
 
         :returns: dict of 0..n GeoJSON features or coverage data
         """
-        LOGGER.debug(f'Fetching comid of: {coords}')
+        LOGGER.debug(f"Fetching comid of: {coords}")
         with self.session() as session:
             # Retrieve data from database as feature
             point = WKTElement(coords, srid=4269)
             intersects = func.ST_Intersects(CatchmentModel.the_geom, point)
-            result = (session
-                      .filter(intersects)
-                      .first())
+            result = session.filter(intersects).first()
 
             if result is None:
-                msg = f'No comid found for: {coords}.'
+                msg = f"No comid found for: {coords}."
                 raise ProviderItemNotFoundError(msg)
 
-            LOGGER.debug(f'Intersection with {result.featureid}')
+            LOGGER.debug(f"Intersection with {result.featureid}")
             if asGeoJSON:
                 item = self._sqlalchemy_to_feature(result)
                 return item
@@ -93,20 +90,19 @@ class CatchmentLookup(BaseLookup):
         else:
             geometry = None
 
-        navigation = \
-            url_join(self.relative_url, item.featureid, 'navigation')
+        navigation = url_join(self.relative_url, item.featureid, "navigation")
 
         return {
-            'type': 'Feature',
-            'geometry': geometry,
-            'properties': {
-                'identifier': item.featureid,
-                'source': 'comid',
-                'name': item.name,
-                'comid': item.comid,
-                'uri': item.uri,
-                'reachcode': item.reachcode,
-                'measure': item.measure,
-                'navigation': navigation
-            }
+            "type": "Feature",
+            "geometry": geometry,
+            "properties": {
+                "identifier": item.featureid,
+                "source": "comid",
+                "name": item.name,
+                "comid": item.comid,
+                "uri": item.uri,
+                "reachcode": item.reachcode,
+                "measure": item.measure,
+                "navigation": navigation,
+            },
         }

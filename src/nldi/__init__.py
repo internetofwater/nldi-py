@@ -27,12 +27,12 @@
 #
 # =================================================================
 
-__version__ = '0.1.0'
+__version__ = "0.1.0"
 
 import click
 
-from nldi.config import config
-from nldi.openapi import openapi
+# from nldi.config import config
+# from nldi.openapi import openapi
 
 
 @click.group()
@@ -41,5 +41,5 @@ def cli():
     pass
 
 
-cli.add_command(config)
-cli.add_command(openapi)
+# cli.add_command(config)
+# cli.add_command(openapi)

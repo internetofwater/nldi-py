@@ -27,8 +27,7 @@
 #
 # =================================================================
 
-from flask import (Blueprint, Flask, request,
-                   stream_with_context, Response, send_from_directory)
+from flask import Blueprint, Flask, request, stream_with_context, Response, send_from_directory
 from flask_cors import CORS
 from jinja2.environment import TemplateStream
 import logging
@@ -40,21 +39,21 @@ from nldi.util import yaml_load
 LOGGER = logging.getLogger(__name__)
 
 
-if 'NLDI_CONFIG' not in os.environ:
-    raise RuntimeError('NLDI_CONFIG environment variable not set')
+if "NLDI_CONFIG" not in os.environ:
+    raise RuntimeError("NLDI_CONFIG environment variable not set")
 
-with open(os.environ.get('NLDI_CONFIG'), encoding='utf8') as fh:
+with open(os.environ.get("NLDI_CONFIG"), encoding="utf8") as fh:
     CONFIG = yaml_load(fh)
 
-STATIC_FOLDER = 'static'
-if 'templates' in CONFIG['server']:
-    STATIC_FOLDER = CONFIG['server']['templates'].get('static', 'static')
+STATIC_FOLDER = "static"
+if "templates" in CONFIG["server"]:
+    STATIC_FOLDER = CONFIG["server"]["templates"].get("static", "static")
 
 
-APP = Flask(__name__, static_folder=STATIC_FOLDER, static_url_path='/static')
+APP = Flask(__name__, static_folder=STATIC_FOLDER, static_url_path="/static")
 APP.url_map.strict_slashes = False
 CORS(APP)
-BLUEPRINT = Blueprint('nldi', __name__, static_folder=STATIC_FOLDER)
+BLUEPRINT = Blueprint("nldi", __name__, static_folder=STATIC_FOLDER)
 
 API_ = API(CONFIG)
 
@@ -78,13 +77,12 @@ def get_response(result: tuple):
     return response
 
 
-@BLUEPRINT.route('/favicon.ico')
+@BLUEPRINT.route("/favicon.ico")
 def favicon():
-    return send_from_directory(STATIC_FOLDER, 'favicon.ico',
-                               mimetype='image/vnd.microsoft.icon')
+    return send_from_directory(STATIC_FOLDER, "favicon.ico", mimetype="image/vnd.microsoft.icon")
 
 
-@BLUEPRINT.route('/')
+@BLUEPRINT.route("/")
 def home():
     """
     Root endpoint
@@ -94,15 +92,15 @@ def home():
     return get_response(API_.landing_page(request))
 
 
-@BLUEPRINT.route('/openapi')
+@BLUEPRINT.route("/openapi")
 def openapi():
     """
     OpenAPI endpoint
 
     :returns: HTTP response
     """
-    with open(os.environ.get('NLDI_OPENAPI'), encoding='utf8') as ff:
-        if os.environ.get('NLDI_OPENAPI').endswith(('.yaml', '.yml')):
+    with open(os.environ.get("NLDI_OPENAPI"), encoding="utf8") as ff:
+        if os.environ.get("NLDI_OPENAPI").endswith((".yaml", ".yml")):
             openapi_ = yaml_load(ff)
         else:  # JSON string, do not transform
             openapi_ = ff.read()
@@ -110,7 +108,7 @@ def openapi():
     return get_response(API_.get_openapi(request, openapi_))
 
 
-@BLUEPRINT.route('/linked-data')
+@BLUEPRINT.route("/linked-data")
 def sources():
     """
     Data sources endpoint
@@ -120,7 +118,7 @@ def sources():
     return get_response(API_.get_crawler_sources(request))
 
 
-@BLUEPRINT.route('/linked-data/hydrolocation')
+@BLUEPRINT.route("/linked-data/hydrolocation")
 def hydrolocation():
     """
     Hydrolocation endpoint
@@ -130,7 +128,7 @@ def hydrolocation():
     return get_response(API_.get_hydrolocation(request))
 
 
-@BLUEPRINT.route('/linked-data/comid/position')
+@BLUEPRINT.route("/linked-data/comid/position")
 def get_comid_by_position():
     """
     NHDPv2 comid by position endpoint
@@ -140,7 +138,7 @@ def get_comid_by_position():
     return get_response(API_.get_comid_by_position(request))
 
 
-@BLUEPRINT.route('/linked-data/comid/<int:comid>')
+@BLUEPRINT.route("/linked-data/comid/<int:comid>")
 def get_comid_by_id(comid=None):
     """
     NHDPv2 comid by id endpoint
@@ -150,8 +148,8 @@ def get_comid_by_id(comid=None):
     return get_response(API_.get_comid_by_id(request, comid))
 
 
-@BLUEPRINT.route('/linked-data/<path:source_name>')
-@BLUEPRINT.route('/linked-data/<path:source_name>/<path:identifier>')
+@BLUEPRINT.route("/linked-data/<path:source_name>")
+@BLUEPRINT.route("/linked-data/<path:source_name>/<path:identifier>")
 def get_source_features(source_name=None, identifier=None):
     """
     Data source endpoint
@@ -161,11 +159,10 @@ def get_source_features(source_name=None, identifier=None):
 
     :returns: HTTP response
     """
-    return get_response(
-        API_.get_source_features(request, source_name, identifier))
+    return get_response(API_.get_source_features(request, source_name, identifier))
 
 
-@BLUEPRINT.route('/linked-data/<path:source_name>/<path:identifier>/basin')
+@BLUEPRINT.route("/linked-data/<path:source_name>/<path:identifier>/basin")
 def get_basin(source_name=None, identifier=None):
     """
     Basin lookup endpoint
@@ -175,12 +172,11 @@ def get_basin(source_name=None, identifier=None):
 
     :returns: HTTP response
     """
-    return get_response(
-        API_.get_basin(request, source_name, identifier))
+    return get_response(API_.get_basin(request, source_name, identifier))
 
 
-@BLUEPRINT.route('/linked-data/<path:source_name>/<path:identifier>/navigation')  # noqa
-@BLUEPRINT.route('/linked-data/<path:source_name>/<path:identifier>/navigation/<path:nav_mode>')  # noqa
+@BLUEPRINT.route("/linked-data/<path:source_name>/<path:identifier>/navigation")  # noqa
+@BLUEPRINT.route("/linked-data/<path:source_name>/<path:identifier>/navigation/<path:nav_mode>")  # noqa
 def get_navigation_info(source_name=None, identifier=None, nav_mode=None):
     """
     Data source navigation information endpoint
@@ -191,11 +187,10 @@ def get_navigation_info(source_name=None, identifier=None, nav_mode=None):
 
     :returns: HTTP response
     """
-    return get_response(
-        API_.get_navigation_info(request, source_name, identifier, nav_mode))
+    return get_response(API_.get_navigation_info(request, source_name, identifier, nav_mode))
 
 
-@BLUEPRINT.route('/linked-data/<path:source_name>/<path:identifier>/navigation/<path:nav_mode>/flowlines')  # noqa
+@BLUEPRINT.route("/linked-data/<path:source_name>/<path:identifier>/navigation/<path:nav_mode>/flowlines")  # noqa
 def get_flowline_navigation(source_name=None, identifier=None, nav_mode=None):  # noqa
     """
     Data source flowline navigation endpoint
@@ -206,11 +201,10 @@ def get_flowline_navigation(source_name=None, identifier=None, nav_mode=None):  
 
     :returns: HTTP response
     """
-    return get_response(API_.get_flowlines(
-        request, source_name, identifier, nav_mode))
+    return get_response(API_.get_flowlines(request, source_name, identifier, nav_mode))
 
 
-@BLUEPRINT.route('/linked-data/<path:source_name>/<path:identifier>/navigation/<path:nav_mode>/<path:data_source>')  # noqa
+@BLUEPRINT.route("/linked-data/<path:source_name>/<path:identifier>/navigation/<path:nav_mode>/<path:data_source>")  # noqa
 def get_navigation(source_name=None, identifier=None, nav_mode=None, data_source=None):  # noqa
     """
     Data source navigation endpoint
@@ -222,15 +216,15 @@ def get_navigation(source_name=None, identifier=None, nav_mode=None, data_source
 
     :returns: HTTP response
     """
-    return get_response(API_.get_navigation(
-        request, source_name, identifier, nav_mode, data_source))
+    return get_response(API_.get_navigation(request, source_name, identifier, nav_mode, data_source))
 
 
 try:
-    if CONFIG['pygeoapi']['enabled'] is True:
+    if CONFIG["pygeoapi"]["enabled"] is True:
         from pygeoapi.flask_app import BLUEPRINT as PYGEOAPI_BLUEPRINT
-        APP.register_blueprint(PYGEOAPI_BLUEPRINT, url_prefix='/pygeoapi')
-except KeyError:
-    LOGGER.info('Not including pygeoapi templates')
 
-APP.register_blueprint(BLUEPRINT, url_prefix='/api/nldi')
+        APP.register_blueprint(PYGEOAPI_BLUEPRINT, url_prefix="/pygeoapi")
+except KeyError:
+    LOGGER.info("Not including pygeoapi templates")
+
+APP.register_blueprint(BLUEPRINT, url_prefix="/api/nldi")

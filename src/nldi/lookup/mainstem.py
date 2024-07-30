@@ -36,7 +36,6 @@ LOGGER = logging.getLogger(__name__)
 
 
 class MainstemLookup(BaseLookup):
-
     def __init__(self, provider_def):
         """
         MainstemLookup Class constructor
@@ -48,31 +47,28 @@ class MainstemLookup(BaseLookup):
 
         :returns: nldi.lookup.mainstem.MainstemLookup
         """
-        LOGGER.debug('Initialising Mainstem Lookup.')
+        LOGGER.debug("Initialising Mainstem Lookup.")
         super().__init__(provider_def)
         self.id_field = MainstemLookupModel.nhdpv2_comid
         self.table_model = MainstemLookupModel
 
     def get(self, identifier: str):
-        LOGGER.debug(f'Fetching mainstem for: {identifier}')
+        LOGGER.debug(f"Fetching mainstem for: {identifier}")
         with self.session() as session:
             # Retrieve data from database as feature
-            item = (session
-                    .filter(self.id_field == identifier)
-                    .first())
+            item = session.filter(self.id_field == identifier).first()
 
             if item is None:
-                msg = f'No mainstem found: {self.id_field}={identifier}.'
+                msg = f"No mainstem found: {self.id_field}={identifier}."
                 raise ProviderItemNotFoundError(msg)
             mainstem = self._sqlalchemy_to_feature(item)
 
         return mainstem
 
     def _sqlalchemy_to_feature(self, item):
-
         # Add properties from item
         item_dict = item.__dict__
-        item_dict.pop('_sa_instance_state')  # Internal SQLAlchemy metadata
+        item_dict.pop("_sa_instance_state")  # Internal SQLAlchemy metadata
         feature = item_dict
 
         return feature
