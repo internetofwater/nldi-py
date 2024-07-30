@@ -30,7 +30,6 @@
 import json
 from typing import Iterable
 
-
 from nldi.lookup.base import BaseLookup, ProviderItemNotFoundError
 from nldi.schemas.nldi_data import FeatureSourceModel
 from nldi.util import url_join

@@ -51,7 +51,6 @@ def load_plugin(plugin_def: dict) -> Any:
 
     :returns: plugin object
     """
-
     name = plugin_def["name"]
 
     LOGGER.debug(f"Plugins: {PLUGINS}")

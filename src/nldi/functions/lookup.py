@@ -29,11 +29,11 @@
 
 """Module containing the models for NLDI Lookup functions"""
 
-from sqlalchemy import select, text, and_, func
+from sqlalchemy import and_, func, select, text
 
 from nldi.schemas.nhdplus import FlowlineModel as Flow
-from nldi.schemas.nldi_data import FeatureSourceModel as Feature
 from nldi.schemas.nldi_data import CrawlerSourceModel as Crawler
+from nldi.schemas.nldi_data import FeatureSourceModel as Feature
 
 from .. import LOGGER
 

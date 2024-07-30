@@ -27,11 +27,12 @@
 #
 # =================================================================
 
-from geoalchemy2.shape import to_shape
-from geoalchemy2.elements import WKTElement
-import shapely
-from sqlalchemy import func
 from typing import Union
+
+import shapely
+from geoalchemy2.elements import WKTElement
+from geoalchemy2.shape import to_shape
+from sqlalchemy import func
 
 from nldi.lookup.base import BaseLookup, ProviderItemNotFoundError
 from nldi.schemas.nhdplus import CatchmentModel

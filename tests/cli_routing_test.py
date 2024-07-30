@@ -22,6 +22,7 @@ def test_cli(runner):
     # NOTE: we are not testing any output or if the business logic is working correctly.
     # This just tests that we can call the CLI with this switch and it doesn't produce an error.
 
+
 @pytest.mark.order(5)
 @pytest.mark.unittest
 def test_subcommands(runner):
@@ -34,9 +35,9 @@ def test_subcommands(runner):
     >>> nldi no_such_subcommand
         Should produce help messages and a non-zero exit code.
     """
-    result = runner.invoke(nldi_cmd) # with no subcommand
+    result = runner.invoke(nldi_cmd)  # with no subcommand
     assert result.exit_code == 0
-    assert result.output.startswith("Usage:") ## should get the help message
+    assert result.output.startswith("Usage:")  ## should get the help message
 
     result = runner.invoke(nldi_cmd, ["nonesuch"])
     assert result.exit_code != 0
@@ -45,5 +46,3 @@ def test_subcommands(runner):
     # result = runner.invoke(nldi_cmd, ["config", "align-sources", "./tests/data/sources_config.yml"])
     # assert result.exit_code == 0
     # assert "Undefined environment variable NLDI_URL in config file" in result.output
-
-

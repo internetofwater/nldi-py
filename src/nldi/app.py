@@ -29,5 +29,4 @@ def ping() -> Dict[str, str]:
     return {"PING": "ACK"}
 
 
-
 APP.register_blueprint(BLUEPRINT, url_prefix="/api/nldi")

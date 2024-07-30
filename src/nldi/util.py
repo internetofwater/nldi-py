@@ -90,6 +90,7 @@ def yaml_load(fh: IO) -> dict:
         return {}
     return _cfg
 
+
 def get_typed_value(value: str) -> Union[float, int, str]:
     """
     Derive true type from data value
@@ -98,7 +99,6 @@ def get_typed_value(value: str) -> Union[float, int, str]:
 
     :returns: value as a native Python data type
     """
-
     try:
         if "." in value:  # float?
             value2 = float(value)
@@ -121,7 +121,6 @@ def to_json(dict_: dict, pretty: bool = False) -> str:
 
     :returns: JSON string representation
     """
-
     if pretty:
         indent = 4
     else:
@@ -139,7 +138,6 @@ def stream_j2_template(template: Path, data: dict) -> str:
 
     :returns: string of rendered template
     """
-
     template_paths = [TEMPLATES, "."]
 
     LOGGER.debug(f"using templates: {TEMPLATES}")
@@ -167,5 +165,4 @@ def sort_sources(dict_: list) -> dict:
 
     :returns: filtered ``dict``
     """
-
     return sorted(dict_, key=lambda d: d["crawler_source_id"])

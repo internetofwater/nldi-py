@@ -31,18 +31,19 @@
 
 import json
 import logging
+
 from sqlalchemy import create_engine
 from sqlalchemy.engine import URL
 from sqlalchemy.orm import Session
 
 from nldi.functions.basin import get_basin
-from nldi.functions.navigate import get_navigation, trim_navigation
 from nldi.functions.lookup import (
-    get_point_on_flowline,
     estimate_measure,
     get_closest_point_on_flowline,
     get_distance_from_flowline,
+    get_point_on_flowline,
 )
+from nldi.functions.navigate import get_navigation, trim_navigation
 from nldi.lookup import _ENGINE_STORE
 
 LOGGER = logging.getLogger(__name__)
@@ -74,7 +75,6 @@ class Functions:
 
         :returns: iterator of navigated basin
         """
-
         basin = get_basin(comid, simplified)
         LOGGER.debug(basin.compile(self._engine))
 
@@ -100,7 +100,6 @@ class Functions:
 
         :returns: string of trimmed navigation query
         """
-
         trim = trim_navigation(nav_mode, comid, trim_tolerance, measure)
         LOGGER.debug(trim.compile(self._engine))
         return trim

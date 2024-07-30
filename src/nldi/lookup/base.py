@@ -27,12 +27,13 @@
 #
 # =================================================================
 
-from contextlib import contextmanager
 import logging
+from contextlib import contextmanager
+from typing import Iterable
+
 from sqlalchemy import create_engine, func
 from sqlalchemy.engine import URL
 from sqlalchemy.orm import sessionmaker
-from typing import Iterable
 
 from nldi.lookup import _ENGINE_STORE
 
@@ -73,7 +74,6 @@ class BaseLookup:
 
         :returns: dict of single GeoJSON feature
         """
-
         raise NotImplementedError()
 
     def query(self, **kwargs):
@@ -82,7 +82,6 @@ class BaseLookup:
 
         :returns: dict of 0..n GeoJSON features or coverage data
         """
-
         raise NotImplementedError()
 
     def lookup_navigation(self, nav: str):
@@ -91,7 +90,6 @@ class BaseLookup:
 
         :returns: dict of 0..n GeoJSON features or coverage data
         """
-
         raise NotImplementedError()
 
     @contextmanager

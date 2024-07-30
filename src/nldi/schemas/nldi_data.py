@@ -28,7 +28,7 @@
 # =================================================================
 
 from geoalchemy2 import Geometry
-from sqlalchemy import MetaData, Column, Integer, String, Float, text, Text
+from sqlalchemy import Column, Float, Integer, MetaData, String, Text, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 

@@ -28,7 +28,7 @@
 # =================================================================
 
 from geoalchemy2 import Geometry
-from sqlalchemy import MetaData, Column, Integer, SmallInteger, Numeric
+from sqlalchemy import Column, Integer, MetaData, Numeric, SmallInteger
 from sqlalchemy.ext.declarative import declarative_base
 
 # Define the SQLAlchemy model based on the CrawlerSource Pydantic model

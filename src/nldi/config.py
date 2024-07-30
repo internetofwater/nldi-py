@@ -40,7 +40,7 @@ from nldi.lookup.base import ProviderQueryError
 from nldi.lookup.source import CrawlerSourceLookup
 from nldi.util import yaml_load
 
-from . import LOGGER 
+from . import LOGGER
 
 
 def generate_alignment(cfg_file: Union[pathlib.Path, io.TextIOWrapper]):

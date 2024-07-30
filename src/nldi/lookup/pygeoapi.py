@@ -28,12 +28,13 @@
 # =================================================================
 
 import json
+
 from requests import Session as HTTPSession
 from shapely import wkt
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from nldi.lookup.base import BaseLookup, ProviderItemNotFoundError, ProviderConnectionError, ProviderQueryError
+from nldi.lookup.base import BaseLookup, ProviderConnectionError, ProviderItemNotFoundError, ProviderQueryError
 from nldi.schemas.nhdplus import FlowlineModel
 from nldi.util import url_join
 
@@ -187,7 +188,6 @@ class PygeoapiLookup(BaseLookup):
 
         :returns: pygeoapi response
         """
-
         r = self.http.post(url, json=data)
 
         if not r.ok:

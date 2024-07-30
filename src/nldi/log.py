@@ -43,7 +43,6 @@ def setup_logger(logging_config):
 
     :returns: void (creates logging instance)
     """
-
     log_format = "[%(asctime)s] {%(pathname)s:%(lineno)d} %(levelname)s - %(message)s"
     date_format = "%Y-%m-%dT%H:%M:%SZ"
 

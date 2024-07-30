@@ -31,7 +31,7 @@ from sqlalchemy import func
 from sqlalchemy.exc import ProgrammingError
 from sqlalchemy.orm import Session
 
-from nldi.lookup.base import BaseLookup, ProviderQueryError, ProviderItemNotFoundError
+from nldi.lookup.base import BaseLookup, ProviderItemNotFoundError, ProviderQueryError
 from nldi.schemas.nldi_data import CrawlerSourceModel
 
 from .. import LOGGER

@@ -288,7 +288,6 @@ def get_oas(cfg) -> dict:
             }
         }
 
-
         src_by_basin = url_join("/", src_by_feature, "basin")
         paths[src_by_basin] = {
             "get": {
@@ -523,4 +522,3 @@ def generate(ctx, config_file, output_file, format_="yaml"):
         click.echo(f"Generating {output_file.name}")
         output_file.write(content)
         click.echo("Done")
-

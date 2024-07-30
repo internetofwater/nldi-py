@@ -140,7 +140,7 @@ class API:
 
     @property
     def pygeoapi_lookup(self) -> PygeoapiLookup:
-        """pygeoapi Lookup Provider"""
+        """Pygeoapi Lookup Provider"""
         if self._pygeoapi_lookup is None:
             try:
                 PYGEOAPI_URL = self.config["pygeoapi"]["gdp_url"]
@@ -209,7 +209,6 @@ class API:
 
         :returns: tuple of headers, status code, content
         """
-
         if not request.is_valid():
             return self.get_format_exception(request)
 
@@ -242,7 +241,6 @@ class API:
 
         :returns: tuple of headers, status code, content
         """
-
         if not request.is_valid():
             return self.get_exception(request)
 
@@ -291,7 +289,6 @@ class API:
 
         :returns: tuple of headers, status code, content
         """
-
         if not request.is_valid():
             return self.get_exception(request)
 
@@ -330,7 +327,6 @@ class API:
 
         :returns: tuple of headers, status code, content
         """
-
         if not request.is_valid():
             return self.get_exception(request)
 
@@ -373,7 +369,6 @@ class API:
 
         :returns: tuple of headers, status code, content
         """
-
         if not request.is_valid():
             return self.get_exception(request)
 
@@ -912,7 +907,6 @@ class API:
 
         :returns: tuple of headers, status, and message
         """
-
         LOGGER.error(description)
         exception = {"code": code, "description": description}
 

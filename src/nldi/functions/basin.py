@@ -29,13 +29,15 @@
 
 """Module containing the models for NLDI Basin Lookup"""
 
-from sqlalchemy import select, text, and_, or_, func
-from sqlalchemy.orm import aliased
 from typing import Any
+
+from sqlalchemy import and_, func, or_, select, text
+from sqlalchemy.orm import aliased
 
 from nldi.schemas.characteristic_data import CatchmentModel, FlowlineVAAModel
 
 from .. import LOGGER
+
 
 def get_basin(comid: int, simplified: bool) -> Any:
     nav = (
