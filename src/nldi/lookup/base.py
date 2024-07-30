@@ -36,7 +36,7 @@ from typing import Iterable
 
 from nldi.lookup import _ENGINE_STORE
 
-LOGGER = logging.getLogger(__name__)
+from .. import LOGGER
 
 
 class BaseLookup:

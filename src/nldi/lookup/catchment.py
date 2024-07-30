@@ -29,7 +29,6 @@
 
 from geoalchemy2.shape import to_shape
 from geoalchemy2.elements import WKTElement
-import logging
 import shapely
 from sqlalchemy import func
 from typing import Union
@@ -38,7 +37,7 @@ from nldi.lookup.base import BaseLookup, ProviderItemNotFoundError
 from nldi.schemas.nhdplus import CatchmentModel
 from nldi.util import url_join
 
-LOGGER = logging.getLogger(__name__)
+from .. import LOGGER
 
 
 class CatchmentLookup(BaseLookup):

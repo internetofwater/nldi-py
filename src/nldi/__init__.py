@@ -29,19 +29,7 @@
 
 __version__ = "0.1.0"
 
-import click
+import logging
 
-from nldi.config import config
-from nldi.openapi import openapi
+LOGGER = logging.getLogger(__name__)
 
-
-@click.group(
-        context_settings={            "help_option_names": ["-h", "--help"]            },
-)
-@click.version_option(version=__version__, prog_name="nldi")
-def cli():
-    """NLDI Command Line Interface."""
-    pass
-
-cli.add_command(config)
-cli.add_command(openapi)

@@ -29,14 +29,13 @@
 
 """Module containing the models for NLDI Lookup functions"""
 
-import logging
 from sqlalchemy import select, text, and_, func
 
 from nldi.schemas.nhdplus import FlowlineModel as Flow
 from nldi.schemas.nldi_data import FeatureSourceModel as Feature
 from nldi.schemas.nldi_data import CrawlerSourceModel as Crawler
 
-LOGGER = logging.getLogger(__name__)
+from .. import LOGGER
 
 
 def estimate_measure(feature_id: str, feature_source: str):

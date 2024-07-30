@@ -522,6 +522,20 @@ async = ["asgiref (>=3.2)"]
 dotenv = ["python-dotenv"]
 
 [[package]]
+name = "flask-cors"
+version = "4.0.1"
+description = "A Flask extension adding a decorator for CORS support"
+optional = false
+python-versions = "*"
+files = [
+    {file = "Flask_Cors-4.0.1-py2.py3-none-any.whl", hash = "sha256:f2a704e4458665580c074b714c4627dd5a306b333deb9074d0b1794dfa2fb677"},
+    {file = "flask_cors-4.0.1.tar.gz", hash = "sha256:eeb69b342142fdbf4766ad99357a7f3876a2ceb77689dc10ff912aac06c389e4"},
+]
+
+[package.dependencies]
+Flask = ">=0.9"
+
+[[package]]
 name = "geoalchemy"
 version = "0.7.2"
 description = "Using SQLAlchemy with Spatial Databases"
@@ -2551,4 +2565,4 @@ testing = ["coverage (>=5.0.3)", "zope.event", "zope.testing"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "6c65ee34601119dda575c43ea58e98d13492ca44b0054f873134b6e3ce355a63"
+content-hash = "057b1abc6103d3ea886c4a48447fc7dfdfc70b8eb3b4b11a55488da7ec2da414"

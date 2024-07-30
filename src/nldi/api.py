@@ -46,7 +46,8 @@ from nldi.lookup.source import CrawlerSourceLookup
 from nldi.plugin import load_plugin
 from nldi.util import TEMPLATES, sort_sources, stream_j2_template, to_json, url_join
 
-LOGGER = logging.getLogger(__name__)
+from . import LOGGER
+
 HEADERS = {"force_type": "application/json", "X-Powered-By": f"nldi {__version__}"}
 FORMAT_TYPES.move_to_end(F_JSON, last=False)
 SPLIT_CATCHMENT_THRESHOLD = 200
@@ -60,6 +61,7 @@ def pre_process(func):
     :param func: decorated function
     :returns: `func`
     """
+
     def inner(*args):
         cls, req_in = args[:2]
         req_out = APIRequest.with_data(req_in, ["en-US"])
@@ -67,7 +69,7 @@ def pre_process(func):
             return func(cls, req_out, *args[2:])
         else:
             return func(cls, req_out)
-            
+
     return inner
 
 
@@ -81,10 +83,9 @@ class API:
 
     def __init__(self, cfg):
         """
-        constructor
+        Constructor
 
         :param cfg: cfg dict
-
         :returns: `nldi.API` instance
         """
         self.config = cfg

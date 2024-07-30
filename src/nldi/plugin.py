@@ -29,10 +29,9 @@
 """Plugin loader"""
 
 import importlib
-import logging
 from typing import Any
 
-LOGGER = logging.getLogger(__name__)
+from . import LOGGER
 
 PLUGINS = {
     "CatchmentLookup": "nldi.lookup.catchment.CatchmentLookup",

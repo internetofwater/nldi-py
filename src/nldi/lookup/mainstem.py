@@ -27,12 +27,11 @@
 #
 # =================================================================
 
-import logging
 
 from nldi.lookup.base import BaseLookup, ProviderItemNotFoundError
 from nldi.schemas.nldi_data import MainstemLookupModel
 
-LOGGER = logging.getLogger(__name__)
+from .. import LOGGER
 
 
 class MainstemLookup(BaseLookup):

@@ -28,7 +28,6 @@
 # =================================================================
 
 import json
-import logging
 from typing import Iterable
 
 
@@ -36,7 +35,7 @@ from nldi.lookup.base import BaseLookup, ProviderItemNotFoundError
 from nldi.schemas.nldi_data import FeatureSourceModel
 from nldi.util import url_join
 
-LOGGER = logging.getLogger(__name__)
+from .. import LOGGER
 
 
 class FeatureLookup(BaseLookup):

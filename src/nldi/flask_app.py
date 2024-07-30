@@ -27,7 +27,6 @@
 #
 # =================================================================
 
-import logging
 import os
 
 from flask import Blueprint, Flask, Response, request, send_from_directory, stream_with_context
@@ -37,8 +36,7 @@ from jinja2.environment import TemplateStream
 from nldi.api import API
 from nldi.util import yaml_load
 
-LOGGER = logging.getLogger(__name__)
-
+from . import LOGGER
 
 if "NLDI_CONFIG" not in os.environ:
     raise RuntimeError("NLDI_CONFIG environment variable not set")

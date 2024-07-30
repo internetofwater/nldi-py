@@ -35,7 +35,7 @@ from nldi.lookup.base import BaseLookup, ProviderItemNotFoundError
 from nldi.schemas.nhdplus import FlowlineModel
 from nldi.util import url_join
 
-LOGGER = logging.getLogger(__name__)
+from .. import LOGGER
 
 
 class FlowlineLookup(BaseLookup):

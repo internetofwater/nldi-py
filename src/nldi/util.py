@@ -30,7 +30,6 @@
 """Generic util functions used in the code"""
 
 import json
-import logging
 import os
 import re
 from pathlib import Path
@@ -39,7 +38,7 @@ from typing import IO, Union
 import yaml
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
-LOGGER = logging.getLogger(__name__)
+from . import LOGGER
 
 THISDIR = Path(__file__).parent.resolve()
 TEMPLATES = THISDIR / "templates"

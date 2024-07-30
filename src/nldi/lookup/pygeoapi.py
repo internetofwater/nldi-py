@@ -28,7 +28,6 @@
 # =================================================================
 
 import json
-import logging
 from requests import Session as HTTPSession
 from shapely import wkt
 from sqlalchemy import func
@@ -38,7 +37,7 @@ from nldi.lookup.base import BaseLookup, ProviderItemNotFoundError, ProviderConn
 from nldi.schemas.nhdplus import FlowlineModel
 from nldi.util import url_join
 
-LOGGER = logging.getLogger(__name__)
+from .. import LOGGER
 
 DEFAULT_PROPS = {
     "identifier": "",

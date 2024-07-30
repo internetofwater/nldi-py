@@ -27,41 +27,19 @@
 #
 # =================================================================
 
-"""Logging system"""
+import click
 
-import logging
-import sys
+from . import __version__
+from .config import config
+from .openapi import openapi
 
-from . import LOGGER
+
+@click.group(context_settings={"help_option_names": ["-h", "--help"]})
+@click.version_option(version=__version__, prog_name="nldi")
+def cli():
+    """NLDI Command Line Interface."""
+    pass
 
 
-def setup_logger(logging_config):
-    """
-    Setup configuration
-
-    :param logging_config: logging specific configuration
-
-    :returns: void (creates logging instance)
-    """
-
-    log_format = "[%(asctime)s] {%(pathname)s:%(lineno)d} %(levelname)s - %(message)s"
-    date_format = "%Y-%m-%dT%H:%M:%SZ"
-
-    loglevels = {
-        "CRITICAL": logging.CRITICAL,
-        "ERROR": logging.ERROR,
-        "WARNING": logging.WARNING,
-        "INFO": logging.INFO,
-        "DEBUG": logging.DEBUG,
-        "NOTSET": logging.NOTSET,
-    }
-
-    loglevel = loglevels[logging_config["level"]]
-
-    if "logfile" in logging_config:
-        logging.basicConfig(level=loglevel, datefmt=date_format, format=log_format, filename=logging_config["logfile"])
-    else:
-        logging.basicConfig(level=loglevel, datefmt=date_format, format=log_format, stream=sys.stdout)
-
-    LOGGER.debug("Logging initialized")
-    return
+cli.add_command(config)
+cli.add_command(openapi)

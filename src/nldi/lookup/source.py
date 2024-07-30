@@ -27,7 +27,6 @@
 #
 # =================================================================
 
-import logging
 from sqlalchemy import func
 from sqlalchemy.exc import ProgrammingError
 from sqlalchemy.orm import Session
@@ -35,7 +34,7 @@ from sqlalchemy.orm import Session
 from nldi.lookup.base import BaseLookup, ProviderQueryError, ProviderItemNotFoundError
 from nldi.schemas.nldi_data import CrawlerSourceModel
 
-LOGGER = logging.getLogger(__name__)
+from .. import LOGGER
 
 
 class CrawlerSourceLookup(BaseLookup):

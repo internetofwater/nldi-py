@@ -28,7 +28,6 @@
 # =================================================================
 
 import io
-import logging
 from copy import deepcopy
 from pathlib import Path
 from typing import Union
@@ -38,10 +37,9 @@ import yaml
 from pygeoapi.models.openapi import OAPIFormat
 from pygeoapi.util import get_base_url
 
-from nldi import __version__
 from nldi.util import THISDIR, sort_sources, to_json, url_join, yaml_load
 
-LOGGER = logging.getLogger(__name__)
+from .. import LOGGER, __version__
 
 with open(THISDIR / "openapi" / "schemas.yaml", "r") as fh:
     OAS_SCHEMAS = yaml_load(fh)

@@ -30,14 +30,14 @@
 """Module containing the models for NLDI Navigation"""
 
 from enum import Enum
-import logging
-from sqlalchemy import select, text, and_, or_, case, func
-from sqlalchemy.orm import aliased
 from typing import Any
 
-from nldi.schemas.nhdplus import FlowlineVAAModel, FlowlineModel
+from sqlalchemy import and_, case, func, or_, select, text
+from sqlalchemy.orm import aliased
 
-LOGGER = logging.getLogger(__name__)
+from nldi.schemas.nhdplus import FlowlineModel, FlowlineVAAModel
+
+from .. import LOGGER
 
 COASTAL_FCODE = 56600
 
