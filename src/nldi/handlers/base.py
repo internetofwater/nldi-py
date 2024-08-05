@@ -97,6 +97,7 @@ class BaseHandler:
         """
         Validate connection to the DB.
 
+        :raises: SQL Alchemy Exception if connection fails
         :return: success/failure
         :rtype: bool
         """

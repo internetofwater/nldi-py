@@ -31,9 +31,12 @@
 
 import json
 import os
+import pathlib
 import re
+from functools import singledispatch
+from io import TextIOWrapper
 from pathlib import Path
-from typing import IO, Union
+from typing import IO, Any, Union
 
 import yaml
 from jinja2 import Environment, FileSystemLoader, select_autoescape
@@ -158,11 +161,60 @@ def stream_j2_template(template: Path, data: dict) -> str:
 
 
 def sort_sources(dict_: list) -> dict:
-    """
-    helper function to sort sources list by a dict key
-
-    :param dict_: ``list``
-
-    :returns: filtered ``dict``
-    """
+    """help sort sources list by a dict key."""
     return sorted(dict_, key=lambda d: d["crawler_source_id"])
+
+
+# region refactors
+@singledispatch
+def load_yaml(fromwhere: Any) -> dict:
+    """
+    Load a YAML file or stream into a Python dict.
+
+    This is a generic function that can handle arguments of various types.
+    See the other implementations for specific types.
+
+    * str - will convert to a Path and call the Path implementation
+    * pathlib.Path - will open the Path and pass the file handle to the TextIOWrapper implementation
+    * TextIOWrapper - will read the stream and attempt to parse it
+    """
+    raise NotImplementedError(f"Unsupported type: {type(fromwhere)}")
+
+
+@load_yaml.register
+def _(fromwhere: TextIOWrapper) -> dict:
+    # support environment variables in config
+    # https://stackoverflow.com/a/55301129
+    path_matcher = re.compile(r".*\$\{([^}^{]+)\}.*")
+
+    def path_constructor(loader, node):
+        env_var = path_matcher.match(node.value).group(1)
+        if env_var not in os.environ:
+            raise EnvironmentError(f"Undefined environment variable {env_var} in config file.")
+        return get_typed_value(os.path.expandvars(node.value))
+
+    class EnvVarLoader(yaml.SafeLoader):
+        pass
+
+    EnvVarLoader.add_implicit_resolver("!path", path_matcher, None)
+    EnvVarLoader.add_constructor("!path", path_constructor)
+
+    try:
+        _cfg = yaml.load(fromwhere, Loader=EnvVarLoader)  # noqa: S506
+    except EnvironmentError as err:
+        LOGGER.error(err)
+        return {}
+    return _cfg
+
+
+@load_yaml.register(pathlib.Path)
+def _(fromwhere: pathlib.Path) -> dict:
+    if not fromwhere.exists():
+        raise FileNotFoundError(f"File not found: {fromwhere}")
+    with fromwhere.open() as fh:
+        return load_yaml(fh)
+
+
+@load_yaml.register(str)
+def _(fromwhere: str) -> dict:
+    return load_yaml(pathlib.Path(fromwhere))

@@ -5,6 +5,7 @@
 """Configuration for running pytest"""
 
 import logging
+import pathlib
 
 import pytest
 import sqlalchemy
@@ -51,3 +52,9 @@ def nldi_db_container():
     yield db_info
 
     dc.stop()
+
+@pytest.fixture(scope="session")
+def config_yaml():
+    """Configuration file for tests."""
+    here = pathlib.Path(__file__).parent
+    return here / "data" / "sources_config.yml"
