@@ -33,7 +33,6 @@ import pathlib
 from copy import deepcopy
 from typing import Union
 
-import click
 from pygeoapi.util import get_base_url
 
 from nldi.lookup.base import ProviderQueryError
@@ -43,14 +42,14 @@ from nldi.util import yaml_load
 from . import LOGGER
 
 
-def generate_alignment(cfg_file: Union[pathlib.Path, io.TextIOWrapper]):
+def generate_alignment(cfg_file: Union[pathlib.Path, io.TextIOWrapper]) -> bool:
     """
     Align Crawler Source from the configuration file
 
-    :param cfg_file: configuration Path instance
-
-    :returns: content of the OpenAPI document in the output
-              format requested
+    :param cfg_file: Configuration Path instance
+    :type cfg_file: Union[pathlib.Path, io.TextIOWrapper]
+    :return: Success/Failure of alignment
+    :rtype: bool
     """
     if isinstance(cfg_file, pathlib.Path):
         with cfg_file.open(mode="r") as cf:
@@ -76,23 +75,3 @@ def generate_alignment(cfg_file: Union[pathlib.Path, io.TextIOWrapper]):
         return False
 
     return True
-
-
-@click.group()
-def config():
-    """Manage configuration."""
-    LOGGER.debug("SubCommand: `config` - Configuration Management")
-
-
-@config.command()
-@click.pass_context
-@click.argument("config_file", type=click.File(encoding="utf-8"))
-def align_sources(ctx, config_file):
-    """Align Crawler Source table - update the source table with the configuration file"""
-    if generate_alignment(config_file):
-        click.echo("Successfully aligned crawler source table")
-    else:
-        click.echo("Unsuccessfully aligned crawler source table")
-
-
-config.add_command(align_sources)

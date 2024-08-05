@@ -3,17 +3,26 @@
 # SPDX-License-Identifier: CC0
 #
 
-"""API entry point for NLDI services"""
+"""
+API entry point for NLDI services.
+
+This is the main entry point for the NLDI API, to be served
+via a WSGI server such as Gunicorn or Uvicorn.
+
+Typical launch command:
+
+>>> guicorn nldi.app:APP --bind hostname:port
+
+"""
 
 from typing import Dict
 
-import click
 import flask
 from flask_cors import CORS
 
 from . import LOGGER
 
-STATIC_FOLDER = "static"
+STATIC_FOLDER = "static"  ## TODO: config info like this should probably be in a config file.
 
 
 APP = flask.Flask(__name__, static_folder=STATIC_FOLDER, static_url_path=f"/{STATIC_FOLDER}")
@@ -25,8 +34,12 @@ BLUEPRINT = flask.Blueprint("nldi", __name__, static_folder=STATIC_FOLDER)
 
 @BLUEPRINT.route("/admin/ping")
 def ping() -> Dict[str, str]:
-    """Health check endpoint"""
+    """Health-check endpoint"""
     return {"PING": "ACK"}
 
+
+@BLUEPRINT.route("/favicon.ico")
+def favicon():
+    return flask.send_from_directory(STATIC_FOLDER, "favicon.ico", mimetype="image/vnd.microsoft.icon")
 
 APP.register_blueprint(BLUEPRINT, url_prefix="/api/nldi")

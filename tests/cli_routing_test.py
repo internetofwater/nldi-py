@@ -10,7 +10,7 @@ Tests "routing" to ensure that subcommands and switches are working as expected.
 """
 
 import pytest
-from nldi import cli as nldi_cmd
+from nldi.cmdline import cli as nldi_cmd
 
 
 @pytest.mark.order(5)

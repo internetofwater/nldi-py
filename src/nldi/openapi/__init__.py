@@ -32,7 +32,6 @@ from copy import deepcopy
 from pathlib import Path
 from typing import Union
 
-import click
 import yaml
 from pygeoapi.models.openapi import OAPIFormat
 from pygeoapi.util import get_base_url
@@ -485,40 +484,3 @@ def generate_openapi_document(cfg_file: Union[Path, io.TextIOWrapper], output_fo
         content = to_json(get_oas(s), pretty=pretty_print)
     return content
 
-
-@click.group()
-def openapi():
-    """OpenAPI management"""
-    pass
-
-
-@openapi.command()
-@click.pass_context
-@click.argument("config_file", type=click.File(encoding="utf-8"))
-@click.option(
-    "--format",
-    "-f",
-    "format_",
-    type=click.Choice(["json", "yaml"]),  # noqa
-    default="yaml",
-    help="Output format [json|yaml]",
-)
-@click.option(
-    "--output-file",
-    "-of",
-    type=click.File("w", encoding="utf-8"),  # noqa
-    help="Name of output file",
-)
-def generate(ctx, config_file, output_file, format_="yaml"):
-    """Generate OpenAPI Document."""
-    if config_file is None:
-        raise click.ClickException("--config/-c required")
-
-    content = generate_openapi_document(config_file, format_)
-
-    if output_file is None:
-        click.echo(content)
-    else:
-        click.echo(f"Generating {output_file.name}")
-        output_file.write(content)
-        click.echo("Done")
