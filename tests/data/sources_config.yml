@@ -8,10 +8,6 @@ server:
     user: ${NLDI_DB_USERNAME}
     password: ${NLDI_DB_PASSWORD}
 
-pygeoapi:
-  enabled: true
-  gdp_url: ${PYGEOAPI_URL}
-
 logging:
   level: ERROR
   # logfile: /tmp/nldi.log

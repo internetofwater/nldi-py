@@ -22,7 +22,16 @@ def runner():
 
 @pytest.fixture(scope="session")
 def nldi_db_container():
-    """Database connection for NLDI database."""
+    """
+    Database connection for NLDI database.
+
+    This fixture will start a Docker container with a Postgres database
+    from the named container image. That image depends on various
+    environment variables to configure the database as part of its boot
+    sequence. These are all defined using ``.with_env()`` calls here before
+    the container is started.
+
+    """
     dc = DockerContainer("ghcr.io/internetofwater/nldi-db:demo")
     dc.with_exposed_ports(5432)
     dc.with_env("POSTGRES_PASSWORD", "changeMe")
@@ -53,11 +62,45 @@ def nldi_db_container():
 
     dc.stop()
 
+
 @pytest.fixture(scope="session")
 def config_yaml():
     """Configuration file for tests."""
     here = pathlib.Path(__file__).parent
     return here / "data" / "sources_config.yml"
+
+
+@pytest.fixture(scope="session")
+def env_update():
+    """
+    Update environment variables for tests.
+
+    The current YAML parser will substitute environment variables in the
+    configuration file. If an undefined variable is encountered, it will
+    raise an exception. This fixture will provide the necessary environment
+    variables to the test environment so that the configuration file can be
+    loaded.
+
+    These values are not especially meaningful -- but provide defaults suitable
+    for testing the loading of the config file.
+
+    Note that this fixture does not modify the current environment... it is
+    just the dictionary that a test should use to update the environment prior
+    to loading the configuration file.
+
+    >>> import os
+    >>> os.environ.update(env_update)
+    >>> # now load the configuration file
+    """
+    return dict(
+        NLDI_URL="http://localhost/nldi",
+        NLDI_DB_HOST="localhost",
+        NLDI_DB_PORT="5432",
+        NLDI_DB_NAME="nldi",
+        NLDI_DB_USERNAME="nldi",
+        NLDI_DB_PASSWORD="changeMe",
+    )
+
 
 # @pytest.fixture(scope="session")
 # def provider_def(nldi_db_container, config_yaml):

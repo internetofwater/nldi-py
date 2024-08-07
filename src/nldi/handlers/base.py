@@ -24,14 +24,14 @@ class BaseHandler:
 
     DIALECT = "postgresql+psycopg2" # Default SQL dialect/driver for all handlers
 
-    def __init__(self, db_info: Dict[str, str]):
+    def __init__(self, provider_def: Dict[str, str]):
         LOGGER.debug("%s Constructor", self.__class__.__name__)
         # Read table information from database
         self.geom_field = None
         self.id_field = None
         self.table_model = None
         self.db_search_path = []
-        self._store_db_parameters(db_info)
+        self._store_db_parameters(provider_def['database'])
 
     def get(self, identifier, **kwargs):
         raise NotImplementedError()
