@@ -22,6 +22,11 @@ class FeatureHandler(BaseHandler):
     a particular source table to find a specific feature by its ID.
     """
 
+                # "name": plugin_name,
+                # "database": self.connection_def,
+                # "base_url": self.base_url,
+
+
     def __init__(self, provider_def):
         super().__init__(provider_def)
 

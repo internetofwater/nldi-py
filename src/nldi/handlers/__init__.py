@@ -6,3 +6,4 @@
 
 from .base import BaseHandler
 from .crawlersource import CrawlerSourceHandler
+from .feature import FeatureHandler

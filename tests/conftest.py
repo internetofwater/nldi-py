@@ -5,6 +5,7 @@
 """Configuration for running pytest"""
 
 import logging
+import os
 import pathlib
 
 import pytest
@@ -102,15 +103,44 @@ def env_update():
     )
 
 
-# @pytest.fixture(scope="session")
-# def provider_def(nldi_db_container, config_yaml):
-#     """Provider definition for tests."""
-#     from nldi.util import load_yaml
-#     _def = {
-#         'server': {
-#             'data': nldi_db_container,
-#         },
-#         'sources': load_yaml(config_yaml),
-#     }
+@pytest.fixture(scope="session")
+def global_config(nldi_db_container, config_yaml, env_update):
+    """
+    Provide global cofiguration definition for tests.
 
-#     return _def
+    This is a dict of general config information. It is composed of information from the
+    config file, environemnt variables, and the database connection information.
+    """
+    from nldi.util import load_yaml
+
+    env_update["NLDI_DB_HOST"] = nldi_db_container["host"]
+    os.environ.update(env_update)
+    _def = load_yaml(config_yaml)
+#    _def["database"] = nldi_db_container
+    _def['base_url'] = 'http://localhost/nldi'
+
+    return _def
+
+
+@pytest.fixture(scope="session")
+def mock_source():
+    """
+    Provide a mock source definition for tests.
+
+    This dict should match what is returned from the database when looking up
+    source with suffix 'WQP'.
+    """
+    return {
+        'crawler_source_id': 1,
+        'source_name': 'Water Quality Portal',
+        'source_suffix': 'WQP',
+        'source_uri': 'https://www.waterqualitydata.us/data/Station/search?mimeType=geojson&minactivities=1&counts=no',
+        'feature_id': 'MonitoringLocationIdentifier',
+        'feature_name': 'MonitoringLocationName',
+        'feature_uri': 'siteUrl',
+        'feature_reach': None,
+        'feature_measure': None,
+        'ingest_type': 'point',
+        'feature_type': 'varies'
+    }
+
