@@ -1,10 +1,14 @@
+#!/usr/bin/env python
+# coding: utf-8
+# SPDX-License-Identifier: CC0
+#
+
 import json
 from typing import Iterable
 
-from nldi.util import url_join
-
 from .. import LOGGER
 from ..schemas.nldi_data import FeatureSourceModel
+from ..util import url_join
 from . import BaseHandler
 from .errors import ProviderItemNotFoundError, ProviderQueryError
 

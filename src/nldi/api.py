@@ -110,7 +110,14 @@ class API:
 
         :param puglin_name: Name of plugin to load
         """
-        return load_plugin({"name": plugin_name, "database": self.connection_def, "base_url": self.base_url, **kwargs})
+        return load_plugin(
+            {
+                "name": plugin_name,
+                "database": self.connection_def,
+                "base_url": self.base_url,
+                **kwargs,
+            },
+        )
 
     @property
     def connection_def(self) -> dict:
@@ -460,9 +467,7 @@ class API:
         if identifier:
             try:
                 feature = plugin.get(identifier)
-                features = [
-                    feature,
-                ]
+                features = [feature]
             except ProviderQueryError:
                 msg = "query error (check logs)"
                 return self.get_exception(
@@ -473,8 +478,7 @@ class API:
                 return self.get_exception(
                     HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format, "NoApplicableCode", msg
                 )
-
-        else:
+        else:  # No identifier given; return all features from this source
             try:
                 features = plugin.query()
             except ProviderQueryError:

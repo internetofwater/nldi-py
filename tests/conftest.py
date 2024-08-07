@@ -58,3 +58,16 @@ def config_yaml():
     """Configuration file for tests."""
     here = pathlib.Path(__file__).parent
     return here / "data" / "sources_config.yml"
+
+# @pytest.fixture(scope="session")
+# def provider_def(nldi_db_container, config_yaml):
+#     """Provider definition for tests."""
+#     from nldi.util import load_yaml
+#     _def = {
+#         'server': {
+#             'data': nldi_db_container,
+#         },
+#         'sources': load_yaml(config_yaml),
+#     }
+
+#     return _def
