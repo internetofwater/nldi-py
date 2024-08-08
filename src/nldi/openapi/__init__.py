@@ -483,4 +483,3 @@ def generate_openapi_document(cfg_file: Union[Path, io.TextIOWrapper], output_fo
     else:
         content = to_json(get_oas(s), pretty=pretty_print)
     return content
-

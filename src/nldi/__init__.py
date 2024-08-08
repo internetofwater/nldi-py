@@ -32,3 +32,4 @@ __version__ = "0.1.0"
 import logging
 
 LOGGER = logging.getLogger(__name__)
+NAD83_SRID = 4269

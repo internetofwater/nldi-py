@@ -39,11 +39,11 @@ def test_db_container_fixture(nldi_db_container) -> None:
     assert nldi_db_container["dbname"] == "nldi"
     connection_str = DB_URL.create(
         "postgresql+psycopg2",
-        username=nldi_db_container['user'],
-        password=nldi_db_container['password'],
-        host=nldi_db_container['host'],
-        port=nldi_db_container['port'],
-        database=nldi_db_container['dbname'],
+        username=nldi_db_container["user"],
+        password=nldi_db_container["password"],
+        host=nldi_db_container["host"],
+        port=nldi_db_container["port"],
+        database=nldi_db_container["dbname"],
     )
     engine = sqlalchemy.create_engine(connection_str)
     with engine.begin() as connection:

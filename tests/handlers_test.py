@@ -6,7 +6,14 @@ import os
 
 import pytest
 from nldi import util
-from nldi.handlers import BaseHandler, CrawlerSourceHandler, FeatureHandler, FlowlineHandler
+from nldi.handlers import (
+    BaseHandler,
+    CrawlerSourceHandler,
+    FeatureHandler,
+    FlowlineHandler,
+    CatchmentHandler,
+    MainstemHandler,
+)
 from nldi.handlers.errors import ProviderItemNotFoundError
 
 
@@ -117,4 +124,34 @@ def test_handler_flowline_notfound(nldi_db_container):
     flh = FlowlineHandler({"database": nldi_db_container, "base_url": "http://localhost/nldi"})
     assert flh is not None
     with pytest.raises(ProviderItemNotFoundError):
-        feature_dict = flh.get("00")  #<< note that the identifier must be an int or something that can be cast to an int.
+        feature_dict = flh.get(
+            "00"
+        )  # << note that the identifier must be an int or something that can be cast to an int.
+
+
+@pytest.mark.order(25)
+@pytest.mark.unittest
+def test_handler_catchment_query(nldi_db_container):
+    # -89.22401470690966 42.82769689708948
+    ch = CatchmentHandler({"database": nldi_db_container, "base_url": "http://localhost/nldi"})
+    assert ch is not None
+    feature_lookup = ch.query("POINT(-89.22401470690966 42.82769689708948)", asGeoJSON=False)
+    assert feature_lookup == 13297332  # << known comid for this point
+
+    ## TODO:  Need to figure out how to test the Geo against the catchmentsp table.
+    # feature_lookup = ch.query("POINT(-89.22401470690966 42.82769689708948)", asGeoJSON=True)
+    # assert feature_lookup["type"] == "Feature"
+    # assert feature_lookup["properties"]["comid"] == 13297332
+
+
+@pytest.mark.order(26)
+@pytest.mark.unittest
+def test_handler_mainstem(nldi_db_container):
+    """
+    13294300	467897	https://geoconnex.us/ref/mainstems/467897
+    """
+    mh = MainstemHandler({"database": nldi_db_container})
+    assert mh is not None
+    feature_dict = mh.get("13294300")  # << Note that I'm using a string here... but the keys are ints
+    assert feature_dict["nhdpv2_comid"] == 13294300  # << int
+    assert feature_dict["mainstem_id"] == 467897  # << int

@@ -39,6 +39,7 @@ metadata = MetaData(schema="nhdplus")
 BaseModel = declarative_base(metadata=metadata)
 
 
+### TODO:  Question for Ben .. This table looks way different in the demo database. Is this the right table?
 class CatchmentModel(BaseModel):
     __tablename__ = "catchmentsp"
 

@@ -22,7 +22,7 @@ class BaseHandler:
     side cursor (using support class DatabaseCursor)
     """
 
-    DIALECT = "postgresql+psycopg2" # Default SQL dialect/driver for all handlers
+    DIALECT = "postgresql+psycopg2"  # Default SQL dialect/driver for all handlers
 
     def __init__(self, provider_def: Dict[str, str]):
         LOGGER.debug("%s Constructor", self.__class__.__name__)
@@ -31,7 +31,7 @@ class BaseHandler:
         self.id_field = None
         self.table_model = None
         self.db_search_path = []
-        self._store_db_parameters(provider_def['database'])
+        self._store_db_parameters(provider_def["database"])
 
     def get(self, identifier, **kwargs):
         raise NotImplementedError()
@@ -63,7 +63,7 @@ class BaseHandler:
         finally:
             session.close()
 
-    def _store_db_parameters(self, parameters:Dict[str, str]) -> None:
+    def _store_db_parameters(self, parameters: Dict[str, str]) -> None:
         self.db_user = parameters.get("user")
         self.db_host = parameters.get("host")
         self.db_port = parameters.get("port", 5432)
@@ -82,7 +82,7 @@ class BaseHandler:
         )
 
     @cached_property
-    def _engine(self) -> sqlalchemy.engine :
+    def _engine(self) -> sqlalchemy.engine:
         engine = sqlalchemy.create_engine(
             self.db_connection_string,
             connect_args={"client_encoding": "utf8", "application_name": "nldi"},

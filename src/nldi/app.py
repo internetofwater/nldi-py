@@ -42,4 +42,5 @@ def ping() -> Dict[str, str]:
 def favicon():
     return flask.send_from_directory(STATIC_FOLDER, "favicon.ico", mimetype="image/vnd.microsoft.icon")
 
+
 APP.register_blueprint(BLUEPRINT, url_prefix="/api/nldi")

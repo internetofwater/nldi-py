@@ -5,6 +5,8 @@
 
 
 from .base import BaseHandler
+from .catchment import CatchmentHandler
 from .crawlersource import CrawlerSourceHandler
 from .feature import FeatureHandler
 from .flowline import FlowlineHandler
+from .mainstem import MainstemHandler

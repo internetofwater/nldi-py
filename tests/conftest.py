@@ -116,8 +116,8 @@ def global_config(nldi_db_container, config_yaml, env_update):
     env_update["NLDI_DB_HOST"] = nldi_db_container["host"]
     os.environ.update(env_update)
     _def = load_yaml(config_yaml)
-#    _def["database"] = nldi_db_container
-    _def['base_url'] = 'http://localhost/nldi'
+    #    _def["database"] = nldi_db_container
+    _def["base_url"] = "http://localhost/nldi"
 
     return _def
 
@@ -131,16 +131,15 @@ def mock_source():
     source with suffix 'WQP'.
     """
     return {
-        'crawler_source_id': 1,
-        'source_name': 'Water Quality Portal',
-        'source_suffix': 'WQP',
-        'source_uri': 'https://www.waterqualitydata.us/data/Station/search?mimeType=geojson&minactivities=1&counts=no',
-        'feature_id': 'MonitoringLocationIdentifier',
-        'feature_name': 'MonitoringLocationName',
-        'feature_uri': 'siteUrl',
-        'feature_reach': None,
-        'feature_measure': None,
-        'ingest_type': 'point',
-        'feature_type': 'varies'
+        "crawler_source_id": 1,
+        "source_name": "Water Quality Portal",
+        "source_suffix": "WQP",
+        "source_uri": "https://www.waterqualitydata.us/data/Station/search?mimeType=geojson&minactivities=1&counts=no",
+        "feature_id": "MonitoringLocationIdentifier",
+        "feature_name": "MonitoringLocationName",
+        "feature_uri": "siteUrl",
+        "feature_reach": None,
+        "feature_measure": None,
+        "ingest_type": "point",
+        "feature_type": "varies",
     }
-
