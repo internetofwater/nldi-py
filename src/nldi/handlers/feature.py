@@ -87,8 +87,9 @@ class FeatureHandler(BaseHandler):
                 raise ProviderItemNotFoundError("Not found")
 
             LOGGER.debug(f"Returning {hits} hits")
-            for item in query.all():
-                yield self._sqlalchemy_to_feature(item)
+            # for item in query.all():
+            #     yield self._sqlalchemy_to_feature(item)
+            return (self._sqlalchemy_to_feature(item) for item in query.all())
 
     def _sqlalchemy_to_feature(self, item):
         if self.geom_field:
