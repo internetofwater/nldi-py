@@ -1,4 +1,4 @@
-# Network Linked Data Index Contribution Guidelines
+# NLDI Contribution Guidelines
 
 First, Thank you for considering a contribution. This project is
 a community resource, its success is contingent on your contributions.

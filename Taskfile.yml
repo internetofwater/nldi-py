@@ -59,9 +59,9 @@ tasks:
 #       - task: wheel
 # #       - task: docker
 
-#   doc:
-#     cmds:
-#       - sphinx-build -a -b html ./docs ./public
+  doc:
+    cmds:
+      - sphinx-build -a -b html ./docs ./public
 
 #   wheel:
 #     cmds:

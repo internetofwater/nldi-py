@@ -1,4 +1,6 @@
-CC0 1.0 Universal
+# LICENSE
+
+## CC0 1.0 Universal
 
 Statement of Purpose
 
