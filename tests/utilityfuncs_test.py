@@ -10,6 +10,7 @@ import pytest
 @pytest.mark.order(20)
 @pytest.mark.unittest
 def test_read_yaml_file(config_yaml, env_update):
+    """Standard usage: read a YAML file into a dict, if given a pathlib.Path object."""
     os.environ.update(env_update)
     cfg = util.load_yaml(config_yaml)
     sources = cfg["sources"]
@@ -23,10 +24,10 @@ def test_read_yaml_file(config_yaml, env_update):
 @pytest.mark.order(20)
 @pytest.mark.unittest
 def test_read_yaml_io(config_yaml, env_update):
+    """If we pass an IO stream or file handle..."""
     os.environ.update(env_update)
     with config_yaml.open() as fh:
         cfg = util.load_yaml(fh)
-    cfg = util.load_yaml(config_yaml)
     sources = cfg["sources"]
     assert len(sources) == 3
 
@@ -34,6 +35,7 @@ def test_read_yaml_io(config_yaml, env_update):
 @pytest.mark.order(20)
 @pytest.mark.unittest
 def test_read_yaml_strpath(config_yaml, env_update):
+    """If we pass a filename as a string..."""
     os.environ.update(env_update)
     cfg = util.load_yaml(str(config_yaml))
     sources = cfg["sources"]

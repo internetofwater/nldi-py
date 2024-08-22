@@ -65,8 +65,8 @@ def nldi_db_container():
 
 
 @pytest.fixture(scope="session")
-def config_yaml():
-    """Configuration file for tests."""
+def config_yaml() -> pathlib.Path:
+    """Sample configuration file for tests."""
     here = pathlib.Path(__file__).parent
     return here / "data" / "sources_config.yml"
 

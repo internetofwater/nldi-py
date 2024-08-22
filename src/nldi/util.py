@@ -183,10 +183,11 @@ def load_yaml(fromwhere: Any) -> dict:
 
 @load_yaml.register
 def _(fromwhere: TextIOWrapper) -> dict:
+
+    LOGGER.debug(f"Reading YAML from... {fromwhere.__class__.__name__}")
     # support environment variables in config
     # https://stackoverflow.com/a/55301129
     path_matcher = re.compile(r".*\$\{([^}^{]+)\}.*")
-
     def path_constructor(loader, node):
         env_var = path_matcher.match(node.value).group(1)
         if env_var not in os.environ:
@@ -209,6 +210,13 @@ def _(fromwhere: TextIOWrapper) -> dict:
 
 @load_yaml.register(pathlib.Path)
 def _(fromwhere: pathlib.Path) -> dict:
+    """
+    Load a YAML file into a Python dict.
+
+    This implementation opens the file and passes the file handle to the
+    TextIOWrapper implementation, which is where the real work happens.
+    """
+    LOGGER.debug(f"Reading YAML: {fromwhere.__repr__()}")
     if not fromwhere.exists():
         raise FileNotFoundError(f"File not found: {fromwhere}")
     with fromwhere.open() as fh:
@@ -217,4 +225,17 @@ def _(fromwhere: pathlib.Path) -> dict:
 
 @load_yaml.register(str)
 def _(fromwhere: str) -> dict:
+    """
+    Load a YAML file into a Python dict.
+
+    This is a convenience function that converts the string argument to a
+    Path and calls the Path implementation.
+    """
+    LOGGER.debug(f"Reading YAML: {fromwhere.__repr__()}")
     return load_yaml(pathlib.Path(fromwhere))
+
+@load_yaml.register(dict)
+def _(fromwhere: dict) -> dict:
+    """Already a dictionary... nothing to do here."""
+    #assumes that the necessary keys are present
+    return fromwhere

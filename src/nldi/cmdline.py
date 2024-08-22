@@ -42,7 +42,7 @@ implemented with ``click``.
 import click
 
 from . import LOGGER, __version__
-from .config import generate_alignment
+from .config import align_crawler_sources
 from .openapi import generate_openapi_document
 
 
@@ -64,7 +64,7 @@ def config():
 @click.argument("config_file", type=click.File(encoding="utf-8"))
 def align_sources(ctx, config_file):
     """Align Crawler Source table - update the source table with the configuration file"""
-    if generate_alignment(config_file):
+    if align_crawler_sources(config_file):
         click.echo("Successfully aligned crawler source table")
     else:
         click.echo("Unsuccessfully aligned crawler source table")
