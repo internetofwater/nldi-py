@@ -183,11 +183,11 @@ def load_yaml(fromwhere: Any) -> dict:
 
 @load_yaml.register
 def _(fromwhere: TextIOWrapper) -> dict:
-
     LOGGER.debug(f"Reading YAML from... {fromwhere.__class__.__name__}")
     # support environment variables in config
     # https://stackoverflow.com/a/55301129
     path_matcher = re.compile(r".*\$\{([^}^{]+)\}.*")
+
     def path_constructor(loader, node):
         env_var = path_matcher.match(node.value).group(1)
         if env_var not in os.environ:
@@ -234,8 +234,9 @@ def _(fromwhere: str) -> dict:
     LOGGER.debug(f"Reading YAML: {fromwhere.__repr__()}")
     return load_yaml(pathlib.Path(fromwhere))
 
+
 @load_yaml.register(dict)
 def _(fromwhere: dict) -> dict:
     """Already a dictionary... nothing to do here."""
-    #assumes that the necessary keys are present
+    # assumes that the necessary keys are present
     return fromwhere

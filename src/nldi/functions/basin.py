@@ -61,7 +61,10 @@ def basin_query(comid: int, simplify: bool) -> Select:
         select([fl_vaa.comid, fl_vaa.hydroseq, fl_vaa.startflag]).where(
             and_(
                 (nav.c.startflag != 1),
-                or_((fl_vaa.dnhydroseq == nav.c.hydroseq), and_((fl_vaa.dnminorhyd != 0), (fl_vaa.dnminorhyd == nav.c.hydroseq))),
+                or_(
+                    (fl_vaa.dnhydroseq == nav.c.hydroseq),
+                    and_((fl_vaa.dnminorhyd != 0), (fl_vaa.dnminorhyd == nav.c.hydroseq)),
+                ),
             )
         )
     )
@@ -77,7 +80,7 @@ def basin_query(comid: int, simplify: bool) -> Select:
     query = select([_geom]).select_from(nav_basin).join(CatchmentModel, nav_basin.c.comid == CatchmentModel.featureid)
 
     return query.params(comid=comid)
-    
+
 
 def get_basin(comid: int, simplified: bool) -> Any:
     nav = (

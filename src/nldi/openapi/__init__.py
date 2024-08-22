@@ -36,18 +36,12 @@ import yaml
 from pygeoapi.models.openapi import OAPIFormat
 from pygeoapi.util import get_base_url
 
-from nldi.util import THISDIR, sort_sources, to_json, url_join, yaml_load
-
 from .. import LOGGER, __version__
+from ..util import THISDIR, load_yaml, sort_sources, to_json, url_join
 
-with open(THISDIR / "openapi" / "schemas.yaml", "r") as fh:
-    OAS_SCHEMAS = yaml_load(fh)
-
-with open(THISDIR / "openapi" / "parameters.yaml", "r") as fh:
-    OAS_PARAMETERS = yaml_load(fh)
-
-with open(THISDIR / "openapi" / "responses.yaml", "r") as fh:
-    OAS_RESPONSES = yaml_load(fh)
+OAS_SCHEMAS = load_yaml(THISDIR / "openapi" / "schemas.yaml")
+OAS_PARAMETERS = load_yaml(THISDIR / "openapi" / "parameters.yaml")
+OAS_RESPONSES = load_yaml(THISDIR / "openapi" / "responses.yaml")
 
 RESPONSES = {
     "400": {"$ref": "#/components/responses/400"},
@@ -57,7 +51,7 @@ RESPONSES = {
 }
 
 
-def get_oas(cfg) -> dict:
+def get_oas(cfg: dict) -> dict:
     """
     Generate an OpenAPI 3.0 Document.
 
@@ -471,11 +465,7 @@ def generate_openapi_document(cfg_file: Union[Path, io.TextIOWrapper], output_fo
     :returns: content of the OpenAPI document in the output
               format requested
     """
-    if isinstance(cfg_file, Path):
-        with cfg_file.open(mode="r") as cf:
-            s = yaml_load(cf)
-    else:
-        s = yaml_load(cfg_file)
+    s = load_yaml(cfg_file)
     pretty_print = s["server"].get("pretty_print", False)
 
     if output_format == "yaml":

@@ -61,8 +61,8 @@ def config():
 
 @config.command()
 @click.pass_context
-@click.argument("config_file", type=click.File(encoding="utf-8"))
-def align_sources(ctx, config_file):
+@click.argument("config_file", type=click.File(encoding="utf-8"))  #              TODO: click.File vs click.Path
+def align_sources(ctx, config_file):  #                                           TODO: do we need to pass context?
     """Align Crawler Source table - update the source table with the configuration file"""
     if align_crawler_sources(config_file):
         click.echo("Successfully aligned crawler source table")

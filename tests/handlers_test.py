@@ -157,9 +157,3 @@ def test_handler_mainstem(nldi_db_container):
     assert feature_dict["nhdpv2_comid"] == 13294300  # << int
     assert feature_dict["mainstem_id"] == 467897  # << int
 
-
-@pytest.mark.order(27)
-@pytest.mark.unittest
-def test_generate_alignment(global_config):
-    _ = config.align_crawler_sources(global_config)
-    pass

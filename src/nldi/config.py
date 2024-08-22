@@ -33,7 +33,7 @@ import pathlib
 from copy import deepcopy
 from typing import Union
 
-from pygeoapi.util import get_base_url
+from pygeoapi.util import get_base_url  ## TODO: can we drop this dependency?
 
 from . import LOGGER, util
 from .lookup.base import ProviderQueryError
