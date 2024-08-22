@@ -33,16 +33,14 @@ from flask import Blueprint, Flask, Response, request, send_from_directory, stre
 from flask_cors import CORS
 from jinja2.environment import TemplateStream
 
-from nldi.api import API
-from nldi.util import yaml_load
-
-from . import LOGGER
+from . import LOGGER, util
+from .api import API
 
 if "NLDI_CONFIG" not in os.environ:
     raise RuntimeError("NLDI_CONFIG environment variable not set")
 
 with open(os.environ.get("NLDI_CONFIG"), encoding="utf8") as fh:
-    CONFIG = yaml_load(fh)
+    CONFIG = util.load_yaml(fh)
 
 STATIC_FOLDER = "static"
 if "templates" in CONFIG["server"]:
@@ -100,7 +98,7 @@ def openapi():
     """
     with open(os.environ.get("NLDI_OPENAPI"), encoding="utf8") as ff:
         if os.environ.get("NLDI_OPENAPI").endswith((".yaml", ".yml")):
-            openapi_ = yaml_load(ff)
+            openapi_ = util.load_yaml(ff)
         else:  # JSON string, do not transform
             openapi_ = ff.read()
 

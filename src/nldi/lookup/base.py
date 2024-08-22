@@ -35,13 +35,13 @@ from sqlalchemy import create_engine, func
 from sqlalchemy.engine import URL
 from sqlalchemy.orm import sessionmaker
 
-from nldi.lookup import _ENGINE_STORE
-
 from .. import LOGGER
+from . import _ENGINE_STORE
 
 
 class BaseLookup:
-    """Postgresql database based on psycopg2 using sync approach and server
+    """
+    Postgresql database based on psycopg2 using sync approach and server
     side cursor (using support class DatabaseCursor)
     """
 

@@ -82,12 +82,6 @@ class API:
     _pygeoapi_lookup = None
 
     def __init__(self, cfg):
-        """
-        Constructor
-
-        :param cfg: cfg dict
-        :returns: `nldi.API` instance
-        """
         self.config = cfg
         self.api_headers = HEADERS
         self.base_url = get_base_url(self.config)

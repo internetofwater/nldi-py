@@ -156,4 +156,3 @@ def test_handler_mainstem(nldi_db_container):
     feature_dict = mh.get("13294300")  # << Note that I'm using a string here... but the keys are ints
     assert feature_dict["nhdpv2_comid"] == 13294300  # << int
     assert feature_dict["mainstem_id"] == 467897  # << int
-

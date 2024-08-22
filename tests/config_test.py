@@ -23,7 +23,7 @@ def test_generate_alignment(global_config):
 @pytest.mark.unittest
 def test_generate_openapi_document(global_config):
     c = openapi.get_oas(global_config)
-    ## Just check that the main parts of the dict are present....   
+    ## Just check that the main parts of the dict are present....
     assert c["openapi"] == "3.0.1"
     assert c["info"]["title"] is not None
     assert c["info"]["description"] is not None
