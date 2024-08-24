@@ -34,7 +34,7 @@ from flask_cors import CORS
 from jinja2.environment import TemplateStream
 
 from . import LOGGER, util
-from .api import API
+from .orig_api import API
 
 if "NLDI_CONFIG" not in os.environ:
     raise RuntimeError("NLDI_CONFIG environment variable not set")

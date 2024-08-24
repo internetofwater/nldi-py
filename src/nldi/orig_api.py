@@ -46,7 +46,7 @@ from nldi.lookup.source import CrawlerSourceLookup
 from nldi.plugin import load_plugin
 from nldi.util import TEMPLATES, sort_sources, stream_j2_template, to_json, url_join
 
-from . import LOGGER
+from . import LOGGER, log
 
 HEADERS = {"force_type": "application/json", "X-Powered-By": f"nldi {__version__}"}
 FORMAT_TYPES.move_to_end(F_JSON, last=False)
@@ -94,7 +94,8 @@ class API:
 
         self.pretty_print = self.config["server"]["pretty_print"]
 
-        setup_logger(cfg["logging"])
+        log.initialize(LOGGER, level=cfg['logging']['level'])
+        # setup_logger(cfg["logging"])
 
         self.func = Functions(self.connection_def)
 

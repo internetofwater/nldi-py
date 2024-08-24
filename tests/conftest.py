@@ -70,7 +70,16 @@ def config_yaml() -> pathlib.Path:
     here = pathlib.Path(__file__).parent
     return here / "data" / "sources_config.yml"
 
-
+@pytest.fixture(scope="session")
+def dummy_db_config():
+    return {
+        "user": "nldi",
+        "password": "changeMe",
+        "host": "localhost",
+        "port": 5432,
+        "dbname": "nldi",
+    }
+    
 @pytest.fixture(scope="session")
 def env_update():
     """
