@@ -27,57 +27,43 @@
 #
 # =================================================================
 
-FROM ubuntu:jammy
+FROM python:3.11-alpine as build
 
 LABEL maintainer="Benjamin Webb <bwebb@lincolninst.edu>"
-
-ARG ADD_DEB_PACKAGES="\
-  python3-gdal \
-  python3-psycopg2 \
-  python3-rasterio"
-
+LABEL description="Docker image for the NLDI API"
 # ENV settings
 ENV TZ=${TZ} \
   LANG=${LANG} \
-  DEBIAN_FRONTEND="noninteractive" \
-  DEB_BUILD_DEPS="\
-  curl \
-  gcc \
-  unzip" \
-  DEB_PACKAGES="\
-  locales \
-  tzdata \
-  gunicorn \
-  python3-dateutil \
-  python3-flask \
-  python3-flask-cors \
-  python3-gevent \
-  python3-greenlet \
-  python3-pip \
-  python3-tz \
-  python3-unicodecsv \
-  python3-yaml \
-  ${ADD_DEB_PACKAGES}"
-
-
-ADD . /nldi
-WORKDIR /nldi
+  PIP_NO_CACHE_DIR=1
 
 # Install operating system dependencies
 RUN \
-  apt-get update -y \
-  && apt-get upgrade -y \
-  && apt-get --no-install-recommends install -y ${DEB_PACKAGES} ${DEB_BUILD_DEPS}  \
-  # Install nldi
-  && pip3 install --no-deps https://github.com/geopython/pygeoapi/archive/refs/heads/master.zip \
-  && pip3 install -r requirements-docker.txt \
-  && pip3 install -e . \
-  # Cleanup
-  && apt-get remove --purge -y ${DEB_BUILD_DEPS} \
-  && apt-get clean \
-  && apt autoremove -y  \
-  && rm -rf /var/lib/apt/lists/* \
-  # Set default config and entrypoint for Docker Image
+  apk update && apk add curl build-base libpq-dev proj-util proj-dev gdal-dev geos-dev
+
+COPY ./requirements-docker.txt ./requirements.txt ./req/
+
+
+RUN pip install --no-cache-dir -r ./req/requirements.txt
+RUN pip install --no-cache-dir -r ./req/requirements-docker.txt
+
+
+
+FROM python:3.11-alpine as nldi
+RUN apk update && apk add --no-cache gcompat libstdc++ curl proj-util libpq-dev
+ADD . /nldi
+WORKDIR /nldi
+COPY --from=build /usr/local/lib/python3.11/site-packages/ /usr/local/lib/python3.11/site-packages/
+COPY --from=build /usr/lib/libgdal.so.35 /usr/lib/libgeos.so.3.12.2 /usr/lib/libproj.so.25 /usr/lib/libgeos_c.so.1.18.2 /usr/lib/
+COPY --from=build /usr/local/bin/pygeoapi /usr/local/bin/gunicorn /usr/local/bin/
+
+RUN \
+  ln -s /usr/lib/libgdal.so.35 /usr/lib/libgdal.so \
+  && ln -s /usr/lib/libgeos.so.3.12.2 /usr/lib/libgeos.so \
+#  && ln -s /usr/lib/libproj.so.25 /usr/lib/libproj.so \
+  && ln -s /usr/lib/libgeos_c.so.1.18.2 /usr/lib/libgeos_c.so.1 \
+  && ln -s /usr/lib/libgeos_c.so.1 /usr/lib/libgeos_c.so
+
+RUN pip install -e . \
   && cp /nldi/docker/default.source.yml /nldi/local.source.yml \
   && cp /nldi/docker/pygeoapi.config.yml /nldi/pygeoapi.config.yml \
   && cp /nldi/docker/entrypoint.sh /entrypoint.sh

@@ -29,6 +29,7 @@
 
 from flask import (Blueprint, Flask, request,
                    stream_with_context, Response, send_from_directory)
+from flask_cors import CORS
 from jinja2.environment import TemplateStream
 import logging
 import os
@@ -52,6 +53,7 @@ if 'templates' in CONFIG['server']:
 
 APP = Flask(__name__, static_folder=STATIC_FOLDER, static_url_path='/static')
 APP.url_map.strict_slashes = False
+CORS(APP)
 BLUEPRINT = Blueprint('nldi', __name__, static_folder=STATIC_FOLDER)
 
 API_ = API(CONFIG)
@@ -231,4 +233,4 @@ try:
 except KeyError:
     LOGGER.info('Not including pygeoapi templates')
 
-APP.register_blueprint(BLUEPRINT)
+APP.register_blueprint(BLUEPRINT, url_prefix='/api/nldi')
