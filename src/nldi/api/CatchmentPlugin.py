@@ -1,10 +1,12 @@
 from contextlib import contextmanager
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Union
 
+
+from geoalchemy2 import WKTElement
 import sqlalchemy
 from sqlalchemy.engine import URL as DB_URL
 
-from .. import LOGGER, util
+from .. import LOGGER, util, NAD83_SRID
 from ..schemas.nhdplus import CatchmentModel
 from .BasePlugin import APIPlugin
 
@@ -18,7 +20,7 @@ class CatchmentPlugin(APIPlugin):
 
     @property
     def relative_url(self):
-        return util.url_join(self.base_url, "linked-data/comid")
+        return util.url_join(self.base_url, "linked-data", "comid")
 
     def get_by_id(self, id: str) -> Dict[str, Any]:
         LOGGER.debug(f"GET Catchment for: {id}")
@@ -46,26 +48,26 @@ class CatchmentPlugin(APIPlugin):
         """
         LOGGER.debug(f"Fetching Catchment COMID by coordinates: {coords=}")
         with self.session() as session:
-            q = self.query(session)
+            geom = sqlalchemy.func.ST_AsGeoJSON(CatchmentModel.the_geom).label("geojson")
             # Retrieve data from database as feature
             point = WKTElement(coords, srid=NAD83_SRID)
-            intersects = func.ST_Intersects(CatchmentModel.the_geom, point)
-            result = q.filter(intersects).first()
-            if result is None:
+            LOGGER.debug(f"Using this point for selection: {point}")
+            intersects = sqlalchemy.func.ST_Intersects(CatchmentModel.the_geom, point)
+            r = session.query(CatchmentModel).where(intersects).first()
+            if r is None:
                 raise KeyError
-
-        LOGGER.debug(f"Intersection with {result.featureid}")
+        LOGGER.info(f"Searching for Catchment under {coords}: Intersection with comid={r.featureid}")
         if as_feature:
-            return self._sqlalchemy_to_feature(result)
+            return self._sqlalchemy_to_feature(r)
         else:
-            return result.featureid
+            return r.featureid
 
     def _sqlalchemy_to_feature(self, item):
         navigation = url_join(self.relative_url, item.featureid, "navigation")
 
         return {
             "type": "Feature",
-            "geometry": item.geom,
+            "geometry": item.geojson,
             ##NOTE: this depends on the initial query returning ST_AsGeoJSON(the_geom) as geom.  See
             ##      the query() method inherited from BasePlugin.
             "properties": {

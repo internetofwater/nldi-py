@@ -10,25 +10,10 @@ from typing import Dict, List, Tuple
 import flask
 from flask_cors import CORS
 from pygeoapi.util import render_j2_template  ##TODO: can we drop this dependency? Need to figure out templating
-
+from nldi.util import stream_j2_template
 from . import LOGGER, __version__, log, util
 from .config import Configuration
 from .api.main import API
-
-
-def update_headers(r: flask.Response) -> flask.Response:
-    """
-    Create a Flask Response object and update matching headers.
-    :param result: The result of the API call.
-                   This should be a tuple of (headers, status, content).
-    :returns: A Response instance.
-    """  # noqa: D205
-    ## The following is a dictionary of headers that will be added to all responses:
-    _RESPONSE_HEADERS = {  # noqa: N806
-        "X-Powered-By": f"nldi {__version__}"
-    }
-    r.headers.update(_RESPONSE_HEADERS)
-    return r
 
 
 # region:: Main Flask App
@@ -36,25 +21,40 @@ APP = flask.Flask(__name__)
 if APP is None:
     raise RuntimeError("NLDI API Server >> Failed to initialize Flask app")
 
+@APP.before_request
+def log_incoming_request() -> None:
+    """Simple middleware function to log requests."""
+    LOGGER.debug(f"{flask.request.method} {flask.request.url}")
+
+    ## Sets up a callback to update headers after the request is processed.
+    @flask.after_this_request
+    def update_headers(r: flask.Response) -> flask.Response:
+        """Simple middlware function to update response headers.    """
+        r.headers.update({
+            "X-Powered-By": f"nldi {__version__}",
+        })
+        return r
+
 log.initialize(LOGGER, level="DEBUG")
 ##TODO: The log level  should be a configurable option, perhaps set with -V or --verbose switch.
 
 ## Loading CONFIG here, after loggers and whatnot are set up.
+if "NLDI_CONFIG" not in os.environ:
+    raise RuntimeError("NLDI_CONFIG environment variable not set")
 CONFIG = Configuration(os.environ.get("NLDI_CONFIG"))
 
 LOGGER.info(f"NLDI v{__version__} API Server >> Starting Up")
 log.versions(logger=LOGGER)
 APP.url_map.strict_slashes = False
 CORS(APP)
+
+
 NLDI_API = API(globalconfig=CONFIG)
-
-
 ROOT = flask.Blueprint("nldi", __name__)
 
 
 @ROOT.route("/")
 def home() -> flask.Response:
-    LOGGER.debug(f"{flask.request.method} {flask.request.url}")
     content = {
         "title": CONFIG["metadata"]["identification"]["title"],
         "description": CONFIG["metadata"]["identification"]["description"],
@@ -63,28 +63,27 @@ def home() -> flask.Response:
                 "rel": "data",
                 "type": "application/json",
                 "title": "Sources",
-                "href": f"{CONFIG['base_url']}linked-data",
+                "href": util.url_join(CONFIG['base_url'], "linked-data"),
             },
             {
                 "rel": "service-desc",
                 "type": "text/html",
                 "title": "The OpenAPI definition as HTML",
-                "href": f"{CONFIG['base_url']}openapi?f=html",
+                "href": util.url_join(CONFIG['base_url'] , "openapi?f=html"),
             },
             {
                 "rel": "service-desc",
                 "type": "application/vnd.oai.openapi+json;version=3.0",
                 "title": "The OpenAPI definition as JSON",
-                "href": f"{CONFIG['base_url']}openapi?f=json",
+                "href": util.url_join(CONFIG['base_url'], "openapi?f=json"),
             },
         ],
     }
-    return update_headers(flask.jsonify(content))
+    return flask.jsonify(content)
 
 
 @ROOT.route("/favicon.ico")
 def favicon():
-    LOGGER.debug(f"{flask.request.method} {flask.request.url}")
     return flask.send_from_directory("./static/", "favicon.ico", mimetype="image/vnd.microsoft.icon")
 
 
@@ -97,64 +96,60 @@ def openapi_spec() -> Tuple[dict, int, str]:
     :type request: _type_
     """
     global CONFIG
-    LOGGER.debug(f"{flask.request.method} {flask.request.url}")
-
     if requested_format := flask.request.args.get("f", "html") == "html":
         if flask.request.args.get("ui") == "redoc":
             template = "openapi/redoc.html"
         else:
             template = "openapi/swagger.html"
-        data = {"openapi-document-path": f"/openapi"}  ##TODO:  Move away from hard-coded path.
+        data = {"openapi-document-path": f"openapi"} ##NOTE: intentionally using relative path here.
 
         content = render_j2_template(CONFIG, template, data)
-        return update_headers(
-            flask.Response(headers={"Content-Type": "text/html"}, status=http.HTTPStatus.OK, response=content)
-        )
+        return flask.Response(
+            headers={"Content-Type": "text/html"},
+            status=http.HTTPStatus.OK,
+            response=content,
+            )
     else:
         r = flask.jsonify(NLDI_API.openapi_json)
         r.headers["Content-Type"] = "application/vnd.oai.openapi+json;version=3.0"  # noqa
-        return update_headers(r)
+        return r
 
 
 @ROOT.route("/linked-data")
 def sources() -> flask.Response:
     """
-    Linked Data Sources endpoint
+    Linked Data Sources endpoint.
+
+    This endpoint produces a list of available sources.
 
     :returns: HTTP response
     """
-    LOGGER.debug(f"{flask.request.method} {flask.request.url}")
-
     content = [
         {
             "source": "comid",
             "sourceName": "NHDPlus comid",
-            "features": util.url_join(CONFIG["base_url"], "linked-data/comid/position"),
+            "features": util.url_join(CONFIG["base_url"], "linked-data",  "comid",  "position"),
         }
-    ]
+    ] ## This source is hard-coded -- should always be available.  Other sources are loaded from the source table.
     for s in NLDI_API.sources.get_all():
         content.append(
             {
                 "source": s["source_suffix"],
                 "sourceName": s["source_name"],
-                "features": util.url_join(
-                    CONFIG["base_url"], f"linked-data/{s["source_suffix"].lower()}", allow_fragments=True
-                ),
+                "features": util.url_join(CONFIG["base_url"], "linked-data", s["source_suffix"].lower()),
             }
         )
-    return update_headers(flask.jsonify(content))
+    return flask.jsonify(content)
 
 @ROOT.route("/linked-data/hydrolocation")
 def hydrolocation():
-    return update_headers(API_.get_hydrolocation(request))
+    return API_.get_hydrolocation(request)
 
 
 @ROOT.route("/linked-data/comid/<int:comid>")
 def get_flowline_by_comid(comid=None):
-    LOGGER.debug(f"{flask.request.method} {flask.request.url}")
     if "FlowLine" not in NLDI_API.plugins:
         from .api import FlowlinePlugin  # noqa: I001
-
         if NLDI_API.register_plugin(FlowlinePlugin("FlowLine")):
             LOGGER.debug("Loaded FlowLine plugin")
         else:
@@ -165,11 +160,11 @@ def get_flowline_by_comid(comid=None):
     except KeyError:
         LOGGER.info(f"COMID {comid} not found; returning 404")
         return flask.Response(status=http.HTTPStatus.NOT_FOUND)
-    return update_headers(flask.jsonify(r))
+    return flask.jsonify(r)
 
 @ROOT.route("/linked-data/comid/position")
 def get_flowline_by_position():
-    LOGGER.debug(f"{flask.request.method} {flask.request.url}")
+    ## TODO:  Refactor all this plugin loading into a single function for re-use elsewhere.
     if "FlowLine" not in NLDI_API.plugins:
         from .api import FlowlinePlugin # noqa: I001
         if NLDI_API.register_plugin(FlowlinePlugin("FlowLine")):
@@ -183,21 +178,31 @@ def get_flowline_by_position():
         if NLDI_API.register_plugin(CatchmentPlugin("Catchment")):
             LOGGER.debug("Loaded Catchment plugin")
         else:
-            LOGGER.error("Failed to register FlowlinePlugin")
-            raise RuntimeError("Failed to register FlowlinePlugin")
-    try:
-        coords = flask.request.params["coords"]
-    except KeyError:
+            LOGGER.error("Failed to register CatchmentPlugin")
+            raise RuntimeError("Failed to register CatchmentPlugin")
+
+    if (coords := flask.request.args.get("coords")) is None:
         LOGGER.error("No coordinates provided")
         return flask.Response(status=http.HTTPStatus.BAD_REQUEST, response="No coordinates provided")
 
     try:
-        r = NLDI_API.plugins["FlowLine"].get(comid)
         comid = NLDI_API.plugins["Catchment"].get_by_coords(coords)
     except KeyError:
         LOGGER.info(f"Unable to find COMID for coordinates {coords}; returning 404")
         return flask.Response(status=http.HTTPStatus.NOT_FOUND)
 
-    return update_headers(flask.jsonify(r))
+    try:
+        flowline_feature = NLDI_API.plugins["FlowLine"].get(comid)
+    except KeyError:
+        LOGGER.info(f"COMID {comid} not found; returning 404")
+        return flask.Response(status=http.HTTPStatus.NOT_FOUND)
 
-APP.register_blueprint(ROOT)
+
+    content = stream_j2_template("FeatureCollection.j2", [flowline_feature])
+    return flask.Response(
+        headers={"Content-Type": "application/json"},
+        status=http.HTTPStatus.OK,
+        response=content,
+    )
+
+APP.register_blueprint(ROOT, url_prefix="/api/nldi")

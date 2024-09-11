@@ -111,7 +111,7 @@ class Configuration(UserDict):
                     ENV[k] = v
 
         self.data = util.load_yaml(cfg_src)
-        self.data["base_url"] = utils.url_join(self.data["server"]["url"], "")
+        self.data["base_url"] = util.url_join(self.data["server"]["url"], "")
 
         if isinstance(cfg_src, io.TextIOWrapper):
             self._config_src = "<stream>"
