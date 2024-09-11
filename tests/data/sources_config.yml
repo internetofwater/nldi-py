@@ -12,6 +12,8 @@ logging:
   level: ERROR
   logfile: /tmp/nldi.log
 
+pygeoapi_url: https://labs.waterdata.usgs.gov/api/nldi/pygeoapi
+
 metadata:
   identification:
     title: Network Linked Data Index API - Python

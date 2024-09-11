@@ -13,7 +13,7 @@ import sqlalchemy
 from click.testing import CliRunner
 from testcontainers.core.container import DockerContainer
 from testcontainers.core.waiting_utils import wait_for_logs
-
+os.environ.update({"NLDI_CONFIG": "tests/data/sources_config.yml"})
 
 @pytest.fixture
 def runner():
@@ -79,7 +79,7 @@ def dummy_db_config():
         "port": 5432,
         "dbname": "nldi",
     }
-    
+
 @pytest.fixture(scope="session")
 def env_update():
     """

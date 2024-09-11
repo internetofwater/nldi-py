@@ -1,31 +1,36 @@
-#!/usr/bin/env python
-# coding: utf-8
-# SPDX-License-Identifier: CC0
-#
+from contextlib import contextmanager
+from typing import Any, Dict, List
 
-from typing import Union
+import sqlalchemy
+from sqlalchemy.engine import URL as DB_URL
 
-import shapely
-from geoalchemy2.elements import WKTElement
-from geoalchemy2.shape import to_shape
-from sqlalchemy import func
-
-from .. import LOGGER, NAD83_SRID
+from .. import LOGGER, util
 from ..schemas.nhdplus import CatchmentModel
-from ..util import url_join
-from . import BaseHandler
-from .errors import ProviderItemNotFoundError
+from .BasePlugin import APIPlugin
 
 
-class CatchmentHandler(BaseHandler):
-    def __init__(self, provider_def):
-        super().__init__(provider_def)
-        self.base_url = provider_def["base_url"]
-        self.relative_url = url_join(self.base_url, "linked-data/comid")
-        self.id_field = "featureid"
+class CatchmentPlugin(APIPlugin):
+    def __init__(self, name):
+        super().__init__(name)
         self.table_model = CatchmentModel
+        self.geom_field = CatchmentModel.the_geom
+        self.id_field = CatchmentModel.featureid
 
-    def query(self, coords: str, asGeoJSON: bool = False) -> Union[dict, int]:
+    @property
+    def relative_url(self):
+        return util.url_join(self.base_url, "linked-data/comid")
+
+    def get_by_id(self, id: str) -> Dict[str, Any]:
+        LOGGER.debug(f"GET Catchment for: {id}")
+        with self.session() as session:
+            # Retrieve data from database as feature
+            q = self.query(session)
+            item = q.filter(self.id_field == id).first()
+            if item is None:
+                raise KeyError(f"No such source: featureid={id}.")
+        return self._sqlalchemy_to_feature(item)
+
+    def get_by_coords(self, coords: str, as_feature: bool = False) -> Union[dict, int]:
         """
         Perform a spatial query against the nhdplus/catchmentsp table.
 
@@ -39,39 +44,30 @@ class CatchmentHandler(BaseHandler):
         :param asGeoJSON: return data as GeoJSON feature (default: False)
         :returns: dict of 0..n GeoJSON features (if asGeoJSON is True) else the ``featureid`` of the matching catchment.
         """
-        LOGGER.debug(f"{self.__class__.__name__} fetching comid by coordinates: {coords=}")
+        LOGGER.debug(f"Fetching Catchment COMID by coordinates: {coords=}")
         with self.session() as session:
+            q = self.query(session)
             # Retrieve data from database as feature
             point = WKTElement(coords, srid=NAD83_SRID)
             intersects = func.ST_Intersects(CatchmentModel.the_geom, point)
-            q = self.query(session)
             result = q.filter(intersects).first()
-
             if result is None:
-                raise ProviderItemNotFoundError(f"No comid found for: {coords=}.")
+                raise KeyError
 
-            LOGGER.debug(f"Intersection with {result.featureid}")
-            if asGeoJSON:
-                return self._sqlalchemy_to_feature(result)
-            else:
-                return result.featureid
+        LOGGER.debug(f"Intersection with {result.featureid}")
+        if as_feature:
+            return self._sqlalchemy_to_feature(result)
+        else:
+            return result.featureid
 
     def _sqlalchemy_to_feature(self, item):
-        try:
-            shapely_geom = to_shape(item.the_geom)
-            geojson_geom = shapely.geometry.mapping(
-                shapely_geom
-            )  ## TODO: __geo_interface__ instead?  Avoids an import.
-            geometry = geojson_geom
-        except Exception as e:
-            LOGGER.error(f"Error converting geometry to GeoJSON: {e}")
-            geometry = None
-
         navigation = url_join(self.relative_url, item.featureid, "navigation")
 
         return {
             "type": "Feature",
-            "geometry": geometry,
+            "geometry": item.geom,
+            ##NOTE: this depends on the initial query returning ST_AsGeoJSON(the_geom) as geom.  See
+            ##      the query() method inherited from BasePlugin.
             "properties": {
                 "identifier": item.featureid,
                 "source": "comid",

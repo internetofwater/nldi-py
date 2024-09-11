@@ -1,0 +1,497 @@
+---
+"400":
+  description: Bad Request
+  content:
+    "*/*":
+      schema:
+        type: object
+        properties:
+          cause:
+            type: object
+            properties:
+              stackTrace:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    classLoaderName:
+                      type: string
+                    moduleName:
+                      type: string
+                    moduleVersion:
+                      type: string
+                    methodName:
+                      type: string
+                    fileName:
+                      type: string
+                    lineNumber:
+                      type: integer
+                      format: int32
+                    className:
+                      type: string
+                    nativeMethod:
+                      type: boolean
+              message:
+                type: string
+              suppressed:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    stackTrace:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          classLoaderName:
+                            type: string
+                          moduleName:
+                            type: string
+                          moduleVersion:
+                            type: string
+                          methodName:
+                            type: string
+                          fileName:
+                            type: string
+                          lineNumber:
+                            type: integer
+                            format: int32
+                          className:
+                            type: string
+                          nativeMethod:
+                            type: boolean
+                    message:
+                      type: string
+                    localizedMessage:
+                      type: string
+              localizedMessage:
+                type: string
+          stackTrace:
+            type: array
+            items:
+              type: object
+              properties:
+                classLoaderName:
+                  type: string
+                moduleName:
+                  type: string
+                moduleVersion:
+                  type: string
+                methodName:
+                  type: string
+                fileName:
+                  type: string
+                lineNumber:
+                  type: integer
+                  format: int32
+                className:
+                  type: string
+                nativeMethod:
+                  type: boolean
+          message:
+            type: string
+          suppressed:
+            type: array
+            items:
+              type: object
+              properties:
+                stackTrace:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      classLoaderName:
+                        type: string
+                      moduleName:
+                        type: string
+                      moduleVersion:
+                        type: string
+                      methodName:
+                        type: string
+                      fileName:
+                        type: string
+                      lineNumber:
+                        type: integer
+                        format: int32
+                      className:
+                        type: string
+                      nativeMethod:
+                        type: boolean
+                message:
+                  type: string
+                localizedMessage:
+                  type: string
+          localizedMessage:
+            type: string
+"404":
+  description: Not Found
+  content:
+    "*/*":
+      schema:
+        type: object
+        properties:
+          cause:
+            type: object
+            properties:
+              stackTrace:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    classLoaderName:
+                      type: string
+                    moduleName:
+                      type: string
+                    moduleVersion:
+                      type: string
+                    methodName:
+                      type: string
+                    fileName:
+                      type: string
+                    lineNumber:
+                      type: integer
+                      format: int32
+                    className:
+                      type: string
+                    nativeMethod:
+                      type: boolean
+              message:
+                type: string
+              suppressed:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    stackTrace:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          classLoaderName:
+                            type: string
+                          moduleName:
+                            type: string
+                          moduleVersion:
+                            type: string
+                          methodName:
+                            type: string
+                          fileName:
+                            type: string
+                          lineNumber:
+                            type: integer
+                            format: int32
+                          className:
+                            type: string
+                          nativeMethod:
+                            type: boolean
+                    message:
+                      type: string
+                    localizedMessage:
+                      type: string
+              localizedMessage:
+                type: string
+          stackTrace:
+            type: array
+            items:
+              type: object
+              properties:
+                classLoaderName:
+                  type: string
+                moduleName:
+                  type: string
+                moduleVersion:
+                  type: string
+                methodName:
+                  type: string
+                fileName:
+                  type: string
+                lineNumber:
+                  type: integer
+                  format: int32
+                className:
+                  type: string
+                nativeMethod:
+                  type: boolean
+          message:
+            type: string
+          suppressed:
+            type: array
+            items:
+              type: object
+              properties:
+                stackTrace:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      classLoaderName:
+                        type: string
+                      moduleName:
+                        type: string
+                      moduleVersion:
+                        type: string
+                      methodName:
+                        type: string
+                      fileName:
+                        type: string
+                      lineNumber:
+                        type: integer
+                        format: int32
+                      className:
+                        type: string
+                      nativeMethod:
+                        type: boolean
+                message:
+                  type: string
+                localizedMessage:
+                  type: string
+          localizedMessage:
+            type: string
+"406":
+  description: Not Acceptable
+  content:
+    "*/*":
+      schema:
+        type: object
+        properties:
+          cause:
+            type: object
+            properties:
+              stackTrace:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    classLoaderName:
+                      type: string
+                    moduleName:
+                      type: string
+                    moduleVersion:
+                      type: string
+                    methodName:
+                      type: string
+                    fileName:
+                      type: string
+                    lineNumber:
+                      type: integer
+                      format: int32
+                    className:
+                      type: string
+                    nativeMethod:
+                      type: boolean
+              message:
+                type: string
+              suppressed:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    stackTrace:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          classLoaderName:
+                            type: string
+                          moduleName:
+                            type: string
+                          moduleVersion:
+                            type: string
+                          methodName:
+                            type: string
+                          fileName:
+                            type: string
+                          lineNumber:
+                            type: integer
+                            format: int32
+                          className:
+                            type: string
+                          nativeMethod:
+                            type: boolean
+                    message:
+                      type: string
+                    localizedMessage:
+                      type: string
+              localizedMessage:
+                type: string
+          stackTrace:
+            type: array
+            items:
+              type: object
+              properties:
+                classLoaderName:
+                  type: string
+                moduleName:
+                  type: string
+                moduleVersion:
+                  type: string
+                methodName:
+                  type: string
+                fileName:
+                  type: string
+                lineNumber:
+                  type: integer
+                  format: int32
+                className:
+                  type: string
+                nativeMethod:
+                  type: boolean
+          message:
+            type: string
+          suppressed:
+            type: array
+            items:
+              type: object
+              properties:
+                stackTrace:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      classLoaderName:
+                        type: string
+                      moduleName:
+                        type: string
+                      moduleVersion:
+                        type: string
+                      methodName:
+                        type: string
+                      fileName:
+                        type: string
+                      lineNumber:
+                        type: integer
+                        format: int32
+                      className:
+                        type: string
+                      nativeMethod:
+                        type: boolean
+                message:
+                  type: string
+                localizedMessage:
+                  type: string
+          localizedMessage:
+            type: string
+"500":
+  description: Internal Server Error
+  content:
+    "*/*":
+      schema:
+        type: object
+        properties:
+          cause:
+            type: object
+            properties:
+              stackTrace:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    classLoaderName:
+                      type: string
+                    moduleName:
+                      type: string
+                    moduleVersion:
+                      type: string
+                    methodName:
+                      type: string
+                    fileName:
+                      type: string
+                    lineNumber:
+                      type: integer
+                      format: int32
+                    className:
+                      type: string
+                    nativeMethod:
+                      type: boolean
+              message:
+                type: string
+              suppressed:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    stackTrace:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          classLoaderName:
+                            type: string
+                          moduleName:
+                            type: string
+                          moduleVersion:
+                            type: string
+                          methodName:
+                            type: string
+                          fileName:
+                            type: string
+                          lineNumber:
+                            type: integer
+                            format: int32
+                          className:
+                            type: string
+                          nativeMethod:
+                            type: boolean
+                    message:
+                      type: string
+                    localizedMessage:
+                      type: string
+              localizedMessage:
+                type: string
+          stackTrace:
+            type: array
+            items:
+              type: object
+              properties:
+                classLoaderName:
+                  type: string
+                moduleName:
+                  type: string
+                moduleVersion:
+                  type: string
+                methodName:
+                  type: string
+                fileName:
+                  type: string
+                lineNumber:
+                  type: integer
+                  format: int32
+                className:
+                  type: string
+                nativeMethod:
+                  type: boolean
+          message:
+            type: string
+          suppressed:
+            type: array
+            items:
+              type: object
+              properties:
+                stackTrace:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      classLoaderName:
+                        type: string
+                      moduleName:
+                        type: string
+                      moduleVersion:
+                        type: string
+                      methodName:
+                        type: string
+                      fileName:
+                        type: string
+                      lineNumber:
+                        type: integer
+                        format: int32
+                      className:
+                        type: string
+                      nativeMethod:
+                        type: boolean
+                message:
+                  type: string
+                localizedMessage:
+                  type: string
+          localizedMessage:
+            type: string
