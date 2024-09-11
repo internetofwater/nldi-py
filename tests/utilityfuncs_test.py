@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: CC0
 #
 import os
-import nldi.util as util
+from nldi import util
 import pytest
 
 
@@ -40,3 +40,44 @@ def test_read_yaml_strpath(config_yaml, env_update):
     cfg = util.load_yaml(str(config_yaml))
     sources = cfg["sources"]
     assert len(sources) == 3
+
+@pytest.mark.order(20)
+@pytest.mark.unittest
+def test_url_join():
+    """Test the url_join function."""
+    assert util.url_join("http://example.com", "foo") == "http://example.com/foo"
+    assert util.url_join("http://example.com/", "foo") == "http://example.com/foo"
+    assert util.url_join("http://example.com", "/foo") == "http://example.com/foo"
+    assert util.url_join("http://example.com/", "/foo") == "http://example.com/foo"
+    # assert util.url_join("http://example.com", "/foo/") == "http://example.com/foo/"
+    assert util.url_join("http://example.com", "/foo/") == "http://example.com/foo"
+
+    # assert util.url_join("http://example.com/", "/foo/") == "http://example.com/foo/"
+    assert util.url_join("http://example.com/", "/foo/") == "http://example.com/foo"
+    # assert util.url_join("http://example.com", "foo/") == "http://example.com/foo/"
+    assert util.url_join("http://example.com", "foo/") == "http://example.com/foo"
+    # assert util.url_join("http://example.com/", "foo/") == "http://example.com/foo/"
+    assert util.url_join("http://example.com/", "foo/") == "http://example.com/foo"
+
+    assert util.url_join("http://example.com", "foo", "bar") == "http://example.com/foo/bar"
+    assert util.url_join("http://example.com/", "foo", "bar") == "http://example.com/foo/bar"
+    assert util.url_join("http://example.com", "/foo", "/bar") == "http://example.com/foo/bar"
+    assert util.url_join("http://example.com/", "/foo", "/bar") == "http://example.com/foo/bar"
+
+    # assert util.url_join("http://example.com", "/foo/", "/bar/") == "http://example.com/foo/bar/"
+    assert util.url_join("http://example.com", "/foo/", "/bar/") == "http://example.com/foo/bar"
+    # assert util.url_join("http://example.com/", "/foo/", "/bar/") == "http://example.com/foo/bar/"
+    assert util.url_join("http://example.com/", "/foo/", "/bar/") == "http://example.com/foo/bar"
+    # assert util.url_join("http://example.com", "foo/", "bar/") == "http://example.com/foo/bar/"
+    assert util.url_join("http://example.com", "foo/", "bar/") == "http://example.com/foo/bar"
+
+    # assert util.url_join("http://example.com/", "foo/bar/") == "http://example.com/foo/bar/"
+    assert util.url_join("http://example.com/", "foo/bar/") == "http://example.com/foo/bar"
+    assert util.url_join("http://example.com/", "foo/bar") == "http://example.com/foo/bar"
+
+    assert util.url_join("http://example.com", "foo", "bar", "baz") == "http://example.com/foo/bar/baz"
+    assert util.url_join("http://example.com/", "foo", "bar", "baz") == "http://example.com/foo/bar/baz"
+    assert util.url_join("http://example.com", "/foo", "/bar", "/baz") == "http://example.com/foo/bar/baz"
+    assert util.url_join("http://example.com/", "foo/bar", "baz") == "http://example.com/foo/bar/baz"
+    assert util.url_join("http://example.com/", "foo/bar/baz", "") == "http://example.com/foo/bar/baz"
+

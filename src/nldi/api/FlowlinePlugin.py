@@ -84,7 +84,7 @@ class FlowlinePlugin(APIPlugin):
         except AttributeError:
             mainstem = ""
 
-        navigation = util.url_join(self.relative_url, f"{feature.nhdplus_comid}/navigation")
+        navigation = util.url_join(self.relative_url, feature.nhdplus_comid, "navigation")
 
         return {
             "type": "Feature",
