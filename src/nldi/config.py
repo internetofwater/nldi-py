@@ -91,7 +91,7 @@ class Configuration(UserDict):
     def __init__(self, cfg_src: Union[pathlib.Path, str, io.TextIOWrapper]):
         if cfg_src is None:
             raise ValueError("No configuration specified.")
-        LOGGER.debug("Loading configuration file.")
+        LOGGER.info("Loading configuration file.")
 
         if LOGGER.level == logging.DEBUG:
             ## IF in debug mode, mock/force the os environment variables. Will not overwrite if key already present in environ.

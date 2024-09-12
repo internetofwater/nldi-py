@@ -3,14 +3,13 @@
 # SPDX-License-Identifier: CC0
 #
 
-"""Test suite for nldi-py package"""
+"""
+Test suite for nldi-py package
+
+Here is where we test 
+"""
 
 from copy import deepcopy
-
-import pytest
-
-from nldi.api import APIPlugin, FlowlinePlugin
-
 
 import pytest
 
@@ -52,3 +51,4 @@ def test_register_APIPlugin_success(global_config):
     success = api.register_plugin(p)
     assert success
     assert len(api.plugins) == 1
+

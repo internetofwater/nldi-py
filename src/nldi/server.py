@@ -16,28 +16,7 @@ from .config import Configuration
 from .api.main import API
 
 
-# region:: Main Flask App
-APP = flask.Flask(__name__)
-if APP is None:
-    raise RuntimeError("NLDI API Server >> Failed to initialize Flask app")
-
-
-@APP.before_request
-def log_incoming_request() -> None:
-    """Simple middleware function to log requests."""
-    LOGGER.debug(f"{flask.request.method} {flask.request.url}")
-
-    ## Sets up a callback to update headers after the request is processed.
-    @flask.after_this_request
-    def update_headers(r: flask.Response) -> flask.Response:
-        """Simple middlware function to update response headers."""
-        r.headers.update(
-            {
-                "X-Powered-By": f"nldi {__version__}",
-            }
-        )
-        return r
-
+NLDI_API = None
 
 log.initialize(LOGGER, level="DEBUG")
 ##TODO: The log level  should be a configurable option, perhaps set with -V or --verbose switch.
@@ -49,14 +28,9 @@ CONFIG = Configuration(os.environ.get("NLDI_CONFIG"))
 
 LOGGER.info(f"NLDI v{__version__} API Server >> Starting Up")
 log.versions(logger=LOGGER)
-APP.url_map.strict_slashes = False
-CORS(APP)
 
-
-NLDI_API = API(globalconfig=CONFIG)
+## Routing dispatch table for ROOT of the server endpoints:
 ROOT = flask.Blueprint("nldi", __name__)
-
-
 @ROOT.route("/")
 def home() -> flask.Response:
     content = {
@@ -85,11 +59,9 @@ def home() -> flask.Response:
     }
     return flask.jsonify(content)
 
-
 @ROOT.route("/favicon.ico")
 def favicon():
     return flask.send_from_directory("./static/", "favicon.ico", mimetype="image/vnd.microsoft.icon")
-
 
 @ROOT.route("/openapi")
 def openapi_spec() -> Tuple[dict, int, str]:
@@ -99,7 +71,7 @@ def openapi_spec() -> Tuple[dict, int, str]:
     :param request: Incoming API request
     :type request: _type_
     """
-    global CONFIG
+    global NLDI_API
     if requested_format := flask.request.args.get("f", "html") == "html":
         if flask.request.args.get("ui") == "redoc":
             template = "openapi/redoc.html"
@@ -107,7 +79,7 @@ def openapi_spec() -> Tuple[dict, int, str]:
             template = "openapi/swagger.html"
         data = {"openapi-document-path": f"openapi"}  ##NOTE: intentionally using relative path here.
 
-        content = render_j2_template(CONFIG, template, data)
+        content = render_j2_template(NLDI_API.config, template, data)
         return flask.Response(
             headers={"Content-Type": "text/html"},
             status=http.HTTPStatus.OK,
@@ -128,11 +100,12 @@ def sources() -> flask.Response:
 
     :returns: HTTP response
     """
+    global NLDI_API
     content = [
         {
             "source": "comid",
             "sourceName": "NHDPlus comid",
-            "features": util.url_join(CONFIG["base_url"], "linked-data", "comid", "position"),
+            "features": util.url_join(NLDI_API.config["base_url"], "linked-data", "comid", "position"),
         }
     ]  ## This source is hard-coded -- should always be available.  Other sources are loaded from the source table.
     for s in NLDI_API.sources.get_all():
@@ -140,7 +113,7 @@ def sources() -> flask.Response:
             {
                 "source": s["source_suffix"],
                 "sourceName": s["source_name"],
-                "features": util.url_join(CONFIG["base_url"], "linked-data", s["source_suffix"].lower()),
+                "features": util.url_join(NLDI_API.config["base_url"], "linked-data", s["source_suffix"].lower()),
             }
         )
     return flask.jsonify(content)
@@ -148,6 +121,7 @@ def sources() -> flask.Response:
 
 @ROOT.route("/linked-data/comid/<int:comid>")
 def get_flowline_by_comid(comid=None):
+    global NLDI_API
     if "FlowLine" not in NLDI_API.plugins:
         from .api import FlowlinePlugin  # noqa: I001
 
@@ -166,6 +140,7 @@ def get_flowline_by_comid(comid=None):
 
 @ROOT.route("/linked-data/comid/position")
 def get_flowline_by_position():
+    global NLDI_API
     ## TODO:  Refactor all this plugin loading into a single function for re-use elsewhere.
     if "FlowLine" not in NLDI_API.plugins:
         from .api import FlowlinePlugin  # noqa: I001
@@ -220,4 +195,38 @@ def hydrolocation():
     return API_.get_hydrolocation(request)
 
 
-APP.register_blueprint(ROOT, url_prefix="/api/nldi")
+
+def app_factory(api: API) -> flask.Flask:
+    """Factory function to create the Flask app with the given API instance."""
+    global NLDI_API
+    global ROOT
+
+    app = flask.Flask(__name__)
+    if app is None:
+        raise RuntimeError("NLDI API Server >> Failed to initialize Flask app")
+    NLDI_API = api
+    app.url_map.strict_slashes = False
+    CORS(app)
+
+
+    @app.before_request
+    def log_incoming_request() -> None:
+        """Simple middleware function to log requests."""
+        LOGGER.debug(f"{flask.request.method} {flask.request.url}")
+
+        ## Sets up a callback to update headers after the request is processed.
+        @flask.after_this_request
+        def update_headers(r: flask.Response) -> flask.Response:
+            """Simple middlware function to update response headers."""
+            r.headers.update(
+                {
+                    "X-Powered-By": f"nldi {__version__}",
+                }
+            )
+            return r
+    app.register_blueprint(ROOT, url_prefix="/api/nldi")
+    return app
+
+
+APP = app_factory(API(globalconfig=CONFIG))
+
