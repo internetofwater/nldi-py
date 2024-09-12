@@ -12,7 +12,6 @@ instance running elsewhere
 
 """
 
-
 from typing import Any, Dict, List
 
 import httpx
@@ -43,7 +42,7 @@ class PyGeoAPIPlugin(APIPlugin):
     @property
     def pygeoapi_url(self) -> str:
         if self.is_registered:
-            return self.parent.config.get('pygeoapi_url', self.DEFAULT_PYGEOAPI_URL)
+            return self.parent.config.get("pygeoapi_url", self.DEFAULT_PYGEOAPI_URL)
         else:
             LOGGER.error("Attempt to get pygeoapi_url from an unregistered plugin.")
             return self.DEFAULT_PYGEOAPI_URL
@@ -62,9 +61,3 @@ class PyGeoAPIPlugin(APIPlugin):
             LOGGER.error(f"JSON decode error: {err}")
             raise ProviderQueryError from err
         return response
-
-
-
-
-
-

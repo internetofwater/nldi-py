@@ -28,6 +28,7 @@ def test_legacy_generate_openapi_document(global_config):
     assert c["info"]["description"] is not None
     assert c["info"]["license"] is not None
 
+
 @pytest.mark.order(22)
 @pytest.mark.unittest
 def test_configuration_load(config_yaml, env_update):

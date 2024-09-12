@@ -21,6 +21,7 @@ APP = flask.Flask(__name__)
 if APP is None:
     raise RuntimeError("NLDI API Server >> Failed to initialize Flask app")
 
+
 @APP.before_request
 def log_incoming_request() -> None:
     """Simple middleware function to log requests."""
@@ -29,11 +30,14 @@ def log_incoming_request() -> None:
     ## Sets up a callback to update headers after the request is processed.
     @flask.after_this_request
     def update_headers(r: flask.Response) -> flask.Response:
-        """Simple middlware function to update response headers.    """
-        r.headers.update({
-            "X-Powered-By": f"nldi {__version__}",
-        })
+        """Simple middlware function to update response headers."""
+        r.headers.update(
+            {
+                "X-Powered-By": f"nldi {__version__}",
+            }
+        )
         return r
+
 
 log.initialize(LOGGER, level="DEBUG")
 ##TODO: The log level  should be a configurable option, perhaps set with -V or --verbose switch.
@@ -63,19 +67,19 @@ def home() -> flask.Response:
                 "rel": "data",
                 "type": "application/json",
                 "title": "Sources",
-                "href": util.url_join(CONFIG['base_url'], "linked-data"),
+                "href": util.url_join(CONFIG["base_url"], "linked-data"),
             },
             {
                 "rel": "service-desc",
                 "type": "text/html",
                 "title": "The OpenAPI definition as HTML",
-                "href": util.url_join(CONFIG['base_url'] , "openapi?f=html"),
+                "href": util.url_join(CONFIG["base_url"], "openapi?f=html"),
             },
             {
                 "rel": "service-desc",
                 "type": "application/vnd.oai.openapi+json;version=3.0",
                 "title": "The OpenAPI definition as JSON",
-                "href": util.url_join(CONFIG['base_url'], "openapi?f=json"),
+                "href": util.url_join(CONFIG["base_url"], "openapi?f=json"),
             },
         ],
     }
@@ -101,14 +105,14 @@ def openapi_spec() -> Tuple[dict, int, str]:
             template = "openapi/redoc.html"
         else:
             template = "openapi/swagger.html"
-        data = {"openapi-document-path": f"openapi"} ##NOTE: intentionally using relative path here.
+        data = {"openapi-document-path": f"openapi"}  ##NOTE: intentionally using relative path here.
 
         content = render_j2_template(CONFIG, template, data)
         return flask.Response(
             headers={"Content-Type": "text/html"},
             status=http.HTTPStatus.OK,
             response=content,
-            )
+        )
     else:
         r = flask.jsonify(NLDI_API.openapi_json)
         r.headers["Content-Type"] = "application/vnd.oai.openapi+json;version=3.0"  # noqa
@@ -128,9 +132,9 @@ def sources() -> flask.Response:
         {
             "source": "comid",
             "sourceName": "NHDPlus comid",
-            "features": util.url_join(CONFIG["base_url"], "linked-data",  "comid",  "position"),
+            "features": util.url_join(CONFIG["base_url"], "linked-data", "comid", "position"),
         }
-    ] ## This source is hard-coded -- should always be available.  Other sources are loaded from the source table.
+    ]  ## This source is hard-coded -- should always be available.  Other sources are loaded from the source table.
     for s in NLDI_API.sources.get_all():
         content.append(
             {
@@ -146,6 +150,7 @@ def sources() -> flask.Response:
 def get_flowline_by_comid(comid=None):
     if "FlowLine" not in NLDI_API.plugins:
         from .api import FlowlinePlugin  # noqa: I001
+
         if NLDI_API.register_plugin(FlowlinePlugin("FlowLine")):
             LOGGER.debug("Loaded FlowLine plugin")
         else:
@@ -158,11 +163,13 @@ def get_flowline_by_comid(comid=None):
         return flask.Response(status=http.HTTPStatus.NOT_FOUND)
     return flask.jsonify(r)
 
+
 @ROOT.route("/linked-data/comid/position")
 def get_flowline_by_position():
     ## TODO:  Refactor all this plugin loading into a single function for re-use elsewhere.
     if "FlowLine" not in NLDI_API.plugins:
-        from .api import FlowlinePlugin # noqa: I001
+        from .api import FlowlinePlugin  # noqa: I001
+
         if NLDI_API.register_plugin(FlowlinePlugin("FlowLine")):
             LOGGER.debug("Loaded FlowLine plugin")
         else:
@@ -170,7 +177,8 @@ def get_flowline_by_position():
             raise RuntimeError("Failed to register FlowlinePlugin")
 
     if "Catchment" not in NLDI_API.plugins:
-        from .api import CatchmentPlugin # noqa: I001
+        from .api import CatchmentPlugin  # noqa: I001
+
         if NLDI_API.register_plugin(CatchmentPlugin("Catchment")):
             LOGGER.debug("Loaded Catchment plugin")
         else:
@@ -207,9 +215,9 @@ def get_flowline_by_position():
     )
 
 
-
 @ROOT.route("/linked-data/hydrolocation")
 def hydrolocation():
     return API_.get_hydrolocation(request)
+
 
 APP.register_blueprint(ROOT, url_prefix="/api/nldi")

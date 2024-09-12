@@ -5,6 +5,7 @@
 
 import pytest
 
+
 @pytest.mark.order(40)
 @pytest.mark.unittest
 def test_get_root():
@@ -14,6 +15,7 @@ def test_get_root():
     assert response.headers["X-Powered-By"] == "nldi 0.1.0"
     assert response.headers["Content-Type"] == "application/json"
 
+
 @pytest.mark.order(41)
 @pytest.mark.unittest
 def test_get_favicon():
@@ -22,13 +24,14 @@ def test_get_favicon():
     assert response.status_code == 200
     assert response.headers["Content-Type"] == "image/vnd.microsoft.icon"
 
+
 @pytest.mark.order(42)
 @pytest.mark.unittest
 def test_get_openapi():
     with APP.test_client() as client:
         response = client.get("/api/nldi/openapi?f=json")
     assert response.status_code == 200
-    assert response.headers["Content-Type"] ==  "application/vnd.oai.openapi+json;version=3.0"
+    assert response.headers["Content-Type"] == "application/vnd.oai.openapi+json;version=3.0"
 
 
 @pytest.mark.order(43)
@@ -42,7 +45,6 @@ def test_API_init():
     assert response.json["description"] is not None
 
 
-
 @pytest.mark.order(44)
 @pytest.mark.unittest
 def test_API_linked_data():
@@ -52,7 +54,7 @@ def test_API_linked_data():
     assert response.headers["Content-Type"] == "application/json"
     source_list = response.json
     assert len(source_list) > 0
-    assert source_list[0]["source"]  == "comid"
+    assert source_list[0]["source"] == "comid"
 
 
 # POINT(-89.22401470690966 42.82769689708948)
@@ -60,9 +62,10 @@ def test_API_linked_data():
 @pytest.mark.unittest
 def test_API_feature_by_comid():
     with APP.test_client() as client:
-        response = client.get("/api/nldi/linked-data/comid/13297166") # known good comid
+        response = client.get("/api/nldi/linked-data/comid/13297166")  # known good comid
     assert response.status_code == 200
     assert response.headers["Content-Type"] == "application/json"
+
 
 @pytest.mark.order(45)
 @pytest.mark.unittest
@@ -71,5 +74,5 @@ def test_API_comid_by_position():
         response = client.get("/api/nldi/linked-data/comid/position?coords=POINT(-89.22401470690966 42.82769689708948)")
     assert response.status_code == 200
     assert response.headers["Content-Type"] == "application/json"
-    assert response.json["type"] =="FeatureCollection"
+    assert response.json["type"] == "FeatureCollection"
     assert len(response.json["features"]) > 0

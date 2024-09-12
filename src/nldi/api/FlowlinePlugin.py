@@ -21,13 +21,13 @@ class FlowlinePlugin(APIPlugin):
         self.id_field = FlowlineModel.nhdplus_comid
         self.table_model = FlowlineModel
 
-    @cached_property
+    @property
     def relative_url(self):
         if self.is_registered:
-            return util.url_join(self.base_url, "linked-data/comid")
+            return util.url_join(self.parent.base_url, "linked-data/comid")
         else:
             LOGGER.warning("Attempt to get relative_url from an unregistered plugin.")
-            return ""
+            return "/linked-data/comid"
 
     def get(self, identifier: str) -> Dict[str, Any]:
         LOGGER.debug(f"{self.__class__.__name__} : Fetching COMID with {identifier=}")
@@ -49,7 +49,7 @@ class FlowlinePlugin(APIPlugin):
 
     def lookup_navigation(self, nav: str):  ## TODO: navigation business logic refactor
         with self.session() as session:
-            q = self.query(session) # Retrieve data from database as feature
+            q = self.query(session)  # Retrieve data from database as feature
             query = q.join(nav, FlowlineModel.nhdplus_comid == nav.c.comid)
             hits = query.count()
 
@@ -59,7 +59,7 @@ class FlowlinePlugin(APIPlugin):
             for item in query.all():
                 yield self._sqlalchemy_to_feature(item)
 
-    def trim_navigation(self, nav, nav_trim): ## TODO: navigation business logic refactor
+    def trim_navigation(self, nav, nav_trim):  ## TODO: navigation business logic refactor
         with self.session() as session:
             query = (
                 session.query(self.table_model, nav_trim.c.geom)

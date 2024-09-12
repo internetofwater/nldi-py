@@ -98,7 +98,7 @@ class Configuration(UserDict):
             # We need these environment variables to be set, as they are substituted/inserted in the config file. If not set,
             # the config file will not load properly.
             for k, v in dict(
-                #NLDI_PATH="/api/nldi",
+                # NLDI_PATH="/api/nldi",
                 NLDI_URL="http://localhost:8081/",
                 NLDI_DB_HOST="172.17.0.2",  # This is the IP address for the Docker container
                 NLDI_DB_PORT="5432",
@@ -121,4 +121,3 @@ class Configuration(UserDict):
     @property
     def config_source(self) -> str:
         return self._config_src
-

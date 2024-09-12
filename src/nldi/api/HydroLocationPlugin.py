@@ -13,7 +13,6 @@ search within the NLDI database.
 
 """
 
-
 from contextlib import contextmanager
 from typing import Any, Dict, List
 
@@ -41,7 +40,6 @@ DEFAULT_PROPS = {
 
 
 class HydroLocationPlugin(PyGeoAPIPlugin):
-
     def get_by_coords(self, coords: str) -> dict:
         LOGGER.debug(f"{__class__.__name__} get_by_coords: {coords}")
         point = shapely.wkt.loads(coords)
@@ -58,9 +56,7 @@ class HydroLocationPlugin(PyGeoAPIPlugin):
         [lon, lat] = response["features"][0]["properties"]["intersection_point"]  # noqa
         wkt_geom = f"POINT({lon} {lat})"
 
-
         nhdplus_comid = self.catchment_lookup.query(wkt_geom)
-
 
         nav_url = url_join(self.base_url, "linked-data", "comid", nhdplus_comid, "navigation")
 
@@ -113,4 +109,3 @@ class HydroLocationPlugin(PyGeoAPIPlugin):
             ],
         }
         return fc
-

@@ -9,7 +9,7 @@ from ..schemas.nldi_data import CrawlerSourceModel
 
 
 class APIPlugin:
-    def __init__(self, name: str, **kwargs:Dict[str, Any]):
+    def __init__(self, name: str, **kwargs: Dict[str, Any]):
         LOGGER.debug(f"{self.__class__.__name__} Constructor")
         self.name = name
         self.parent = None
@@ -29,7 +29,7 @@ class APIPlugin:
     @property
     def base_url(self) -> str:
         if self.is_registered:
-            return self.parent.config['base_url']
+            return self.parent.config["base_url"]
         else:
             LOGGER.error("Attempt to get base_url from an unregistered plugin.")
             raise KeyError
@@ -125,7 +125,7 @@ class APIPlugin:
             except sqlalchemy.exc.OperationalError as e:
                 LOGGER.error(f"Database connection error: {e}")
                 return False
-            return nrows >=1
+            return nrows >= 1
         else:
             ## if no table defined, we just run a dummy query to see if the connection is working.
             try:
@@ -135,4 +135,3 @@ class APIPlugin:
                 LOGGER.error(f"Database connection error: {e}")
                 return False
             return True
-

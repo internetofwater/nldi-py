@@ -41,6 +41,7 @@ def test_read_yaml_strpath(config_yaml, env_update):
     sources = cfg["sources"]
     assert len(sources) == 3
 
+
 @pytest.mark.order(11)
 @pytest.mark.unittest
 def test_url_join():
@@ -80,4 +81,3 @@ def test_url_join():
     assert util.url_join("http://example.com", "/foo", "/bar", "/baz") == "http://example.com/foo/bar/baz"
     assert util.url_join("http://example.com/", "foo/bar", "baz") == "http://example.com/foo/bar/baz"
     assert util.url_join("http://example.com/", "foo/bar/baz", "") == "http://example.com/foo/bar/baz"
-

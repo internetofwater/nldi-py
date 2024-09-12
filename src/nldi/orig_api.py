@@ -94,7 +94,7 @@ class API:
 
         self.pretty_print = self.config["server"]["pretty_print"]
 
-        log.initialize(LOGGER, level=cfg['logging']['level'])
+        log.initialize(LOGGER, level=cfg["logging"]["level"])
         # setup_logger(cfg["logging"])
 
         self.func = Functions(self.connection_def)

@@ -17,6 +17,7 @@ import pytest
 from nldi.api import API, APIPlugin, FlowlinePlugin
 from nldi.server import APP
 
+
 @pytest.mark.order(50)
 @pytest.mark.unittest
 def test_new_API_smoke(global_config):

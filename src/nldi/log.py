@@ -59,7 +59,6 @@ def setup_logger(logging_config: Dict[str, Any]) -> None:
     return
 
 
-
 def initialize(logger: logging.Logger = None, level: str | int = logging.WARNING, logfile=None) -> logging.Logger:
     """
     Initialize the logging system.
@@ -73,10 +72,10 @@ def initialize(logger: logging.Logger = None, level: str | int = logging.WARNING
 
     if isinstance(level, str):
         # translate to logging level:  "DEBUG" --> logging.DEBUG, etc.
-        if level.upper() not in logging._nameToLevel: ## needed with python 3.10.
+        if level.upper() not in logging._nameToLevel:  ## needed with python 3.10.
             # v3.11 and later introduced logging.getLevelNamesMapping() to provide public access to _nameToLevel
             # TODO: remove call to private var when we can safely assume 3.11 or later
-            level = logging.WARNING   # unknown level name; default to WARNING
+            level = logging.WARNING  # unknown level name; default to WARNING
         else:
             level = logging._nameToLevel[level.upper()]
     if logfile:

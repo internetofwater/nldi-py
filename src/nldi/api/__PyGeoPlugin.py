@@ -13,7 +13,6 @@ via the NLDI API, without forcing the client to make a separate request to the
 
 """
 
-
 from contextlib import contextmanager
 from typing import Any, Dict, List
 
@@ -26,7 +25,6 @@ from ..schemas.nldi_data import CrawlerSourceModel
 from .BasePlugin import APIPlugin
 
 ## TODO: Need to complete catchment lookup before this will work
-
 
 
 DEFAULT_PROPS = {
@@ -51,11 +49,10 @@ class PyGeoPlugin(APIPlugin):
     @property
     def pygeoapi_url(self) -> str:
         if self.is_registered:
-            return self.parent.config.get('pygeoapi_url', "")
+            return self.parent.config.get("pygeoapi_url", "")
         else:
             LOGGER.error("Attempt to get pygeoapi_url from an unregistered plugin.")
             raise KeyError
-
 
     def get_hydrolocation(self, coords: str) -> dict:
         LOGGER.debug(f"Extracting geom from WKT: {coords}")
@@ -169,22 +166,6 @@ class PyGeoPlugin(APIPlugin):
             raise ProviderQueryError from err
 
         return response
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
     def get(self, identifier: str):
         """Retrieve a source from the database."""

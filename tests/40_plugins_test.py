@@ -9,7 +9,7 @@ from copy import deepcopy
 
 import pytest
 
-from nldi.api import APIPlugin, FlowlinePlugin, CrawlerSourcePlugin
+from nldi.api import APIPlugin, FlowlinePlugin, CrawlerSourcePlugin, CatchmentPlugin
 
 
 # region APIPlugin
@@ -57,52 +57,15 @@ def test_baseplugin_constructor_with_broken_db_connect_url(nldi_db_container):
     assert p.db_is_alive() is False
 
 
-# region FlowlinePlugin
-@pytest.mark.order(41)
-@pytest.mark.integration
-def test_flowlineplugin_constructor(nldi_db_connect_string):
-    p = FlowlinePlugin("FlowLine", db_connect_url=nldi_db_connect_string)
-    assert p.relative_url == ""  # << Unregistered flowline plugins should return empty string
-    assert (
-        p.db_is_alive() is True
-    )  # << FlowlinePlugin has a table model, so it can check the connection by counting rows in the table.
-
-
-@pytest.mark.order(41)
-@pytest.mark.integration
-def test_flowlineplugin_lookup(nldi_db_connect_string):
-    p = FlowlinePlugin("FlowLine", db_connect_url=nldi_db_connect_string)
-    flowline = p.get("13293396")  # << This COMID is known to be in the test database
-    assert flowline["type"] == "Feature"
-    assert str(flowline["properties"]["comid"]) == "13293396"
-    assert flowline["geometry"]["type"] == "LineString"
-
-
-@pytest.mark.order(41)
-@pytest.mark.integration
-def test_flowlineplugin_lookup_notfound(nldi_db_connect_string):
-    p = FlowlinePlugin("FlowLine", db_connect_url=nldi_db_connect_string)
-    with pytest.raises(KeyError):
-        flowline = p.get("0000000")  # << this one is not in the test database
-
-
-@pytest.mark.order(41)
-@pytest.mark.integration
-def test_flowlineplugin_lookup_badinput(nldi_db_connect_string):
-    p = FlowlinePlugin("FlowLine", db_connect_url=nldi_db_connect_string)
-    with pytest.raises(KeyError):
-        flowline = p.get("this_is_not_an_int")  # << COMIDs have to be integers
-
-
 # region CrawlerSourcePlugin
-@pytest.mark.order(42)
+@pytest.mark.order(41)
 @pytest.mark.integration
 def test_crawlersource_plugin_constructor(nldi_db_connect_string):
     p = CrawlerSourcePlugin("FlowLine", db_connect_url=nldi_db_connect_string)
     assert p.db_is_alive() is True
 
 
-@pytest.mark.order(42)
+@pytest.mark.order(41)
 @pytest.mark.integration
 def test_crawlersource_plugin_listall(nldi_db_connect_string):
     p = CrawlerSourcePlugin("FlowLine", db_connect_url=nldi_db_connect_string)
@@ -110,7 +73,7 @@ def test_crawlersource_plugin_listall(nldi_db_connect_string):
     assert len(src_list) > 0  # << There should be at least one source in the test database
 
 
-@pytest.mark.order(42)
+@pytest.mark.order(41)
 @pytest.mark.integration
 def test_crawlersource_plugin_lookup_one_source(nldi_db_connect_string, mock_source):
     p = CrawlerSourcePlugin("FlowLine", db_connect_url=nldi_db_connect_string)
@@ -125,7 +88,7 @@ def test_crawlersource_plugin_lookup_one_source(nldi_db_connect_string, mock_sou
             assert sampled[k] == mock_source[k]
 
 
-@pytest.mark.order(42)
+@pytest.mark.order(41)
 @pytest.mark.integration
 def test_crawlersource_plugin_lookup_one_source_notfound(nldi_db_connect_string):
     p = CrawlerSourcePlugin("FlowLine", db_connect_url=nldi_db_connect_string)
@@ -133,7 +96,7 @@ def test_crawlersource_plugin_lookup_one_source_notfound(nldi_db_connect_string)
         sampled = p.get("nosuchsource")
 
 
-@pytest.mark.order(43)
+@pytest.mark.order(41)
 @pytest.mark.integration
 def test_crawersource_plugin_insert_new_source(nldi_db_connect_string):
     ## also tests delete_source
@@ -164,7 +127,7 @@ def test_crawersource_plugin_insert_new_source(nldi_db_connect_string):
     assert len(p.get_all()) == n
 
 
-@pytest.mark.order(43)
+@pytest.mark.order(41)
 @pytest.mark.integration
 def test_crawersource_plugin_update_existing_source(nldi_db_connect_string, mock_source):
     p = CrawlerSourcePlugin("FlowLine", db_connect_url=nldi_db_connect_string)
@@ -176,10 +139,76 @@ def test_crawersource_plugin_update_existing_source(nldi_db_connect_string, mock
     assert len(p.get_all()) == n
 
 
-@pytest.mark.order(43)
+@pytest.mark.order(41)
 @pytest.mark.integration
 def test_crawlersource_plugin_align_sources(nldi_db_connect_string, global_config):
     sources = global_config["sources"]
     p = CrawlerSourcePlugin("CrawlerSource", db_connect_url=nldi_db_connect_string)
     assert p.align_sources(sources, force=True) is True
     assert len(p.get_all()) == len(sources)
+
+
+# region FlowlinePlugin
+@pytest.mark.order(42)
+@pytest.mark.integration
+def test_flowlineplugin_constructor(nldi_db_connect_string):
+    p = FlowlinePlugin("FlowLine", db_connect_url=nldi_db_connect_string)
+    assert p.relative_url == "/linked-data/comid"
+    assert p.db_is_alive() is True
+
+
+@pytest.mark.order(42)
+@pytest.mark.integration
+def test_flowlineplugin_lookup(nldi_db_connect_string):
+    p = FlowlinePlugin("FlowLine", db_connect_url=nldi_db_connect_string)
+    flowline = p.get("13293396")  # << This COMID is known to be in the test database
+    assert flowline["type"] == "Feature"
+    assert str(flowline["properties"]["comid"]) == "13293396"
+    assert flowline["geometry"]["type"] == "LineString"
+
+
+@pytest.mark.order(42)
+@pytest.mark.integration
+def test_flowlineplugin_lookup_notfound(nldi_db_connect_string):
+    p = FlowlinePlugin("FlowLine", db_connect_url=nldi_db_connect_string)
+    with pytest.raises(KeyError):
+        flowline = p.get("0000000")  # << this one is not in the test database
+
+
+@pytest.mark.order(42)
+@pytest.mark.integration
+def test_flowlineplugin_lookup_badinput(nldi_db_connect_string):
+    p = FlowlinePlugin("FlowLine", db_connect_url=nldi_db_connect_string)
+    with pytest.raises(KeyError):
+        flowline = p.get("this_is_not_an_int")  # << COMIDs have to be integers
+
+
+# region CatchmentPlugin
+@pytest.mark.order(43)
+@pytest.mark.integration
+def test_catchment_plugin_constructor(nldi_db_connect_string):
+    p = CatchmentPlugin("Catchment", db_connect_url=nldi_db_connect_string)
+    assert p.db_is_alive() is True
+    assert p.relative_url == "/linked-data/comid"
+
+
+@pytest.mark.order(43)
+@pytest.mark.integration
+def test_catchment_plugin_get_by_id(nldi_db_connect_string):
+    p = CatchmentPlugin("Catchment", db_connect_url=nldi_db_connect_string)
+    catchment = p.get_by_id("13297332")
+    assert catchment["type"] == "Feature"
+    assert catchment["geometry"]["type"] == "MultiPolygon"
+
+
+@pytest.mark.order(43)
+@pytest.mark.integration
+def test_catchment_plugin_get_by_coords(nldi_db_connect_string):
+    p = CatchmentPlugin("Catchment", db_connect_url=nldi_db_connect_string)
+    catchment = p.get_by_coords("POINT(-89.22401470690966 42.82769689708948)", as_feature=True)
+    assert catchment["type"] == "Feature"
+    assert catchment["geometry"]["type"] == "MultiPolygon"
+    assert str(catchment["properties"]["identifier"]) == "13297332"
+
+    catchment_id = p.get_by_coords("POINT(-89.22401470690966 42.82769689708948)", as_feature=False)
+    assert str(catchment_id) == "13297332"

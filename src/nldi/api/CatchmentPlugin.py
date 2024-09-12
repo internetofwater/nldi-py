@@ -1,35 +1,50 @@
-from contextlib import contextmanager
+#!/usr/bin/env python
+# coding: utf-8
+# SPDX-License-Identifier: CC0
+#
+
+import json
 from typing import Any, Dict, List, Union
 
-
-from geoalchemy2 import WKTElement
 import sqlalchemy
-from sqlalchemy.engine import URL as DB_URL
+from geoalchemy2 import WKTElement
 
-from .. import LOGGER, util, NAD83_SRID
+from .. import LOGGER, NAD83_SRID, util
 from ..schemas.nhdplus import CatchmentModel
 from .BasePlugin import APIPlugin
 
 
 class CatchmentPlugin(APIPlugin):
-    def __init__(self, name):
-        super().__init__(name)
+    def __init__(self, name, **kwargs):
+        super().__init__(name, **kwargs)
         self.table_model = CatchmentModel
         self.geom_field = CatchmentModel.the_geom
         self.id_field = CatchmentModel.featureid
 
     @property
     def relative_url(self):
-        return util.url_join(self.base_url, "linked-data", "comid")
+        if self.is_registered:
+            return util.url_join(self.parent.base_url, "linked-data/comid")
+        else:
+            LOGGER.warning("Attempt to get relative_url from an unregistered plugin.")
+            return "/linked-data/comid"
 
     def get_by_id(self, id: str) -> Dict[str, Any]:
-        LOGGER.debug(f"GET Catchment for: {id}")
+        """
+        Retrieve a catchment by its featureid.
+
+        The featureid is the unique COMID identifier for a catchment in the NHDPlus database.
+        The returned data is a GeoJSON feature as a python dictionary.
+
+        :param id: featureid of the catchment
+        :returns: dict of GeoJSON feature
+        """
+        LOGGER.debug(f"{self.__class__.__name__} GET Catchment by ID: {id}")
         with self.session() as session:
-            # Retrieve data from database as feature
             q = self.query(session)
-            item = q.filter(self.id_field == id).first()
+            item = q.where(self.id_field == id).first()
             if item is None:
-                raise KeyError(f"No such source: featureid={id}.")
+                raise KeyError(f"No such catchment found: featureid={id}.")
         return self._sqlalchemy_to_feature(item)
 
     def get_by_coords(self, coords: str, as_feature: bool = False) -> Union[dict, int]:
@@ -46,38 +61,40 @@ class CatchmentPlugin(APIPlugin):
         :param asGeoJSON: return data as GeoJSON feature (default: False)
         :returns: dict of 0..n GeoJSON features (if asGeoJSON is True) else the ``featureid`` of the matching catchment.
         """
-        LOGGER.debug(f"Fetching Catchment COMID by coordinates: {coords=}")
+        LOGGER.debug(f"{self.__class__.__name__} GET Catchment by Coordinates: {coords}")
+
         with self.session() as session:
-            geom = sqlalchemy.func.ST_AsGeoJSON(CatchmentModel.the_geom).label("geojson")
+            geojson = sqlalchemy.func.ST_AsGeoJSON(CatchmentModel.the_geom).label("geojson")
             # Retrieve data from database as feature
             point = WKTElement(coords, srid=NAD83_SRID)
             LOGGER.debug(f"Using this point for selection: {point}")
             intersects = sqlalchemy.func.ST_Intersects(CatchmentModel.the_geom, point)
-            r = session.query(CatchmentModel).where(intersects).first()
+            r = session.query(CatchmentModel, geojson).where(intersects).first()
+            ## Setting up the query ^^^^^^^^^^^^^^^ like this means that r is a tuple of (CatchmentModel, GeoJSON_string).
+            # This will be important later when it comes time to unpack.
             if r is None:
                 raise KeyError
-        LOGGER.info(f"Searching for Catchment under {coords}: Intersection with comid={r.featureid}")
         if as_feature:
             return self._sqlalchemy_to_feature(r)
         else:
-            return r.featureid
+            (item, _) = r
+            return item.featureid
 
-    def _sqlalchemy_to_feature(self, item):
-        navigation = url_join(self.relative_url, item.featureid, "navigation")
-
+    def _sqlalchemy_to_feature(self, sql_row):
+        item, geojson = sql_row
+        navigation_link = util.url_join(self.relative_url, item.featureid, "navigation")
         return {
             "type": "Feature",
-            "geometry": item.geojson,
-            ##NOTE: this depends on the initial query returning ST_AsGeoJSON(the_geom) as geom.  See
-            ##      the query() method inherited from BasePlugin.
+            "geometry": json.loads(sql_row.geojson),
             "properties": {
                 "identifier": item.featureid,
                 "source": "comid",
+                ## TODO:  Find out what these fields are for and if they are needed.
                 # "name": item.name,
-                "comid": item.comid,
-                "uri": item.uri,
-                "reachcode": item.reachcode,
-                "measure": item.measure,
-                "navigation": navigation,
+                # "comid": item.comid,
+                # "uri": item.uri,
+                # "reachcode": item.reachcode,
+                # "measure": item.measure,
+                "navigation": navigation_link,
             },
         }

@@ -113,6 +113,7 @@ def sources():
     """
     return get_response(API_.get_crawler_sources(request))
 
+
 @BLUEPRINT.route("/linked-data/comid/<int:comid>")
 def get_comid_by_id(comid=None):
     """
@@ -140,7 +141,6 @@ def hydrolocation():
     :returns: HTTP response
     """
     return get_response(API_.get_hydrolocation(request))
-
 
 
 @BLUEPRINT.route("/linked-data/<path:source_name>")
