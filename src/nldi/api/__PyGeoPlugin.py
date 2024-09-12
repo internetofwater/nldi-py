@@ -1,15 +1,32 @@
+#!/usr/bin/env python
+# coding: utf-8
+# SPDX-License-Identifier: CC0
+#
+
+"""
+PyGeoAPI Plugin
+
+
+This plugin provides a mechanism for proxying requests to a PyGeoAPI
+instance running elsewhere. It is used to provide that pygeoapi functionality
+via the NLDI API, without forcing the client to make a separate request to the
+
+"""
+
+
 from contextlib import contextmanager
 from typing import Any, Dict, List
 
+import httpx
 import sqlalchemy
 from sqlalchemy.engine import URL as DB_URL
-import httpx
 
 from .. import LOGGER
 from ..schemas.nldi_data import CrawlerSourceModel
 from .BasePlugin import APIPlugin
 
 ## TODO: Need to complete catchment lookup before this will work
+
 
 
 DEFAULT_PROPS = {

@@ -141,10 +141,6 @@ def sources() -> flask.Response:
         )
     return flask.jsonify(content)
 
-@ROOT.route("/linked-data/hydrolocation")
-def hydrolocation():
-    return API_.get_hydrolocation(request)
-
 
 @ROOT.route("/linked-data/comid/<int:comid>")
 def get_flowline_by_comid(comid=None):
@@ -185,24 +181,35 @@ def get_flowline_by_position():
         LOGGER.error("No coordinates provided")
         return flask.Response(status=http.HTTPStatus.BAD_REQUEST, response="No coordinates provided")
 
+    ## pre-checks all sorted... let's look for some stuff:
     try:
+        ## Get the COMID for the provided coordinates, taken to be the
+        # nhdplus/catchmentsp polygon intersecting the supplied point
         comid = NLDI_API.plugins["Catchment"].get_by_coords(coords)
     except KeyError:
         LOGGER.info(f"Unable to find COMID for coordinates {coords}; returning 404")
         return flask.Response(status=http.HTTPStatus.NOT_FOUND)
 
+    ## TODO:  both lookups in the same try/except block?  keeping them separate lets us give
+    # more specific error messages....   TBD.
     try:
         flowline_feature = NLDI_API.plugins["FlowLine"].get(comid)
     except KeyError:
-        LOGGER.info(f"COMID {comid} not found; returning 404")
+        LOGGER.info(f"COMID {comid} not found using FlowLine; returning 404")
         return flask.Response(status=http.HTTPStatus.NOT_FOUND)
 
-
+    ## Formatting the response
     content = stream_j2_template("FeatureCollection.j2", [flowline_feature])
     return flask.Response(
         headers={"Content-Type": "application/json"},
         status=http.HTTPStatus.OK,
         response=content,
     )
+
+
+
+@ROOT.route("/linked-data/hydrolocation")
+def hydrolocation():
+    return API_.get_hydrolocation(request)
 
 APP.register_blueprint(ROOT, url_prefix="/api/nldi")

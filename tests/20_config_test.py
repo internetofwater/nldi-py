@@ -12,13 +12,13 @@ import pytest
 from nldi import config, openapi
 
 
-@pytest.mark.order(30)
+@pytest.mark.order(20)
 @pytest.mark.unittest
 def test_legacy_generate_alignment(global_config):
     _ = config.align_crawler_sources(global_config)
 
 
-@pytest.mark.order(31)
+@pytest.mark.order(21)
 @pytest.mark.unittest
 def test_legacy_generate_openapi_document(global_config):
     c = openapi.get_oas(global_config)
@@ -28,7 +28,7 @@ def test_legacy_generate_openapi_document(global_config):
     assert c["info"]["description"] is not None
     assert c["info"]["license"] is not None
 
-@pytest.mark.order(32)
+@pytest.mark.order(22)
 @pytest.mark.unittest
 def test_configuration_load(config_yaml, env_update):
     os.environ.update(env_update)

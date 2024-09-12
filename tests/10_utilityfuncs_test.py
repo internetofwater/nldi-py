@@ -7,7 +7,7 @@ from nldi import util
 import pytest
 
 
-@pytest.mark.order(20)
+@pytest.mark.order(10)
 @pytest.mark.unittest
 def test_read_yaml_file(config_yaml, env_update):
     """Standard usage: read a YAML file into a dict, if given a pathlib.Path object."""
@@ -21,7 +21,7 @@ def test_read_yaml_file(config_yaml, env_update):
     assert "huc12pp" in suffixes
 
 
-@pytest.mark.order(20)
+@pytest.mark.order(10)
 @pytest.mark.unittest
 def test_read_yaml_io(config_yaml, env_update):
     """If we pass an IO stream or file handle..."""
@@ -32,7 +32,7 @@ def test_read_yaml_io(config_yaml, env_update):
     assert len(sources) == 3
 
 
-@pytest.mark.order(20)
+@pytest.mark.order(10)
 @pytest.mark.unittest
 def test_read_yaml_strpath(config_yaml, env_update):
     """If we pass a filename as a string..."""
@@ -41,7 +41,7 @@ def test_read_yaml_strpath(config_yaml, env_update):
     sources = cfg["sources"]
     assert len(sources) == 3
 
-@pytest.mark.order(20)
+@pytest.mark.order(11)
 @pytest.mark.unittest
 def test_url_join():
     """Test the url_join function."""

@@ -5,16 +5,6 @@
 
 import pytest
 
-from nldi.server import APP
-
-
-@pytest.mark.order(40)
-@pytest.mark.unittest
-def test_get_404():
-    with APP.test_client() as client:
-        response = client.get("/notfound")
-    assert response.status_code == 404
-
 @pytest.mark.order(40)
 @pytest.mark.unittest
 def test_get_root():

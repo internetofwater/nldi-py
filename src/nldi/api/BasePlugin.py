@@ -9,22 +9,22 @@ from ..schemas.nldi_data import CrawlerSourceModel
 
 
 class APIPlugin:
-    def __init__(self, name: str):
+    def __init__(self, name: str, **kwargs:Dict[str, Any]):
         LOGGER.debug(f"{self.__class__.__name__} Constructor")
         self.name = name
         self.parent = None
 
-    def __repr__(self):
+        self._db_connect_url = kwargs.get("db_connect_url")
+
+    def __repr__(self) -> str:
         return f"APIPlugin({self.name})"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"APIPlugin({self.name})"
 
     @property
-    def is_registered(self):
-        if self.parent:
-            return True
-        return False
+    def is_registered(self) -> bool:
+        return self.parent is not None
 
     @property
     def base_url(self) -> str:
@@ -34,7 +34,42 @@ class APIPlugin:
             LOGGER.error("Attempt to get base_url from an unregistered plugin.")
             raise KeyError
 
-    def session(self):
+    @property
+    def _db_engine(self) -> sqlalchemy.engine:
+        """
+        Get the database engine for the plugin.
+
+        If the plugin is registered, we get the database engine from the parent.  This is the intended
+        normal mode of operation. If the plugin is not registered, we create a new database engine
+        using the connection URL provided in the constructor.  Assuming that one was provided.  This
+        pattern of creating a new engine is intended for use in testing and development only.  Plugins
+        are meant to be used as a component of the API and should not be creating their own database
+        engines except in bizzare circumstances.
+
+        Note that this method is named with a leading underscore to indicate that it is intended for
+        internal use only.  It is not part of the public API of the plugin, precisely because it is
+        only ever used by the plugin itself.
+
+        :raises RuntimeError: If no database connection URL is provided and none can be found from the parent.
+        :return: engine
+        :rtype: sqlalchemy.engine
+        """
+        if self.is_registered:
+            return self.parent.db_engine
+        else:
+            LOGGER.warning("Attempt to get db_engine from an unregistered plugin.")
+            ## We are an orphaned pluggin, so we need to create our own engine if we can.
+            LOGGER.debug(f"{self.__class__.__name__} creating database engine...")
+            if not self._db_connect_url:
+                raise RuntimeError("No database connection URL provided.")
+            engine = sqlalchemy.create_engine(
+                self._db_connect_url,
+                connect_args={"client_encoding": "utf8", "application_name": "nldi"},
+                pool_pre_ping=True,
+            )
+        return engine
+
+    def session(self) -> sqlalchemy.orm.Session:
         """
         Make a session for the plugin's database engine.
 
@@ -42,17 +77,16 @@ class APIPlugin:
         database engine.  I've moved away from ``sessionmaker`` because it is
         more flexible to create the session object directly. And a sqlalchemy
         ``Session`` is already a context manager (so we don't have to worry about
-        closing it if it is used correctly.)
+        closing it, so log as it is used correctly.)
 
         :raises RuntimeError: _description_
         :return: _description_
         :rtype: _type_
         """
-        if not self.parent:
-            raise RuntimeError("Plugin not registered with API")
-        return sqlalchemy.orm.Session(self.parent.db_engine)
+        return sqlalchemy.orm.Session(self._db_engine)
 
-    def query(self, session):
+    def query(self, session) -> sqlalchemy.orm.query.Query:
+        ## TODO:  I am reconsidering the need for this method.
         """
         Make a ``sqlalchemy`` query object for the plugin's table model.
 
@@ -70,8 +104,8 @@ class APIPlugin:
         :rtype: sqlalchemy.orm.query.Query
         """
         if hasattr(self, "geom_field") and self.geom_field:
-            geom = sqlalchemy.func.ST_AsGeoJSON(self.geom_field).label("geom")
-            return session.query(self.table_model, geom)
+            geojson = sqlalchemy.func.ST_AsGeoJSON(self.geom_field).label("geojson")
+            return session.query(self.table_model, geojson)
         else:
             return session.query(self.table_model)
 
@@ -95,7 +129,7 @@ class APIPlugin:
         else:
             ## if no table defined, we just run a dummy query to see if the connection is working.
             try:
-                with self.parent.db_engine.connect() as c:
+                with self._db_engine.connect() as c:
                     c.execute("SELECT 1")
             except sqlalchemy.exc.OperationalError as e:
                 LOGGER.error(f"Database connection error: {e}")

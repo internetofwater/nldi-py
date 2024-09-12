@@ -113,14 +113,14 @@ def sources():
     """
     return get_response(API_.get_crawler_sources(request))
 
-
-@BLUEPRINT.route("/linked-data/hydrolocation")
-def hydrolocation():
+@BLUEPRINT.route("/linked-data/comid/<int:comid>")
+def get_comid_by_id(comid=None):
     """
-    Hydrolocation endpoint
+    NHDPv2 comid by id endpoint
+
     :returns: HTTP response
     """
-    return get_response(API_.get_hydrolocation(request))
+    return get_response(API_.get_comid_by_id(request, comid))
 
 
 @BLUEPRINT.route("/linked-data/comid/position")
@@ -133,14 +133,14 @@ def get_comid_by_position():
     return get_response(API_.get_comid_by_position(request))
 
 
-@BLUEPRINT.route("/linked-data/comid/<int:comid>")
-def get_comid_by_id(comid=None):
+@BLUEPRINT.route("/linked-data/hydrolocation")
+def hydrolocation():
     """
-    NHDPv2 comid by id endpoint
-
+    Hydrolocation endpoint
     :returns: HTTP response
     """
-    return get_response(API_.get_comid_by_id(request, comid))
+    return get_response(API_.get_hydrolocation(request))
+
 
 
 @BLUEPRINT.route("/linked-data/<path:source_name>")

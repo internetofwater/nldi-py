@@ -11,9 +11,12 @@ import pathlib
 import pytest
 import sqlalchemy
 from click.testing import CliRunner
+from sqlalchemy.engine import URL as DB_URL
 from testcontainers.core.container import DockerContainer
 from testcontainers.core.waiting_utils import wait_for_logs
+
 os.environ.update({"NLDI_CONFIG": "tests/data/sources_config.yml"})
+
 
 @pytest.fixture
 def runner():
@@ -65,10 +68,35 @@ def nldi_db_container():
 
 
 @pytest.fixture(scope="session")
+def nldi_db_connect_string(nldi_db_container):
+    """
+    Database connection string for NLDI database.
+
+    This fixture will provide a connection string for the NLDI database
+    that is running in the Docker container. This is useful for testing
+    the connection to the database from the test environment.
+
+    """
+    # return (
+    #     f"postgresql+psycopg2://{nldi_db_container['user']}:{nldi_db_container['password']}"
+    #     f"@{nldi_db_container['host']}:{nldi_db_container['port']}/{nldi_db_container['dbname']}"
+    # )
+    return DB_URL.create(
+        "postgresql+psycopg2",
+        username=nldi_db_container["user"],
+        password=nldi_db_container["password"],
+        host=nldi_db_container["host"],
+        port=nldi_db_container["port"],
+        database=nldi_db_container["dbname"],
+    )
+
+
+@pytest.fixture(scope="session")
 def config_yaml() -> pathlib.Path:
     """Sample configuration file for tests."""
     here = pathlib.Path(__file__).parent
     return here / "data" / "sources_config.yml"
+
 
 @pytest.fixture(scope="session")
 def dummy_db_config():
@@ -79,6 +107,7 @@ def dummy_db_config():
         "port": 5432,
         "dbname": "nldi",
     }
+
 
 @pytest.fixture(scope="session")
 def env_update():

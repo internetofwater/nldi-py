@@ -6,15 +6,17 @@
 import json
 import logging
 from functools import cached_property
+from typing import Dict, Any
 
+import sqlalchemy
 from .. import LOGGER, util
 from ..schemas.nhdplus import FlowlineModel
 from .BasePlugin import APIPlugin
 
 
 class FlowlinePlugin(APIPlugin):
-    def __init__(self, name):
-        super().__init__(name)
+    def __init__(self, name, **kwargs):
+        super().__init__(name, **kwargs)
         self.geom_field = FlowlineModel.shape
         self.id_field = FlowlineModel.nhdplus_comid
         self.table_model = FlowlineModel
@@ -27,12 +29,18 @@ class FlowlinePlugin(APIPlugin):
             LOGGER.warning("Attempt to get relative_url from an unregistered plugin.")
             return ""
 
-    def get(self, identifier: str):
+    def get(self, identifier: str) -> Dict[str, Any]:
         LOGGER.debug(f"{self.__class__.__name__} : Fetching COMID with {identifier=}")
         with self.session() as session:
             # Retrieve data from database as feature
-            q = self.query(session)
-            item = q.filter(self.id_field == identifier).first()
+            try:
+                q = self.query(session)
+                item = q.filter(self.id_field == identifier).first()
+            except sqlalchemy.exc.SQLAlchemyError as e:
+                LOGGER.error(f"SQLAlchemy error: {e}")
+                # Doesn't really matter what the error is, the end result is that we couldn't find the named key.  Raise KeyError
+                raise KeyError from e
+
             if item is None:
                 LOGGER.debug(f"Not found: {identifier=}")
                 raise KeyError("No comid found for: {identifier=}")
@@ -71,10 +79,10 @@ class FlowlinePlugin(APIPlugin):
             for item in query.all():
                 yield self._sqlalchemy_to_feature(item)
 
-    def _sqlalchemy_to_feature(self, item):
+    def _sqlalchemy_to_feature(self, item) -> Dict[str, Any]:
         if self.geom_field:
-            (feature, geom) = item
-            geometry = json.loads(geom)
+            (feature, geojson) = item
+            geometry = json.loads(geojson)
         else:
             feature = item
             geometry = None
