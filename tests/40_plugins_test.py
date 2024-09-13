@@ -9,7 +9,15 @@ from copy import deepcopy
 
 import pytest
 
-from nldi.api import APIPlugin, FlowlinePlugin, CrawlerSourcePlugin, CatchmentPlugin, HydroLocationPlugin
+from nldi.api import (
+    APIPlugin,
+    FlowlinePlugin,
+    CrawlerSourcePlugin,
+    CatchmentPlugin,
+    HydroLocationPlugin,
+    SplitCatchmentPlugin,
+    MainstemPlugin,
+)
 
 
 # region APIPlugin
@@ -203,6 +211,14 @@ def test_catchment_plugin_get_by_id(nldi_db_connect_string):
 
 @pytest.mark.order(43)
 @pytest.mark.integration
+def test_catchment_plugin_get_by_id_notfound(nldi_db_connect_string):
+    p = CatchmentPlugin("Catchment", db_connect_url=nldi_db_connect_string)
+    with pytest.raises(KeyError):
+        catchment = p.get_by_id("00000000")
+
+
+@pytest.mark.order(43)
+@pytest.mark.integration
 def test_catchment_plugin_get_by_coords(nldi_db_connect_string):
     p = CatchmentPlugin("Catchment", db_connect_url=nldi_db_connect_string)
     catchment = p.get_by_coords("POINT(-89.22401470690966 42.82769689708948)", as_feature=True)
@@ -235,3 +251,46 @@ def test_hydrolocation_plugin_get_by_coords(nldi_db_connect_string):
     assert response["features"][0]["geometry"]["type"] == "Point"
     assert response["features"][1]["geometry"]["type"] == "Point"
     ## TODO:  Verify the computed values are correct.
+
+
+@pytest.mark.order(45)
+@pytest.mark.integration
+def test_splitcatchment_plugin_constructor(nldi_db_connect_string):
+    p = SplitCatchmentPlugin("SplitCatchment", db_connect_url=nldi_db_connect_string)
+    assert p.db_is_alive() is True
+    assert p.pygeoapi_url == SplitCatchmentPlugin.DEFAULT_PYGEOAPI_URL
+
+
+@pytest.mark.order(45)
+@pytest.mark.integration
+def test_splitcatchment_plugin_get_by_coords(nldi_db_connect_string):
+    p = HydroLocationPlugin("HydroLocation", db_connect_url=nldi_db_connect_string)
+    response = p.get_by_coords("POINT(-89.22401470690966 42.82769689708948)")
+
+    ## TODO:  Verify the computed values are correct.
+
+
+# region MainStemPlugin
+@pytest.mark.order(46)
+@pytest.mark.integration
+def test_mainstem_plugin_constructor(nldi_db_connect_string):
+    p = MainstemPlugin("MainStem", db_connect_url=nldi_db_connect_string)
+    assert p.db_is_alive() is True
+
+
+@pytest.mark.order(46)
+@pytest.mark.integration
+def test_mainstem_plugin_get_by_id(nldi_db_connect_string):
+    p = MainstemPlugin("MainStem", db_connect_url=nldi_db_connect_string)
+    mainstem = p.get("13294360")
+    assert isinstance(mainstem, dict)
+    for k in ["nhdpv2_comid", "mainstem_id", "uri"]:
+        assert k in mainstem
+
+
+@pytest.mark.order(46)
+@pytest.mark.integration
+def test_mainstem_plugin_get_by_id_notfound(nldi_db_connect_string):
+    p = MainstemPlugin("MainStem", db_connect_url=nldi_db_connect_string)
+    with pytest.raises(KeyError):
+        mainstem = p.get("00000000")

@@ -88,8 +88,6 @@ class API:
             ## TODO:  Decide if we want to raise an exception here or just deregister the plugin and return False.
             return False
 
-    # def get_plugins(self) -> Dict[str, APIPlugin]:
-    #     return self._plugin_registry
 
     @property
     def openapi_json(self) -> Dict[str, Any]:
