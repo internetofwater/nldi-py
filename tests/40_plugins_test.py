@@ -9,7 +9,7 @@ from copy import deepcopy
 
 import pytest
 
-from nldi.api import APIPlugin, FlowlinePlugin, CrawlerSourcePlugin, CatchmentPlugin
+from nldi.api import APIPlugin, FlowlinePlugin, CrawlerSourcePlugin, CatchmentPlugin, HydroLocationPlugin
 
 
 # region APIPlugin
@@ -212,3 +212,26 @@ def test_catchment_plugin_get_by_coords(nldi_db_connect_string):
 
     catchment_id = p.get_by_coords("POINT(-89.22401470690966 42.82769689708948)", as_feature=False)
     assert str(catchment_id) == "13297332"
+
+
+# region PyGeoAPIPlugin
+
+
+@pytest.mark.order(44)
+@pytest.mark.integration
+def test_hydrolocation_plugin_constructor(nldi_db_connect_string):
+    p = HydroLocationPlugin("HydroLocation", db_connect_url=nldi_db_connect_string)
+    assert p.db_is_alive() is True
+    assert p.pygeoapi_url == HydroLocationPlugin.DEFAULT_PYGEOAPI_URL
+
+
+@pytest.mark.order(44)
+@pytest.mark.integration
+def test_hydrolocation_plugin_get_by_coords(nldi_db_connect_string):
+    p = HydroLocationPlugin("HydroLocation", db_connect_url=nldi_db_connect_string)
+    response = p.get_by_coords("POINT(-89.22401470690966 42.82769689708948)")
+    assert response["type"] == "FeatureCollection"
+    assert len(response["features"]) == 2  # << there should be two Point features in the response
+    assert response["features"][0]["geometry"]["type"] == "Point"
+    assert response["features"][1]["geometry"]["type"] == "Point"
+    ## TODO:  Verify the computed values are correct.

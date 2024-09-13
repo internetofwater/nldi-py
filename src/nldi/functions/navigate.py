@@ -43,10 +43,11 @@ COASTAL_FCODE = 56600
 
 
 class NavigationModes(str, Enum):
-    DM = "DM"
-    DD = "DD"
-    UM = "UM"
-    UT = "UT"
+    DM = "DM"  # Downstream navigation on the Main channel
+    DD = "DD"  # Downstream navigation with Diversions
+    UM = "UM"  # Upstream navigation on the Main channel
+    UT = "UT"  # Upstream navigation with Tributaries
+    # PP = "PP"  # Point-to-Point navigation ; the stopComid query parameter is required and must be downstream of the comid.
 
 
 def trim_navigation(nav_mode: str, comid: int, trim_tolerance: float, measure: float):

@@ -32,7 +32,7 @@ class APIPlugin:
             return self.parent.config["base_url"]
         else:
             LOGGER.error("Attempt to get base_url from an unregistered plugin.")
-            raise KeyError
+            return "/"
 
     @property
     def _db_engine(self) -> sqlalchemy.engine:

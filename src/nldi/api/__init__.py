@@ -10,3 +10,5 @@ from .BasePlugin import APIPlugin
 from .CrawlerSourcePlugin import CrawlerSourcePlugin
 from .FlowlinePlugin import FlowlinePlugin
 from .CatchmentPlugin import CatchmentPlugin
+from .HydroLocationPlugin import HydroLocationPlugin
+

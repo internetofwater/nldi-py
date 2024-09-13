@@ -207,8 +207,7 @@ def app_factory(api: API) -> flask.Flask:
     NLDI_API = api
     app.url_map.strict_slashes = False
     CORS(app)
-
-
+    ## These have to be defined here, after the app is created... since the decorator is a method on the app object.
     @app.before_request
     def log_incoming_request() -> None:
         """Simple middleware function to log requests."""
@@ -224,7 +223,9 @@ def app_factory(api: API) -> flask.Flask:
                 }
             )
             return r
+
     app.register_blueprint(ROOT, url_prefix="/api/nldi")
+
     return app
 
 
