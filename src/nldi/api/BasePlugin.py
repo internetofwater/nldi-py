@@ -31,7 +31,7 @@ class APIPlugin:
         if self.is_registered:
             return self.parent.config["base_url"]
         else:
-            LOGGER.error("Attempt to get base_url from an unregistered plugin.")
+            LOGGER.warning("Attempt to get base_url from an unregistered plugin.")
             return "/"
 
     @property

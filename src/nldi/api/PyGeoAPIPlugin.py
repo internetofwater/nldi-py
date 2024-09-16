@@ -17,8 +17,9 @@ from typing import Any, Dict, List
 import httpx
 
 from .. import LOGGER
-from .err import ProviderQueryError
 from .BasePlugin import APIPlugin
+from .err import ProviderQueryError
+
 
 class PyGeoAPIPlugin(APIPlugin):
     DEFAULT_PYGEOAPI_URL = "https://labs-beta.waterdata.usgs.gov/api/nldi/pygeoapi"
@@ -43,20 +44,21 @@ class PyGeoAPIPlugin(APIPlugin):
         if self.is_registered:
             return self.parent.config.get("pygeoapi_url", self.DEFAULT_PYGEOAPI_URL)
         else:
-            LOGGER.error("Attempt to get pygeoapi_url from an unregistered plugin.")
+            LOGGER.warning("Attempt to get pygeoapi_url from an unregistered plugin.")
             return self.DEFAULT_PYGEOAPI_URL
 
     @classmethod
-    def _post_to_external_service(cls, url: str, data: dict = {}) -> dict:
-        LOGGER.debug(f"{__class__.__name__} Sending POST request to: {url}")
+    def _post_to_external_service(cls, url: str, data: dict = {}, timeout:int=0) -> dict:
+        _to = timeout if timeout > 0 else cls.HTTP_TIMEOUT
+        LOGGER.debug(f"{__class__.__name__} Sending POST (timeout={_to}) to: {url}")
         try:
             with httpx.Client() as client:
-                r = client.post(url, data=json.dumps(data), timeout=cls.HTTP_TIMEOUT).raise_for_status()
+                r = client.post(url, data=json.dumps(data), timeout=_to).raise_for_status()
                 response = r.json()
-        except httpx.HTTPStatusError as err:
+        except httpx.HTTPStatusError as err: # pragma: no cover
             LOGGER.error(f"HTTP error: {err}")
             raise ProviderQueryError from err
-        except json.JSONDecodeError as err:
+        except json.JSONDecodeError as err: # pragma: no cover
             LOGGER.error(f"JSON decode error: {err}")
             raise ProviderQueryError from err
         return response

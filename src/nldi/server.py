@@ -10,14 +10,14 @@ from typing import Dict, List, Tuple
 import flask
 from flask_cors import CORS
 from pygeoapi.util import render_j2_template  ##TODO: can we drop this dependency? Need to figure out templating
-from nldi.util import stream_j2_template
+
 from . import LOGGER, __version__, log, util
-from .config import Configuration
 from .api.main import API
+from .config import Configuration
 
+NLDI_API = None  # we have to start somewhere...
 
-NLDI_API = None
-
+# region Preamble
 log.initialize(LOGGER, level="DEBUG")
 ##TODO: The log level  should be a configurable option, perhaps set with -V or --verbose switch.
 
@@ -29,8 +29,11 @@ CONFIG = Configuration(os.environ.get("NLDI_CONFIG"))
 LOGGER.info(f"NLDI v{__version__} API Server >> Starting Up")
 log.versions(logger=LOGGER)
 
-## Routing dispatch table for ROOT of the server endpoints:
+# region Routing
+# Creates dispatch table for ROOT of the server endpoints:
 ROOT = flask.Blueprint("nldi", __name__)
+
+
 @ROOT.route("/")
 def home() -> flask.Response:
     content = {
@@ -59,9 +62,11 @@ def home() -> flask.Response:
     }
     return flask.jsonify(content)
 
+
 @ROOT.route("/favicon.ico")
 def favicon():
     return flask.send_from_directory("./static/", "favicon.ico", mimetype="image/vnd.microsoft.icon")
+
 
 @ROOT.route("/openapi")
 def openapi_spec() -> Tuple[dict, int, str]:
@@ -182,7 +187,7 @@ def get_flowline_by_position():
         return flask.Response(status=http.HTTPStatus.NOT_FOUND)
 
     ## Formatting the response
-    content = stream_j2_template("FeatureCollection.j2", [flowline_feature])
+    content = util.stream_j2_template("FeatureCollection.j2", [flowline_feature])
     return flask.Response(
         headers={"Content-Type": "application/json"},
         status=http.HTTPStatus.OK,
@@ -192,12 +197,110 @@ def get_flowline_by_position():
 
 @ROOT.route("/linked-data/hydrolocation")
 def hydrolocation():
-    return API_.get_hydrolocation(request)
+    global NLDI_API
+    if "Catchment" not in NLDI_API.plugins:
+        from .api import CatchmentPlugin  # noqa: I001
+
+        if NLDI_API.register_plugin(CatchmentPlugin("Catchment")):
+            LOGGER.debug("Loaded Catchment plugin")
+        else:
+            LOGGER.error("Failed to register CatchmentPlugin")
+            raise RuntimeError("Failed to register CatchmentPlugin")
+            
+    if "HydroLocation" not in NLDI_API.plugins:
+        from .api import HydroLocationPlugin  # noqa: I001
+
+        if NLDI_API.register_plugin(HydroLocationPlugin("HydroLocation")):
+            LOGGER.debug("Loaded HydroLocation plugin")
+        else:
+            LOGGER.error("Failed to register HydroLocationPlugin")
+            raise RuntimeError("Failed to register HydroLocationPlugin")
+
+    if (coords := flask.request.args.get("coords")) is None:
+        LOGGER.error("No coordinates provided")
+        return flask.Response(status=http.HTTPStatus.BAD_REQUEST, response="No coordinates provided")
+    try:
+        _hydro_location = NLDI_API.plugins["HydroLocation"].get_by_coords(coords)
+    except Exception as e:
+        LOGGER.error(f"Error getting hydrolocation for coordinates {coords}: {e}")
+        return flask.Response(status=http.HTTPStatus.INTERNAL_SERVER_ERROR, response=str(e))
+    return flask.jsonify(_hydro_location)
+
+# region Routes Per-Source
+@ROOT.route("/linked-data/<path:source_name>")
+@ROOT.route("/linked-data/<path:source_name>/<path:identifier>")
+def get_source_features(source_name=None, identifier=None):
+    r = flask.jsonify(
+        {
+            "message": "Not Implemented",
+            "params": {"source_name": source_name, "identifier": identifier},
+        }
+    )
+    return r
+
+@ROOT.route("/linked-data/<path:source_name>/<path:identifier>/basin")
+def get_basin(source_name=None, identifier=None):
+    r = flask.jsonify(
+        {
+            "message": "Not Implemented",
+            "params": {"source_name": source_name, "identifier": identifier},
+        }
+    )
+    return r
+    # return get_response(API_.get_basin(request, source_name, identifier))
+
+@ROOT.route("/linked-data/<path:source_name>/<path:identifier>/navigation")  # noqa
+@ROOT.route("/linked-data/<path:source_name>/<path:identifier>/navigation/<path:nav_mode>")  # noqa
+def get_navigation_info(source_name=None, identifier=None, nav_mode=None):
+    r = flask.jsonify(
+        {
+            "message": "Not Implemented",
+            "params": {"source_name": source_name, "identifier": identifier, "nav_mode": nav_mode},
+        }
+    )
+    return r
+#     return get_response(API_.get_navigation_info(request, source_name, identifier, nav_mode))
 
 
+@ROOT.route("/linked-data/<path:source_name>/<path:identifier>/navigation/<path:nav_mode>/flowlines")  # noqa
+def get_flowline_navigation(source_name=None, identifier=None, nav_mode=None):  # noqa
+    r = flask.jsonify(
+        {
+            "message": "Not Implemented",
+            "params": {"source_name": source_name, "identifier": identifier},
+        }
+    )
+    return r
+#     return get_response(API_.get_flowlines(request, source_name, identifier, nav_mode))
 
+
+@ROOT.route("/linked-data/<path:source_name>/<path:identifier>/navigation/<path:nav_mode>/<path:data_source>")  # noqa
+def get_navigation(source_name=None, identifier=None, nav_mode=None, data_source=None):  # noqa
+    r = flask.jsonify(
+        {
+            "message": "Not Implemented",
+            "params": {
+                "source_name": source_name,
+                "identifier": identifier,
+                "nav_mode": nav_mode,
+                "data_source": data_source,
+            },
+        }
+    )
+    return r
+#     return get_response(API_.get_navigation(request, source_name, identifier, nav_mode, data_source))
+
+
+# region APP Creation
 def app_factory(api: API) -> flask.Flask:
-    """Factory function to create the Flask app with the given API instance."""
+    """
+    Create the Flask app with the given API instance.
+
+    We're choosing to make the main Flask APP using a factory function to give the possibility
+    that the app can be created with different API configurations. This mostly a concession
+    to testability -- mocked and faked APIs can be used to test APP functionality more easily
+    with this setup.
+    """
     global NLDI_API
     global ROOT
 
@@ -207,27 +310,33 @@ def app_factory(api: API) -> flask.Flask:
     NLDI_API = api
     app.url_map.strict_slashes = False
     CORS(app)
-    ## These have to be defined here, after the app is created... since the decorator is a method on the app object.
+    app.register_blueprint(ROOT, url_prefix="/api/nldi")
+
+    ## These have to be defined here, after the app is created... since the decorator is
+    #  a method on the app object we got from flask.Flask.
     @app.before_request
     def log_incoming_request() -> None:
-        """Simple middleware function to log requests."""
+        """Implement simple middleware function to log requests."""
         LOGGER.debug(f"{flask.request.method} {flask.request.url}")
 
         ## Sets up a callback to update headers after the request is processed.
         @flask.after_this_request
         def update_headers(r: flask.Response) -> flask.Response:
-            """Simple middlware function to update response headers."""
+            """Implement simple middlware function to update response headers."""
             r.headers.update(
                 {
                     "X-Powered-By": f"nldi {__version__}",
                 }
+                # TODO: add headers to this dict that you want in every response.
             )
             return r
 
-    app.register_blueprint(ROOT, url_prefix="/api/nldi")
-
+    ## This is the app we'll be serving...
     return app
 
 
+# region APP
 APP = app_factory(API(globalconfig=CONFIG))
-
+## ^^^^^^^^  this is the standard startup, where APP is the thing we care about.
+## But for testing or special cases, you can send a different API in (with a different
+## ``globalconfig``).

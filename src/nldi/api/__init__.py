@@ -5,14 +5,14 @@
 
 """API Support"""
 
-from .main import API
 from .BasePlugin import APIPlugin
+from .CatchmentPlugin import CatchmentPlugin
 from .CrawlerSourcePlugin import CrawlerSourcePlugin
 from .FlowlinePlugin import FlowlinePlugin
-from .CatchmentPlugin import CatchmentPlugin
 from .HydroLocationPlugin import HydroLocationPlugin
-from .SplitCatchmentPlugin import SplitCatchmentPlugin
+from .main import API
 from .MainstemPlugin import MainstemPlugin
+from .SplitCatchmentPlugin import SplitCatchmentPlugin
 
 __all__ = [
     "API",

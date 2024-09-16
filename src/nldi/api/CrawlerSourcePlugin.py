@@ -77,11 +77,15 @@ class CrawlerSourcePlugin(APIPlugin):
 
     def insert_source(self, source) -> bool:
         """
-        Insert a source in the database.
+        Insert a source in the CrawlerSource table.
 
         This method will insert a new source into the database, or update an existing source
         if it happens to have the same ``crawler_source_id`` as an existing source.  This
-        "upsert" using "ON CONFLICT" clause specific to the PostGreSQL dialect of SQL.
+        "upsert" using "ON CONFLICT" clause specific to the postgres dialect of SQL.
+
+        NOTE that this is a (hopefully) non-breaking change in behavior.  Previous factors of this
+        function presumed that the to-be-inserted source did not already exist, and simply
+        inserted (and trapped for failure).
         """
         source_suffix = source["source_suffix"].lower()
         source["source_suffix"] = source_suffix
@@ -152,8 +156,9 @@ class CrawlerSourcePlugin(APIPlugin):
         columns present.
 
         If the ``force`` parameter is True, all sources in the database will be deleted
-        before inserting the new ones. If False, the new sources will be inserted/updated in
-        addition to the existing ones.
+        before inserting the new ones. This is the default, as this preserves backward
+        compatibility. If False, the new sources will be inserted/updated in the source
+        table without purging the existing configuration.
 
         :param sources: A list of sources to insert into the database.
         :type Dict[str, str]
@@ -165,7 +170,8 @@ class CrawlerSourcePlugin(APIPlugin):
                 session.query(CrawlerSourceModel).delete()
                 session.commit()
         for s in sources:
-            # I agree.... a single session for all of these would be better.... but we're talking
-            # about inserting a half-dozen rows at most.   ##TODO: optimize this later.
-            self.insert_source(s)
+            # I agree.... a single session for all of these would be better than letting insert_source
+            # create a new session for each insert.... but we're only talking about inserting a dozen
+            # rows at most.
+            self.insert_source(s)   ##TODO: optimize this to allow session re-use.
         return True

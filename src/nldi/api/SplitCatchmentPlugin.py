@@ -48,8 +48,12 @@ class SplitCatchmentPlugin(PyGeoAPIPlugin):
             ]
         }
 
-        url = url_join(self.pygeoapi_url, "processes/nldi-splitcatchment/execution")  # noqa
-        response = self._post_to_external_service(self.splitcatchment_service_endpoint, data=request_payload)
+        url = util.url_join(self.pygeoapi_url, "processes/nldi-splitcatchment/execution")  # noqa
+        response = self._post_to_external_service(
+            self.splitcatchment_service_endpoint,
+            data=request_payload,
+            timeout=2*self.HTTP_TIMEOUT,  ## give the split algorithm a bit more time to work.
+            )
 
         # Search for feature with id "mergedCatchment" or "drainageBasin"
         _to_return = None

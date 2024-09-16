@@ -57,6 +57,9 @@ def url_join(*parts: str) -> str:
 
     Per https://github.com/geopython/pygeoapi/issues/695
 
+    Note that this function ALWAYS removes a trailing / for the output, even if
+    your last term in the parts list includes the trailing slash. 
+
     :param parts: list of parts to join
     :returns: str of resulting URL
     """
@@ -64,6 +67,7 @@ def url_join(*parts: str) -> str:
 
 
 def yaml_load(fh: IO) -> dict:
+    # NOTE: deprecated in favor of refactored version below
     """
     Serialize a YAML file into a pyyaml object.
 
@@ -116,6 +120,8 @@ def get_typed_value(value: str) -> Union[float, int, str]:
 
 
 def to_json(dict_: dict, pretty: bool = False) -> str:
+    #NOTE: mostly deprecated....   prefer to use flask.jsonify for return responses.  This func
+    # is still used in the jinja template renderer.
     """
     Serialize dict to json
 
@@ -165,7 +171,7 @@ def sort_sources(dict_: list) -> dict:
     return sorted(dict_, key=lambda d: d["crawler_source_id"])
 
 
-# region refactors
+# region Refactored Functions
 @singledispatch
 def load_yaml(fromwhere: Any) -> dict:
     """

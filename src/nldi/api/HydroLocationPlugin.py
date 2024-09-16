@@ -28,20 +28,40 @@ from .PyGeoAPIPlugin import PyGeoAPIPlugin
 
 
 class HydroLocationPlugin(PyGeoAPIPlugin):
-
     @property
     def catchment_lookup(self):
+        """
+        Return a catchment lookup plugin.
+
+        This is a property that returns a CatchmentPlugin instance.  If the plugin is not registered,
+        it will create a new instance with a default name and database connection URL.  If this plugin
+        is propertly registered with the API, it will return the catchment plugin instance that is
+        registered with the parent.
+        """
         if self.is_registered and "Catchment" in self.parent.plugins:
-            return self.parent.plugins["CatchmentPlugin"]
+            return self.parent.plugins["Catchment"]
         else:
-            LOGGER.error("Attempt to get catchment_lookup from an unregistered plugin.")
+            LOGGER.warning("Attempt to get catchment_lookup from an unregistered plugin.")
             return CatchmentPlugin("Catchment-From-HydroLocation", db_connect_url=self._db_connect_url)
 
     @property
     def flowtrace_service_endpoint(self) -> str:
+        """Return the fully qualified URL for the flowtrace service endpoint."""
         return util.url_join(self.pygeoapi_url, "processes", "nldi-flowtrace", "execution")
 
     def get_by_coords(self, coords: str) -> dict:
+        """
+        Get a hydrolocation by coordinates.
+
+
+
+        :param coords: _description_
+        :type coords: str
+        :raises ProviderQueryError: _description_
+        :raises KeyError: _description_
+        :return: _description_
+        :rtype: dict
+        """
         LOGGER.debug(f"{__class__.__name__} get_by_coords: {coords}")
         point = shapely.wkt.loads(coords)
         request_payload = {
@@ -69,7 +89,10 @@ class HydroLocationPlugin(PyGeoAPIPlugin):
         measure = (
             FlowlineModel.fmeasure
             + (
-                1 - sqlalchemy.func.ST_LineLocatePoint(FlowlineModel.shape, sqlalchemy.func.ST_GeomFromText(wkt_geom, 4269))  # noqa
+                1
+                - sqlalchemy.func.ST_LineLocatePoint(
+                    FlowlineModel.shape, sqlalchemy.func.ST_GeomFromText(wkt_geom, 4269)
+                )  # noqa
             )
             * (FlowlineModel.tmeasure - FlowlineModel.fmeasure)
         ).label("measure")

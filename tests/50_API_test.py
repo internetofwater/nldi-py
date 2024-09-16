@@ -6,7 +6,7 @@
 """
 Test suite for nldi-py package
 
-Here is where we test 
+Here is where we test
 """
 
 from copy import deepcopy

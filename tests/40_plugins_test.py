@@ -6,6 +6,7 @@
 """Test suite for nldi-py package"""
 
 from copy import deepcopy
+import json
 
 import pytest
 
@@ -69,14 +70,14 @@ def test_baseplugin_constructor_with_broken_db_connect_url(nldi_db_container):
 @pytest.mark.order(41)
 @pytest.mark.integration
 def test_crawlersource_plugin_constructor(nldi_db_connect_string):
-    p = CrawlerSourcePlugin("FlowLine", db_connect_url=nldi_db_connect_string)
+    p = CrawlerSourcePlugin("CrawlerSource", db_connect_url=nldi_db_connect_string)
     assert p.db_is_alive() is True
 
 
 @pytest.mark.order(41)
 @pytest.mark.integration
 def test_crawlersource_plugin_listall(nldi_db_connect_string):
-    p = CrawlerSourcePlugin("FlowLine", db_connect_url=nldi_db_connect_string)
+    p = CrawlerSourcePlugin("CrawlerSource", db_connect_url=nldi_db_connect_string)
     src_list = p.get_all()
     assert len(src_list) > 0  # << There should be at least one source in the test database
 
@@ -84,7 +85,7 @@ def test_crawlersource_plugin_listall(nldi_db_connect_string):
 @pytest.mark.order(41)
 @pytest.mark.integration
 def test_crawlersource_plugin_lookup_one_source(nldi_db_connect_string, mock_source):
-    p = CrawlerSourcePlugin("FlowLine", db_connect_url=nldi_db_connect_string)
+    p = CrawlerSourcePlugin("CrawlerSource", db_connect_url=nldi_db_connect_string)
     sampled = p.get(mock_source["source_suffix"])
 
     for k in mock_source:
@@ -99,7 +100,7 @@ def test_crawlersource_plugin_lookup_one_source(nldi_db_connect_string, mock_sou
 @pytest.mark.order(41)
 @pytest.mark.integration
 def test_crawlersource_plugin_lookup_one_source_notfound(nldi_db_connect_string):
-    p = CrawlerSourcePlugin("FlowLine", db_connect_url=nldi_db_connect_string)
+    p = CrawlerSourcePlugin("CrawlerSource", db_connect_url=nldi_db_connect_string)
     with pytest.raises(KeyError):
         sampled = p.get("nosuchsource")
 
@@ -108,7 +109,7 @@ def test_crawlersource_plugin_lookup_one_source_notfound(nldi_db_connect_string)
 @pytest.mark.integration
 def test_crawersource_plugin_insert_new_source(nldi_db_connect_string):
     ## also tests delete_source
-    p = CrawlerSourcePlugin("FlowLine", db_connect_url=nldi_db_connect_string)
+    p = CrawlerSourcePlugin("CrawlerSource", db_connect_url=nldi_db_connect_string)
 
     n = len(p.get_all())
     assert n == 3  # << There should be 3 sources in the test database
@@ -138,12 +139,29 @@ def test_crawersource_plugin_insert_new_source(nldi_db_connect_string):
 @pytest.mark.order(41)
 @pytest.mark.integration
 def test_crawersource_plugin_update_existing_source(nldi_db_connect_string, mock_source):
-    p = CrawlerSourcePlugin("FlowLine", db_connect_url=nldi_db_connect_string)
+    p = CrawlerSourcePlugin("CrawlerSource", db_connect_url=nldi_db_connect_string)
 
     n = len(p.get_all())
     assert n == 3  # << There should be 3 sources in the test database
     success = p.insert_source(mock_source)
     assert success is True
+    assert len(p.get_all()) == n
+
+
+@pytest.mark.order(41)
+@pytest.mark.integration
+def test_crawersource_plugin_delete_source(nldi_db_connect_string, mock_source):
+    p = CrawlerSourcePlugin("CrawlerSource", db_connect_url=nldi_db_connect_string)
+
+    n = len(p.get_all())
+    assert n == 3  # << There should be 3 sources in the test database
+    # delete this source -- must be named by its unique source_id
+    success = p.delete_source(mock_source["crawler_source_id"])
+    assert success is True
+    assert len(p.get_all()) == n - 1
+
+    ## put it back....
+    success = p.insert_source(mock_source)
     assert len(p.get_all()) == n
 
 
@@ -231,8 +249,6 @@ def test_catchment_plugin_get_by_coords(nldi_db_connect_string):
 
 
 # region PyGeoAPIPlugin
-
-
 @pytest.mark.order(44)
 @pytest.mark.integration
 def test_hydrolocation_plugin_constructor(nldi_db_connect_string):
@@ -245,12 +261,66 @@ def test_hydrolocation_plugin_constructor(nldi_db_connect_string):
 @pytest.mark.integration
 def test_hydrolocation_plugin_get_by_coords(nldi_db_connect_string):
     p = HydroLocationPlugin("HydroLocation", db_connect_url=nldi_db_connect_string)
-    response = p.get_by_coords("POINT(-89.22401470690966 42.82769689708948)")
-    assert response["type"] == "FeatureCollection"
-    assert len(response["features"]) == 2  # << there should be two Point features in the response
-    assert response["features"][0]["geometry"]["type"] == "Point"
-    assert response["features"][1]["geometry"]["type"] == "Point"
-    ## TODO:  Verify the computed values are correct.
+    computed_response = p.get_by_coords("POINT(-89.22401470690966 42.82769689708948)")
+
+    ## according to https://labs.waterdata.usgs.gov/api/nldi/linked-data/hydrolocation?f=json&coords=POINT%28-89.22401470690966%2042.82769689708948%29
+    expected_response = {
+        "type": "FeatureCollection",
+        "features": [
+            {
+                "type": "Feature",
+                "geometry": {"type": "Point", "coordinates": [-89.2238590189335, 42.8280375024736]},
+                "properties": {
+                    "identifier": "",
+                    "navigation": "https://labs.waterdata.usgs.gov/api/nldi/linked-data/comid/13297332/navigation",
+                    "measure": "47.24281851027958",
+                    "reachcode": "07090002007792",
+                    "name": "",
+                    "source": "indexed",
+                    "sourceName": "Automatically indexed by the NLDI",
+                    "comid": "13297332",
+                    "type": "hydrolocation",
+                    "uri": "",
+                },
+            },
+            {
+                "type": "Feature",
+                "geometry": {"type": "Point", "coordinates": [-89.2240147069097, 42.8276968970895]},
+                "properties": {
+                    "identifier": "",
+                    "navigation": "",
+                    "measure": "",
+                    "reachcode": "",
+                    "name": "",
+                    "source": "provided",
+                    "sourceName": "Provided via API call",
+                    "comid": "",
+                    "type": "point",
+                    "uri": "",
+                },
+            },
+        ],
+    }
+    # NOTE: we are just testing key properties and values.  Can't just do a compare on the dicts because of the url prefix of the navigation link.
+    #      Also, the coordinates are not exact, so we need to use pytest.approx() to compare them.
+    assert (
+        str(computed_response["features"][0]["properties"]["measure"])
+        == expected_response["features"][0]["properties"]["measure"]
+    )
+    assert (
+        str(computed_response["features"][0]["properties"]["reachcode"])
+        == expected_response["features"][0]["properties"]["reachcode"]
+    )
+    assert (
+        str(computed_response["features"][0]["properties"]["comid"])
+        == expected_response["features"][0]["properties"]["comid"]
+    )
+    assert computed_response["features"][0]["geometry"]["coordinates"][0] == pytest.approx(
+        expected_response["features"][0]["geometry"]["coordinates"][0], abs=1e-6
+    )
+    assert computed_response["features"][0]["geometry"]["coordinates"][1] == pytest.approx(
+        expected_response["features"][0]["geometry"]["coordinates"][1], abs=1e-6
+    )
 
 
 @pytest.mark.order(45)
@@ -264,9 +334,10 @@ def test_splitcatchment_plugin_constructor(nldi_db_connect_string):
 @pytest.mark.order(45)
 @pytest.mark.integration
 def test_splitcatchment_plugin_get_by_coords(nldi_db_connect_string):
-    p = HydroLocationPlugin("HydroLocation", db_connect_url=nldi_db_connect_string)
+    p = SplitCatchmentPlugin("SplitCatchment", db_connect_url=nldi_db_connect_string)
     response = p.get_by_coords("POINT(-89.22401470690966 42.82769689708948)")
-
+    assert response["type"] == "Feature"
+    assert response["geometry"]["type"].endswith("Polygon") ## could be Polygon or MultiPolygon
     ## TODO:  Verify the computed values are correct.
 
 
