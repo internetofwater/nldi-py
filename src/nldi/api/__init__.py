@@ -13,7 +13,7 @@ from .HydroLocationPlugin import HydroLocationPlugin
 from .main import API
 from .MainstemPlugin import MainstemPlugin
 from .SplitCatchmentPlugin import SplitCatchmentPlugin
-
+from .FeaturePlugin import FeaturePlugin
 __all__ = [
     "API",
     "APIPlugin",
@@ -23,5 +23,6 @@ __all__ = [
     "HydroLocationPlugin",
     "SplitCatchmentPlugin",
     "MainstemPlugin",
+    "FeaturePlugin",
 ]
 

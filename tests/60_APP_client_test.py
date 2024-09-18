@@ -67,23 +67,33 @@ def test_API_hydrolocation(global_config):
     assert len(response.json["features"]) == 2
     assert response.json["features"][0]["properties"]["source"] == "indexed"
     assert response.json["features"][1]["properties"]["source"] == "provided"
-    assert str(response.json["features"][0]["properties"]["comid"]) == "13297332"  #<< known good comid
+    assert str(response.json["features"][0]["properties"]["comid"]) == "13297332"
+    assert response.json["features"][0]["properties"]["measure"] == pytest.approx(47.242818, 1e-06)
     #      ^^^^^^^^^^^ "correct" responses obtained from
     #      https://labs.waterdata.usgs.gov/api/nldi/linked-data/hydrolocation?f=json&coords=POINT(-89.22401470690966%2042.82769689708948)
 
 
 @pytest.mark.order(61)
 @pytest.mark.unittest
-def test_source_linked_data(global_config):
-    # @ROOT.route("/linked-data/<path:source_name>")
+def test_source_linked_data_one_feature(global_config):
     # @ROOT.route("/linked-data/<path:source_name>/<path:identifier>")
     _api = API(globalconfig=global_config)
     _app = app_factory(_api)
     with _app.test_client() as client:
-        response = client.get("/api/nldi/linked-data/wqp")
+        # response = client.get("/api/nldi/linked-data/wqp/USGS-05427930")
+        response = client.get("/api/nldi/linked-data/wqp/WIDNR_WQX-133338")
+
         assert response.status_code == 200
 
-        response = client.get("/api/nldi/linked-data/wqp/1234")
+
+@pytest.mark.order(61)
+@pytest.mark.unittest
+def test_source_linked_data_all_features(global_config):
+    # @ROOT.route("/linked-data/<path:source_name>")
+    _api = API(globalconfig=global_config)
+    _app = app_factory(_api)
+    with _app.test_client() as client:
+        response = client.get("/api/nldi/linked-data/wqp")
         assert response.status_code == 200
 
 
@@ -106,12 +116,11 @@ def test_source_linked_data_navigation(global_config):
     _api = API(globalconfig=global_config)
     _app = app_factory(_api)
     with _app.test_client() as client:
-        response = client.get("/api/nldi/linked-data/wqp/navigation")
+        response = client.get("/api/nldi/linked-data/wqp/USGS-05427930/navigation")
         assert response.status_code == 200
 
-        response = client.get("/api/nldi/linked-data/wqp/navigation/mode")
+        response = client.get("/api/nldi/linked-data/wqp/USGS-05427930/navigation/mode")
         assert response.status_code == 200
-
 
 
 @pytest.mark.order(61)
@@ -121,7 +130,7 @@ def test_source_linked_data_flowlines(global_config):
     _api = API(globalconfig=global_config)
     _app = app_factory(_api)
     with _app.test_client() as client:
-        response = client.get("/api/nldi/linked-data/wqp/navigation/mode/flowlines")
+        response = client.get("/api/nldi/linked-data/wqp/USGS-05427930/navigation/mode/flowlines")
         assert response.status_code == 200
 
 
@@ -132,5 +141,5 @@ def test_source_linked_data_source(global_config):
     _api = API(globalconfig=global_config)
     _app = app_factory(_api)
     with _app.test_client() as client:
-        response = client.get("/api/nldi/linked-data/wqp/navigation/mode/src")
+        response = client.get("/api/nldi/linked-data/wqp/USGS-05427930/navigation/mode/src")
         assert response.status_code == 200

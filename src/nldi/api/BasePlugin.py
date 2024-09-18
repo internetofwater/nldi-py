@@ -17,10 +17,10 @@ class APIPlugin:
         self._db_connect_url = kwargs.get("db_connect_url")
 
     def __repr__(self) -> str:
-        return f"APIPlugin({self.name})"
+        return f"{self.__class__.__name__}({self.name})"
 
     def __str__(self) -> str:
-        return f"APIPlugin({self.name})"
+        return f"{self.__class__.__name__}({self.name})"
 
     @property
     def is_registered(self) -> bool:

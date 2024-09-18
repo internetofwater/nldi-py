@@ -10,15 +10,7 @@ import json
 
 import pytest
 
-from nldi.api import (
-    APIPlugin,
-    FlowlinePlugin,
-    CrawlerSourcePlugin,
-    CatchmentPlugin,
-    HydroLocationPlugin,
-    SplitCatchmentPlugin,
-    MainstemPlugin,
-)
+from nldi.api import *
 
 
 # region APIPlugin
@@ -30,6 +22,7 @@ def test_baseplugin_constructor_smoketest():
     assert p.name == "test"
     assert not p.is_registered
     assert p._db_connect_url is None
+    print(f"{p} and {p!r}") # just to trigger repr and str methods
 
 
 @pytest.mark.order(40)
@@ -337,7 +330,7 @@ def test_splitcatchment_plugin_get_by_coords(nldi_db_connect_string):
     p = SplitCatchmentPlugin("SplitCatchment", db_connect_url=nldi_db_connect_string)
     response = p.get_by_coords("POINT(-89.22401470690966 42.82769689708948)")
     assert response["type"] == "Feature"
-    assert response["geometry"]["type"].endswith("Polygon") ## could be Polygon or MultiPolygon
+    assert response["geometry"]["type"].endswith("Polygon")  ## could be Polygon or MultiPolygon
     ## TODO:  Verify the computed values are correct.
 
 
@@ -365,3 +358,39 @@ def test_mainstem_plugin_get_by_id_notfound(nldi_db_connect_string):
     p = MainstemPlugin("MainStem", db_connect_url=nldi_db_connect_string)
     with pytest.raises(KeyError):
         mainstem = p.get("00000000")
+
+
+# region FeaturePlugin
+@pytest.mark.order(47)
+@pytest.mark.integration
+def test_feature_plugin_constructor(nldi_db_connect_string):
+    p = FeaturePlugin("Feature", db_connect_url=nldi_db_connect_string)
+    assert p.db_is_alive() is True
+
+
+@pytest.mark.order(47)
+@pytest.mark.integration
+def test_feature_plugin_src_lookup(nldi_db_connect_string):
+    p = FeaturePlugin("Feature", db_connect_url=nldi_db_connect_string)
+    src = p.crawler_source_lookup.get("wqp")
+    assert src["source_suffix"] == "wqp"
+
+
+@pytest.mark.order(47)
+@pytest.mark.integration
+def test_feature_plugin_lookup(nldi_db_connect_string):
+    p = FeaturePlugin("Feature", db_connect_url=nldi_db_connect_string)
+    feature = p.get_by_id("USGS-05427930", "wqp")
+    assert feature["type"] == "Feature"
+    assert str(feature["properties"]["comid"]) == "13294176"
+    assert feature["properties"]["name"].startswith("DORN (SPRING) CREEK")
+
+@pytest.mark.order(47)
+@pytest.mark.integration
+def test_feature_plugin_get_all(nldi_db_connect_string):
+    p = FeaturePlugin("Feature", db_connect_url=nldi_db_connect_string)
+    features = list(p.get_all("huc12pp"))
+    assert len(features) == 18
+    for f in features:
+        assert f["type"] == "Feature"
+        assert f["properties"]["source"] == "huc12pp"

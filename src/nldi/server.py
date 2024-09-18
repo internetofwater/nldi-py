@@ -34,6 +34,24 @@ log.versions(logger=LOGGER)
 ROOT = flask.Blueprint("nldi", __name__)
 
 
+@ROOT.before_request
+def log_incoming_request() -> None:
+    """Implement simple middleware function to log requests."""
+    LOGGER.debug(f"{flask.request.method} {flask.request.url}")
+
+    ## Sets up a callback to update headers after the request is processed.
+    @flask.after_this_request
+    def update_headers(r: flask.Response) -> flask.Response:
+        """Implement simple middlware function to update response headers."""
+        r.headers.update(
+            {
+                "X-Powered-By": f"nldi {__version__}",
+            }
+            # TODO: add headers to this dict that you want in every response.
+        )
+        return r
+
+
 @ROOT.route("/")
 def home() -> flask.Response:
     content = {
@@ -206,7 +224,7 @@ def hydrolocation():
         else:
             LOGGER.error("Failed to register CatchmentPlugin")
             raise RuntimeError("Failed to register CatchmentPlugin")
-            
+
     if "HydroLocation" not in NLDI_API.plugins:
         from .api import HydroLocationPlugin  # noqa: I001
 
@@ -226,17 +244,9 @@ def hydrolocation():
         return flask.Response(status=http.HTTPStatus.INTERNAL_SERVER_ERROR, response=str(e))
     return flask.jsonify(_hydro_location)
 
+
 # region Routes Per-Source
-@ROOT.route("/linked-data/<path:source_name>")
-@ROOT.route("/linked-data/<path:source_name>/<path:identifier>")
-def get_source_features(source_name=None, identifier=None):
-    r = flask.jsonify(
-        {
-            "message": "Not Implemented",
-            "params": {"source_name": source_name, "identifier": identifier},
-        }
-    )
-    return r
+
 
 @ROOT.route("/linked-data/<path:source_name>/<path:identifier>/basin")
 def get_basin(source_name=None, identifier=None):
@@ -246,8 +256,8 @@ def get_basin(source_name=None, identifier=None):
             "params": {"source_name": source_name, "identifier": identifier},
         }
     )
-    return r
-    # return get_response(API_.get_basin(request, source_name, identifier))
+    return r  # return get_response(API_.get_basin(request, source_name, identifier))
+
 
 @ROOT.route("/linked-data/<path:source_name>/<path:identifier>/navigation")  # noqa
 @ROOT.route("/linked-data/<path:source_name>/<path:identifier>/navigation/<path:nav_mode>")  # noqa
@@ -258,8 +268,7 @@ def get_navigation_info(source_name=None, identifier=None, nav_mode=None):
             "params": {"source_name": source_name, "identifier": identifier, "nav_mode": nav_mode},
         }
     )
-    return r
-#     return get_response(API_.get_navigation_info(request, source_name, identifier, nav_mode))
+    return r  #     return get_response(API_.get_navigation_info(request, source_name, identifier, nav_mode))
 
 
 @ROOT.route("/linked-data/<path:source_name>/<path:identifier>/navigation/<path:nav_mode>/flowlines")  # noqa
@@ -270,8 +279,7 @@ def get_flowline_navigation(source_name=None, identifier=None, nav_mode=None):  
             "params": {"source_name": source_name, "identifier": identifier},
         }
     )
-    return r
-#     return get_response(API_.get_flowlines(request, source_name, identifier, nav_mode))
+    return r  # return get_response(API_.get_flowlines(request, source_name, identifier, nav_mode))
 
 
 @ROOT.route("/linked-data/<path:source_name>/<path:identifier>/navigation/<path:nav_mode>/<path:data_source>")  # noqa
@@ -288,7 +296,42 @@ def get_navigation(source_name=None, identifier=None, nav_mode=None, data_source
         }
     )
     return r
+
+
 #     return get_response(API_.get_navigation(request, source_name, identifier, nav_mode, data_source))
+
+
+@ROOT.route("/linked-data/<path:source_name>")
+@ROOT.route("/linked-data/<path:source_name>/<path:identifier>")
+def get_source_features(source_name=None, identifier=None):
+    if "Feature" not in NLDI_API.plugins:
+        from .api import FeaturePlugin  # noqa: I001
+
+        if NLDI_API.register_plugin(FeaturePlugin("Feature")):
+            LOGGER.debug("Loaded Feature plugin")
+        else:
+            LOGGER.error("Failed to register FeaturePlugin")
+            raise RuntimeError("Failed to register FeaturePlugin")
+
+    if identifier:
+        try:
+            feature = NLDI_API.plugins["Feature"].get_by_id(identifier, source_name)
+            features = [feature]
+        except KeyError as e:
+            return flask.Response(status=http.HTTPStatus.NOT_FOUND, response=str(e))
+    else:  # No identifier given; return all features from this source
+        try:
+            features = NLDI_API.plugins["Feature"].get_all(source_name)
+        except KeyError as e:
+            return flask.Response(status=http.HTTPStatus.NOT_FOUND, response=str(e))
+
+    ## Formatting the response
+    content = util.stream_j2_template("FeatureCollection.j2", features)
+    return flask.Response(
+        headers={"Content-Type": "application/json"},
+        status=http.HTTPStatus.OK,
+        response=content,
+    )
 
 
 # region APP Creation
@@ -311,25 +354,6 @@ def app_factory(api: API) -> flask.Flask:
     app.url_map.strict_slashes = False
     CORS(app)
     app.register_blueprint(ROOT, url_prefix="/api/nldi")
-
-    ## These have to be defined here, after the app is created... since the decorator is
-    #  a method on the app object we got from flask.Flask.
-    @app.before_request
-    def log_incoming_request() -> None:
-        """Implement simple middleware function to log requests."""
-        LOGGER.debug(f"{flask.request.method} {flask.request.url}")
-
-        ## Sets up a callback to update headers after the request is processed.
-        @flask.after_this_request
-        def update_headers(r: flask.Response) -> flask.Response:
-            """Implement simple middlware function to update response headers."""
-            r.headers.update(
-                {
-                    "X-Powered-By": f"nldi {__version__}",
-                }
-                # TODO: add headers to this dict that you want in every response.
-            )
-            return r
 
     ## This is the app we'll be serving...
     return app

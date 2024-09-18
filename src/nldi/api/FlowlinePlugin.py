@@ -48,37 +48,39 @@ class FlowlinePlugin(APIPlugin):
             return self._sqlalchemy_to_feature(item)
 
     def lookup_navigation(self, nav: str):  ## TODO: navigation business logic refactor
-        with self.session() as session:
-            q = self.query(session)  # Retrieve data from database as feature
-            query = q.join(nav, FlowlineModel.nhdplus_comid == nav.c.comid)
-            hits = query.count()
+        raise NotImplementedError("Not implemented yet")
+        # with self.session() as session:
+        #     q = self.query(session)  # Retrieve data from database as feature
+        #     query = q.join(nav, FlowlineModel.nhdplus_comid == nav.c.comid)
+        #     hits = query.count()
 
-            if hits is None:
-                raise KeyError("Not Found")
-            LOGGER.debug(f"Found {hits} hits")
-            for item in query.all():
-                yield self._sqlalchemy_to_feature(item)
-            
+        #     if hits is None:
+        #         raise KeyError("Not Found")
+        #     LOGGER.debug(f"Found {hits} hits")
+        #     for item in query.all():
+        #         yield self._sqlalchemy_to_feature(item)
+
 
     def trim_navigation(self, nav, nav_trim):  ## TODO: navigation business logic refactor
-        with self.session() as session:
-            query = (
-                session.query(self.table_model, nav_trim.c.geom)
-                .join(nav, FlowlineModel.nhdplus_comid == nav.c.comid)
-                .join(
-                    nav_trim,
-                    FlowlineModel.nhdplus_comid == nav_trim.c.comid,  # noqa
-                )
-            )
-            hits = query.count()
+        raise NotImplementedError("Not implemented yet")
+        # with self.session() as session:
+        #     query = (
+        #         session.query(self.table_model, nav_trim.c.geom)
+        #         .join(nav, FlowlineModel.nhdplus_comid == nav.c.comid)
+        #         .join(
+        #             nav_trim,
+        #             FlowlineModel.nhdplus_comid == nav_trim.c.comid,  # noqa
+        #         )
+        #     )
+        #     hits = query.count()
 
-            if hits is None:
-                msg = "Not found"
-                raise ProviderItemNotFoundError(msg)
+        #     if hits is None:
+        #         msg = "Not found"
+        #         raise ProviderItemNotFoundError(msg)
 
-            LOGGER.debug(f"Returning {hits} hits")
-            for item in query.all():
-                yield self._sqlalchemy_to_feature(item)
+        #     LOGGER.debug(f"Returning {hits} hits")
+        #     for item in query.all():
+        #         yield self._sqlalchemy_to_feature(item)
 
     def _sqlalchemy_to_feature(self, item) -> Dict[str, Any]:
         if self.geom_field:

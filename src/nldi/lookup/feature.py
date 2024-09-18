@@ -94,22 +94,24 @@ class FeatureLookup(BaseLookup):
                 yield self._sqlalchemy_to_feature(item)
 
     def lookup_navigation(self, nav: str):
-        crawler_source_id = self.source.get("crawler_source_id")
-        crawler_source_id_ = FeatureSourceModel.crawler_source_id
+        raise NotImplementedError("FeaturePlugin.lookup_navigation() is not implemented.")
+        # TODO: Implement this.
+        # crawler_source_id = self.source.get("crawler_source_id")
+        # crawler_source_id_ = FeatureSourceModel.crawler_source_id
 
-        with self.session() as session:
-            # Retrieve data from database as feature
-            query = session.join(nav, self.table_model.comid == nav.c.comid).filter(
-                crawler_source_id_ == crawler_source_id
-            )
-            hits = query.count()
+        # with self.session() as session:
+        #     # Retrieve data from database as feature
+        #     query = session.join(nav, self.table_model.comid == nav.c.comid).filter(
+        #         crawler_source_id_ == crawler_source_id
+        #     )
+        #     hits = query.count()
 
-            if hits is None:
-                raise ProviderItemNotFoundError("Not found")
+        #     if hits is None:
+        #         raise ProviderItemNotFoundError("Not found")
 
-            LOGGER.debug(f"Returning {hits} hits")
-            for item in query.all():
-                yield self._sqlalchemy_to_feature(item)
+        #     LOGGER.debug(f"Returning {hits} hits")
+        #     for item in query.all():
+        #         yield self._sqlalchemy_to_feature(item)
 
     def _sqlalchemy_to_feature(self, item):
         if self.geom_field:
