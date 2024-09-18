@@ -4,12 +4,11 @@ from typing import Any, Dict, List
 import sqlalchemy
 from sqlalchemy.engine import URL as DB_URL
 
-from .. import LOGGER
-from ..schemas.nldi_data import CrawlerSourceModel
+from ... import LOGGER
 
 
 class APIPlugin:
-    def __init__(self, name: str, **kwargs: Dict[str, Any]):
+    def __init__(self, name: str|None = None, **kwargs: Dict[str, Any]):
         LOGGER.debug(f"{self.__class__.__name__} Constructor")
         self.name = name
         self.parent = None
@@ -21,6 +20,12 @@ class APIPlugin:
 
     def __str__(self) -> str:
         return f"{self.__class__.__name__}({self.name})"
+
+    def get_by_id(self, id: str) -> Any:
+        raise NotImplementedError
+
+    def get_by_coords(self, coords: str) -> Any:
+        raise NotImplementedError
 
     @property
     def is_registered(self) -> bool:

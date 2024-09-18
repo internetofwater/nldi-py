@@ -146,7 +146,7 @@ def sources() -> flask.Response:
 def get_flowline_by_comid(comid=None):
     global NLDI_API
     if "FlowLine" not in NLDI_API.plugins:
-        from .api import FlowlinePlugin  # noqa: I001
+        from .api.plugins import FlowlinePlugin  # noqa: I001
 
         if NLDI_API.register_plugin(FlowlinePlugin("FlowLine")):
             LOGGER.debug("Loaded FlowLine plugin")
@@ -166,7 +166,7 @@ def get_flowline_by_position():
     global NLDI_API
     ## TODO:  Refactor all this plugin loading into a single function for re-use elsewhere.
     if "FlowLine" not in NLDI_API.plugins:
-        from .api import FlowlinePlugin  # noqa: I001
+        from .api.plugins import FlowlinePlugin  # noqa: I001
 
         if NLDI_API.register_plugin(FlowlinePlugin("FlowLine")):
             LOGGER.debug("Loaded FlowLine plugin")
@@ -175,7 +175,7 @@ def get_flowline_by_position():
             raise RuntimeError("Failed to register FlowlinePlugin")
 
     if "Catchment" not in NLDI_API.plugins:
-        from .api import CatchmentPlugin  # noqa: I001
+        from .api.plugins import CatchmentPlugin  # noqa: I001
 
         if NLDI_API.register_plugin(CatchmentPlugin("Catchment")):
             LOGGER.debug("Loaded Catchment plugin")
@@ -217,7 +217,7 @@ def get_flowline_by_position():
 def hydrolocation():
     global NLDI_API
     if "Catchment" not in NLDI_API.plugins:
-        from .api import CatchmentPlugin  # noqa: I001
+        from .api.plugins import CatchmentPlugin  # noqa: I001
 
         if NLDI_API.register_plugin(CatchmentPlugin("Catchment")):
             LOGGER.debug("Loaded Catchment plugin")
@@ -226,7 +226,7 @@ def hydrolocation():
             raise RuntimeError("Failed to register CatchmentPlugin")
 
     if "HydroLocation" not in NLDI_API.plugins:
-        from .api import HydroLocationPlugin  # noqa: I001
+        from .api.plugins import HydroLocationPlugin  # noqa: I001
 
         if NLDI_API.register_plugin(HydroLocationPlugin("HydroLocation")):
             LOGGER.debug("Loaded HydroLocation plugin")
@@ -305,7 +305,7 @@ def get_navigation(source_name=None, identifier=None, nav_mode=None, data_source
 @ROOT.route("/linked-data/<path:source_name>/<path:identifier>")
 def get_source_features(source_name=None, identifier=None):
     if "Feature" not in NLDI_API.plugins:
-        from .api import FeaturePlugin  # noqa: I001
+        from .api.plugins import FeaturePlugin  # noqa: I001
 
         if NLDI_API.register_plugin(FeaturePlugin("Feature")):
             LOGGER.debug("Loaded Feature plugin")

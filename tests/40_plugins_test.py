@@ -5,12 +5,12 @@
 
 """Test suite for nldi-py package"""
 
-from copy import deepcopy
 import json
+from copy import deepcopy
 
 import pytest
 
-from nldi.api import *
+from nldi.api.plugins import *
 
 
 # region APIPlugin

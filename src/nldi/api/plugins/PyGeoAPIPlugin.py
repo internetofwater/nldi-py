@@ -16,9 +16,9 @@ from typing import Any, Dict, List
 
 import httpx
 
-from .. import LOGGER
-from .BasePlugin import APIPlugin
-from .err import ProviderQueryError
+from ... import LOGGER
+from ..err import ProviderQueryError
+from .APIPlugin import APIPlugin
 
 
 class PyGeoAPIPlugin(APIPlugin):

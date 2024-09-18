@@ -9,9 +9,9 @@ from typing import Any, Dict, List, Union
 import sqlalchemy
 from geoalchemy2 import WKTElement
 
-from .. import LOGGER, NAD83_SRID, util
-from ..schemas.nhdplus import CatchmentModel
-from .BasePlugin import APIPlugin
+from ... import LOGGER, NAD83_SRID, util
+from ...schemas.nhdplus import CatchmentModel
+from .APIPlugin import APIPlugin
 
 
 class CatchmentPlugin(APIPlugin):

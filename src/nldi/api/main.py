@@ -13,8 +13,7 @@ from sqlalchemy.engine import URL as DB_URL
 
 from .. import LOGGER, __version__
 from ..util import load_yaml
-from .BasePlugin import APIPlugin
-from .CrawlerSourcePlugin import CrawlerSourcePlugin
+from .plugins import APIPlugin, CrawlerSourcePlugin
 
 
 class API:

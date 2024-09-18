@@ -9,9 +9,9 @@ from functools import cached_property
 from typing import Dict, Any
 
 import sqlalchemy
-from .. import LOGGER, util
-from ..schemas.nhdplus import FlowlineModel
-from .BasePlugin import APIPlugin
+from ... import LOGGER, util
+from ...schemas.nhdplus import FlowlineModel
+from .APIPlugin import APIPlugin
 
 
 class FlowlinePlugin(APIPlugin):

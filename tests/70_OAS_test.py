@@ -14,9 +14,11 @@ from copy import deepcopy
 
 import pytest
 
-from nldi.api import API, APIPlugin, FlowlinePlugin
-from nldi.server import APP
 from nldi import __version__
+from nldi.api import API
+from nldi.api.plugins import *
+from nldi.server import APP
+
 
 @pytest.mark.order(70)
 @pytest.mark.unittest

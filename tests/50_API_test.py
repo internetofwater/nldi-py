@@ -13,7 +13,9 @@ from copy import deepcopy
 
 import pytest
 
-from nldi.api import API, APIPlugin, FlowlinePlugin
+from nldi.api import API
+from nldi.api.plugins import *
+
 from nldi.server import APP
 
 

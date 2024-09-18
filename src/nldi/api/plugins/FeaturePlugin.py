@@ -9,10 +9,10 @@ from typing import Any, Dict, List, Union
 import sqlalchemy
 from geoalchemy2 import WKTElement
 
-from .. import LOGGER, NAD83_SRID, util
-from ..schemas.nldi_data import FeatureSourceModel
+from ... import LOGGER, NAD83_SRID, util
+from ...schemas.nldi_data import FeatureSourceModel
 
-from .BasePlugin import APIPlugin
+from .APIPlugin import APIPlugin
 from .CrawlerSourcePlugin import CrawlerSourcePlugin
 
 
@@ -78,7 +78,8 @@ class FeaturePlugin(APIPlugin):
                 raise KeyError(f"No features found for {source_suffix=}.")
             LOGGER.debug(f"Query returned {_hits} hits.")
 
-            _return = []  ##TODO: This should really be a generator, but the db connection keeps closing after only a handful of rows processed.  Need to figure out why.
+            _return = []  ##TODO: This should really be a generator, but the db connection keeps closing after only a handful of rows processed.
+
             for item in q:
                 row, geojson = item
                 _return.append(self._sqlalchemy_to_feature(row, geojson, src))
@@ -105,9 +106,9 @@ class FeaturePlugin(APIPlugin):
 
     def _sqlalchemy_to_feature(self, feature, geojson, srcinfo) -> Dict[str, Any]:
         try:
-            mainstem = feature.mainstem_lookup.url_join  ## TODO: This is not correct.  Need to figure out how to get the mainstem_lookup from the database.
+            mainstem = feature.mainstem_lookup.uri
         except AttributeError:
-            LOGGER.warning(f"mainstem_lookup not found for {feature.identifier}")
+            LOGGER.warning(f"Mainstem_lookup not found for {feature.identifier}")
             mainstem = ""
         navigation = util.url_join(self.relative_url( srcinfo['source_suffix'] ), feature.identifier, "navigation")
 

@@ -8,9 +8,9 @@ from typing import Any, Dict, List
 import sqlalchemy
 from sqlalchemy.dialects.postgresql import insert as pginsert
 
-from .. import LOGGER
-from ..schemas.nldi_data import CrawlerSourceModel
-from .BasePlugin import APIPlugin
+from ... import LOGGER
+from ...schemas.nldi_data import CrawlerSourceModel
+from .APIPlugin import APIPlugin
 
 
 class CrawlerSourcePlugin(APIPlugin):

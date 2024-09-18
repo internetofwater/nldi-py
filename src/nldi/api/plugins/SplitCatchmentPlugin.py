@@ -19,8 +19,8 @@ import shapely
 import sqlalchemy
 from sqlalchemy.engine import URL as DB_URL
 
-from .. import LOGGER, util
-from .err import ProviderGenericError, ProviderQueryError
+from ... import LOGGER, util
+from ..err import ProviderGenericError, ProviderQueryError
 from .PyGeoAPIPlugin import PyGeoAPIPlugin
 
 

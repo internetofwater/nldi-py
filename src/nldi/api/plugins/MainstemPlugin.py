@@ -1,6 +1,6 @@
-from nldi.schemas.nldi_data import MainstemLookupModel
-from . import APIPlugin
-from .. import LOGGER
+from ...schemas.nldi_data import MainstemLookupModel
+from .APIPlugin import APIPlugin
+from ... import LOGGER
 from typing import Any, Dict
 
 
