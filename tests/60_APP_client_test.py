@@ -95,7 +95,7 @@ def test_source_linked_data_all_features(global_config):
     with _app.test_client() as client:
         response = client.get("/api/nldi/linked-data/wqp")
         assert response.status_code == 200
-        assert len(response.json["features"]) > 1100 ## wqp has 1100+ features
+        assert len(response.json["features"]) > 1100  ## wqp has 1100+ features
 
 
 @pytest.mark.order(61)

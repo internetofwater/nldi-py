@@ -22,7 +22,7 @@ def test_baseplugin_constructor_smoketest():
     assert p.name == "test"
     assert not p.is_registered
     assert p._db_connect_url is None
-    print(f"{p} and {p!r}") # just to trigger repr and str methods
+    print(f"{p} and {p!r}")  # just to trigger repr and str methods
 
 
 @pytest.mark.order(40)
@@ -384,6 +384,7 @@ def test_feature_plugin_lookup(nldi_db_connect_string):
     assert feature["type"] == "Feature"
     assert str(feature["properties"]["comid"]) == "13294176"
     assert feature["properties"]["name"].startswith("DORN (SPRING) CREEK")
+
 
 @pytest.mark.order(47)
 @pytest.mark.integration

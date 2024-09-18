@@ -87,7 +87,6 @@ class API:
             ## TODO:  Decide if we want to raise an exception here or just deregister the plugin and return False.
             return False
 
-
     @property
     def openapi_json(self) -> Dict[str, Any]:
         """

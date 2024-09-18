@@ -37,6 +37,7 @@ def test_get_404():
         response = client.get("/notfound")
     assert response.status_code == 404
 
+
 @pytest.mark.order(70)
 @pytest.mark.unittest
 def test_get_favicon():
@@ -44,7 +45,6 @@ def test_get_favicon():
         response = client.get("/api/nldi/favicon.ico")
     assert response.status_code == 200
     assert response.headers["Content-Type"] == "image/vnd.microsoft.icon"
-
 
 
 @pytest.mark.order(60)

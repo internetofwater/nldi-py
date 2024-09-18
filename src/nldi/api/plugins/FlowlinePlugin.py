@@ -60,7 +60,6 @@ class FlowlinePlugin(APIPlugin):
         #     for item in query.all():
         #         yield self._sqlalchemy_to_feature(item)
 
-
     def trim_navigation(self, nav, nav_trim):  ## TODO: navigation business logic refactor
         raise NotImplementedError("Not implemented yet")
         # with self.session() as session:

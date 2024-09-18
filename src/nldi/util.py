@@ -58,7 +58,7 @@ def url_join(*parts: str) -> str:
     Per https://github.com/geopython/pygeoapi/issues/695
 
     Note that this function ALWAYS removes a trailing / for the output, even if
-    your last term in the parts list includes the trailing slash. 
+    your last term in the parts list includes the trailing slash.
 
     :param parts: list of parts to join
     :returns: str of resulting URL
@@ -120,7 +120,7 @@ def get_typed_value(value: str) -> Union[float, int, str]:
 
 
 def to_json(dict_: dict, pretty: bool = False) -> str:
-    #NOTE: mostly deprecated....   prefer to use flask.jsonify for return responses.  This func
+    # NOTE: mostly deprecated....   prefer to use flask.jsonify for return responses.  This func
     # is still used in the jinja template renderer.
     """
     Serialize dict to json

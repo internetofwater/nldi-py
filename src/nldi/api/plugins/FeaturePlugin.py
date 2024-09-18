@@ -52,12 +52,16 @@ class FeaturePlugin(APIPlugin):
         with self.session() as session:
             geojson = sqlalchemy.func.ST_AsGeoJSON(self.geom_field).label("geojson")
             q = session.query(self.table_model, geojson)
-            item = q.where(self.id_field == id).filter(self.table_model.crawler_source_id == src['crawler_source_id']).first()
+            item = (
+                q.where(self.id_field == id)
+                .filter(self.table_model.crawler_source_id == src["crawler_source_id"])
+                .first()
+            )
             if item is None:
                 raise KeyError(f"No such feature found: {id=} / {source_suffix=}.")
             row, geojson = item
             ## NOTE: We have to call this here (while session is active) so that the database relationships can be resolved.
-            result =  self._sqlalchemy_to_feature(row, geojson, src)
+            result = self._sqlalchemy_to_feature(row, geojson, src)
         return result
 
     def get_all(self, source_suffix: str) -> List[Dict[str, Any]]:
@@ -71,7 +75,11 @@ class FeaturePlugin(APIPlugin):
         with self.session() as session:
             # Retrieve data from database as feature
             geojson = sqlalchemy.func.ST_AsGeoJSON(self.geom_field).label("geojson")
-            q = session.query(self.table_model, geojson).filter(self.table_model.crawler_source_id == src['crawler_source_id']).order_by(self.table_model.identifier)
+            q = (
+                session.query(self.table_model, geojson)
+                .filter(self.table_model.crawler_source_id == src["crawler_source_id"])
+                .order_by(self.table_model.identifier)
+            )
 
             _hits = q.count()
             if q.count() is None:
@@ -110,17 +118,17 @@ class FeaturePlugin(APIPlugin):
         except AttributeError:
             LOGGER.warning(f"Mainstem_lookup not found for {feature.identifier}")
             mainstem = ""
-        navigation = util.url_join(self.relative_url( srcinfo['source_suffix'] ), feature.identifier, "navigation")
+        navigation = util.url_join(self.relative_url(srcinfo["source_suffix"]), feature.identifier, "navigation")
 
         return {
             "type": "Feature",
             "properties": {
                 "identifier": feature.identifier,
                 "name": feature.name,
-                "source": srcinfo['source_suffix'],
-                "sourceName": srcinfo['source_name'],
+                "source": srcinfo["source_suffix"],
+                "sourceName": srcinfo["source_name"],
                 "comid": feature.comid,
-                "type": srcinfo['feature_type'],
+                "type": srcinfo["feature_type"],
                 "uri": feature.uri,
                 "reachcode": feature.reachcode,
                 "measure": feature.measure,
@@ -129,4 +137,3 @@ class FeaturePlugin(APIPlugin):
             },
             "geometry": json.loads(geojson),
         }
-

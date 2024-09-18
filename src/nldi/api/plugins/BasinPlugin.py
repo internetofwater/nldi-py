@@ -21,13 +21,11 @@ class BasinPlugin(APIPlugin):
         self.geom_field = CatchmentModel.the_geom
         self.id_field = CatchmentModel.featureid
 
-
     def get_by_id(self, id: str) -> Dict[str, Any]:
         pass
 
     def get_by_coords(self, coords: str, as_feature: bool = False) -> Union[dict, int]:
         pass
-
 
     @property
     def crawler_source_lookup(self) -> CrawlerSourcePlugin:
@@ -46,7 +44,6 @@ class BasinPlugin(APIPlugin):
             return FlowlinePlugin("Feature-From-Basin", db_connect_url=self._db_connect_url)
 
     def get_basin(self, source_name: str, identifier: str) -> Tuple[dict, int, str]:
-
         source_name = source_name.lower()
         try:
             if source_name != "comid":

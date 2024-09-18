@@ -31,18 +31,17 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 #
 # =================================================================
-from copy import deepcopy
-
 import io
 import logging
 import pathlib
 from collections import UserDict
+from copy import deepcopy
 from os import environ as ENV  # noqa: N812
 from typing import Union
 
 from pygeoapi.util import get_base_url  ## TODO: can we drop this dependency?
-from . import LOGGER, util
 
+from . import LOGGER, util
 from .lookup.base import ProviderQueryError
 from .lookup.source import CrawlerSourceLookup
 

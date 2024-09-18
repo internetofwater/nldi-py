@@ -53,4 +53,3 @@ def test_register_APIPlugin_success(global_config):
     success = api.register_plugin(p)
     assert success
     assert len(api.plugins) == 1
-

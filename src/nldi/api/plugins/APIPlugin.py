@@ -8,7 +8,7 @@ from ... import LOGGER
 
 
 class APIPlugin:
-    def __init__(self, name: str|None = None, **kwargs: Dict[str, Any]):
+    def __init__(self, name: str | None = None, **kwargs: Dict[str, Any]):
         LOGGER.debug(f"{self.__class__.__name__} Constructor")
         self.name = name
         self.parent = None

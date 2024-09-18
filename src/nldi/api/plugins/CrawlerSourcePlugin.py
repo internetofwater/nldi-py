@@ -173,5 +173,5 @@ class CrawlerSourcePlugin(APIPlugin):
             # I agree.... a single session for all of these would be better than letting insert_source
             # create a new session for each insert.... but we're only talking about inserting a dozen
             # rows at most.
-            self.insert_source(s)   ##TODO: optimize this to allow session re-use.
+            self.insert_source(s)  ##TODO: optimize this to allow session re-use.
         return True
