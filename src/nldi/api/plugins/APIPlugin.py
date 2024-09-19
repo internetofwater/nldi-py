@@ -3,6 +3,7 @@ from typing import Any, Dict, List
 
 import sqlalchemy
 from sqlalchemy.engine import URL as DB_URL
+from sqlalchemy.orm import Session
 
 from ... import LOGGER
 
@@ -10,7 +11,7 @@ from ... import LOGGER
 class APIPlugin:
     def __init__(self, name: str | None = None, **kwargs: Dict[str, Any]):
         LOGGER.debug(f"{self.__class__.__name__} Constructor")
-        self.name = name
+        self.name = name if name else self.__class__.__name__
         self.parent = None
 
         self._db_connect_url = kwargs.get("db_connect_url")
@@ -74,7 +75,7 @@ class APIPlugin:
             )
         return engine
 
-    def session(self) -> sqlalchemy.orm.Session:
+    def session(self) -> Session:
         """
         Make a session for the plugin's database engine.
 

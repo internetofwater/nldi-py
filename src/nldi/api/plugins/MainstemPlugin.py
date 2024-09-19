@@ -5,7 +5,7 @@ from typing import Any, Dict
 
 
 class MainstemPlugin(APIPlugin):
-    def __init__(self, name, **kwargs):
+    def __init__(self, name: str | None = None, **kwargs: Dict[str, Any]):
         super().__init__(name, **kwargs)
         self.id_field = MainstemLookupModel.nhdpv2_comid
         self.table_model = MainstemLookupModel

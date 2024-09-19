@@ -145,16 +145,9 @@ def sources() -> flask.Response:
 @ROOT.route("/linked-data/comid/<int:comid>")
 def get_flowline_by_comid(comid=None):
     global NLDI_API
-    if "FlowLine" not in NLDI_API.plugins:
-        from .api.plugins import FlowlinePlugin  # noqa: I001
-
-        if NLDI_API.register_plugin(FlowlinePlugin("FlowLine")):
-            LOGGER.debug("Loaded FlowLine plugin")
-        else:
-            LOGGER.error("Failed to register FlowlinePlugin")
-            raise RuntimeError("Failed to register FlowlinePlugin")
+    NLDI_API.require_plugin("FlowlinePlugin")
     try:
-        r = NLDI_API.plugins["FlowLine"].get(comid)
+        r = NLDI_API.plugins["FlowlinePlugin"].get(comid)
     except KeyError:
         LOGGER.info(f"COMID {comid} not found; returning 404")
         return flask.Response(status=http.HTTPStatus.NOT_FOUND)
@@ -164,24 +157,8 @@ def get_flowline_by_comid(comid=None):
 @ROOT.route("/linked-data/comid/position")
 def get_flowline_by_position():
     global NLDI_API
-    ## TODO:  Refactor all this plugin loading into a single function for re-use elsewhere.
-    if "FlowLine" not in NLDI_API.plugins:
-        from .api.plugins import FlowlinePlugin  # noqa: I001
-
-        if NLDI_API.register_plugin(FlowlinePlugin("FlowLine")):
-            LOGGER.debug("Loaded FlowLine plugin")
-        else:
-            LOGGER.error("Failed to register FlowlinePlugin")
-            raise RuntimeError("Failed to register FlowlinePlugin")
-
-    if "Catchment" not in NLDI_API.plugins:
-        from .api.plugins import CatchmentPlugin  # noqa: I001
-
-        if NLDI_API.register_plugin(CatchmentPlugin("Catchment")):
-            LOGGER.debug("Loaded Catchment plugin")
-        else:
-            LOGGER.error("Failed to register CatchmentPlugin")
-            raise RuntimeError("Failed to register CatchmentPlugin")
+    NLDI_API.require_plugin("FlowlinePlugin")
+    NLDI_API.require_plugin("CatchmentPlugin")
 
     if (coords := flask.request.args.get("coords")) is None:
         LOGGER.error("No coordinates provided")
@@ -191,7 +168,7 @@ def get_flowline_by_position():
     try:
         ## Get the COMID for the provided coordinates, taken to be the
         # nhdplus/catchmentsp polygon intersecting the supplied point
-        comid = NLDI_API.plugins["Catchment"].get_by_coords(coords)
+        comid = NLDI_API.plugins["CatchmentPlugin"].get_by_coords(coords)
     except KeyError:
         LOGGER.info(f"Unable to find COMID for coordinates {coords}; returning 404")
         return flask.Response(status=http.HTTPStatus.NOT_FOUND)
@@ -199,7 +176,7 @@ def get_flowline_by_position():
     ## TODO:  both lookups in the same try/except block?  keeping them separate lets us give
     # more specific error messages....   TBD.
     try:
-        flowline_feature = NLDI_API.plugins["FlowLine"].get(comid)
+        flowline_feature = NLDI_API.plugins["FlowlinePlugin"].get(comid)
     except KeyError:
         LOGGER.info(f"COMID {comid} not found using FlowLine; returning 404")
         return flask.Response(status=http.HTTPStatus.NOT_FOUND)
@@ -216,29 +193,14 @@ def get_flowline_by_position():
 @ROOT.route("/linked-data/hydrolocation")
 def hydrolocation():
     global NLDI_API
-    if "Catchment" not in NLDI_API.plugins:
-        from .api.plugins import CatchmentPlugin  # noqa: I001
-
-        if NLDI_API.register_plugin(CatchmentPlugin("Catchment")):
-            LOGGER.debug("Loaded Catchment plugin")
-        else:
-            LOGGER.error("Failed to register CatchmentPlugin")
-            raise RuntimeError("Failed to register CatchmentPlugin")
-
-    if "HydroLocation" not in NLDI_API.plugins:
-        from .api.plugins import HydroLocationPlugin  # noqa: I001
-
-        if NLDI_API.register_plugin(HydroLocationPlugin("HydroLocation")):
-            LOGGER.debug("Loaded HydroLocation plugin")
-        else:
-            LOGGER.error("Failed to register HydroLocationPlugin")
-            raise RuntimeError("Failed to register HydroLocationPlugin")
+    NLDI_API.require_plugin("CatchmentPlugin") #< hydrolocation plugin requires catchment plugin internally.
+    NLDI_API.require_plugin("HydroLocationPlugin")
 
     if (coords := flask.request.args.get("coords")) is None:
         LOGGER.error("No coordinates provided")
         return flask.Response(status=http.HTTPStatus.BAD_REQUEST, response="No coordinates provided")
     try:
-        _hydro_location = NLDI_API.plugins["HydroLocation"].get_by_coords(coords)
+        _hydro_location = NLDI_API.plugins["HydroLocationPlugin"].get_by_coords(coords)
     except Exception as e:
         LOGGER.error(f"Error getting hydrolocation for coordinates {coords}: {e}")
         return flask.Response(status=http.HTTPStatus.INTERNAL_SERVER_ERROR, response=str(e))
@@ -304,24 +266,17 @@ def get_navigation(source_name=None, identifier=None, nav_mode=None, data_source
 @ROOT.route("/linked-data/<path:source_name>")
 @ROOT.route("/linked-data/<path:source_name>/<path:identifier>")
 def get_source_features(source_name=None, identifier=None):
-    if "Feature" not in NLDI_API.plugins:
-        from .api.plugins import FeaturePlugin  # noqa: I001
-
-        if NLDI_API.register_plugin(FeaturePlugin("Feature")):
-            LOGGER.debug("Loaded Feature plugin")
-        else:
-            LOGGER.error("Failed to register FeaturePlugin")
-            raise RuntimeError("Failed to register FeaturePlugin")
+    NLDI_API.require_plugin("FeaturePlugin")
 
     if identifier:
         try:
-            feature = NLDI_API.plugins["Feature"].get_by_id(identifier, source_name)
+            feature = NLDI_API.plugins["FeaturePlugin"].get_by_id(identifier, source_name)
             features = [feature]
         except KeyError as e:
             return flask.Response(status=http.HTTPStatus.NOT_FOUND, response=str(e))
     else:  # No identifier given; return all features from this source
         try:
-            features = NLDI_API.plugins["Feature"].get_all(source_name)
+            features = NLDI_API.plugins["FeaturePlugin"].get_all(source_name)
         except KeyError as e:
             return flask.Response(status=http.HTTPStatus.NOT_FOUND, response=str(e))
 

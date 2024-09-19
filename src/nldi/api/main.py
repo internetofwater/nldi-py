@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: CC0
 #
 
+import importlib
 import pathlib
 from copy import deepcopy
 from functools import cached_property
@@ -13,7 +14,8 @@ from sqlalchemy.engine import URL as DB_URL
 
 from .. import LOGGER, __version__
 from ..util import load_yaml
-from .plugins import APIPlugin, CrawlerSourcePlugin
+from . import plugins
+# import APIPlugin, CrawlerSourcePlugin
 
 
 class API:
@@ -32,7 +34,7 @@ class API:
         # All plugins will use this connection information, as well as any cached ENGINEs
         self.base_url = globalconfig["base_url"]
 
-        self.sources = CrawlerSourcePlugin("Sources")
+        self.sources = plugins.CrawlerSourcePlugin("PrivateSources")
         self.sources.parent = self
         # NOTE: the sources table is a plugin, same as the other content plugins, but it is a special
         # case. Without the sources table, there's really not much else to do. So, we will handle it
@@ -73,7 +75,7 @@ class API:
         )
         return engine
 
-    def register_plugin(self, plugin: APIPlugin) -> bool:
+    def register_plugin(self, plugin: plugins.APIPlugin) -> bool:
         self.plugins[plugin.name] = plugin
         plugin.parent = self
         ## On the "fail-fast" principle, we will check if the plugin can connect to the database before moving on.
@@ -86,6 +88,30 @@ class API:
             # raise RuntimeError("Plugin {plugin.name} failed to register.")
             ## TODO:  Decide if we want to raise an exception here or just deregister the plugin and return False.
             return False
+
+    def require_plugin(self, plugin_name: str) -> bool:
+        LOGGER.debug("Loading Required plugin: {plugin_name}")
+        if plugin_name not in self.plugins:
+            LOGGER.debug(f"Plugin {plugin_name} not found in registry.  Attempting to load...")
+        else:
+            return True
+
+        try:
+            pkgname = ".plugins"
+            classname = plugin_name
+            module = importlib.import_module(pkgname, package="nldi.api")
+            class_ = getattr(module, classname)
+            plugin = class_()
+        except ImportError as e:
+            LOGGER.error(f"Failed to load plugin {plugin_name}", exc_info=True)
+            raise ImportError(f"Failed to load plugin {plugin_name}") from e
+
+        if self.register_plugin(plugin):
+            pass
+        else:
+            LOGGER.error(f"Failed to register pluging {plugin_name}", exc_info=True)
+            raise RuntimeError(f"Failed to register {plugin_name}")
+        return True
 
     @property
     def openapi_json(self) -> Dict[str, Any]:

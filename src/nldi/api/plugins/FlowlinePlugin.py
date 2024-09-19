@@ -15,7 +15,7 @@ from .APIPlugin import APIPlugin
 
 
 class FlowlinePlugin(APIPlugin):
-    def __init__(self, name, **kwargs):
+    def __init__(self, name: str | None = None, **kwargs: Dict[str, Any]):
         super().__init__(name, **kwargs)
         self.geom_field = FlowlineModel.shape
         self.id_field = FlowlineModel.nhdplus_comid

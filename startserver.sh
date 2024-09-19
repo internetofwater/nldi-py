@@ -15,5 +15,5 @@ export NLDI_OPENAPI="${NLDI_HOME}/local.openapi.yml"
 
 # nldi openapi generate ${NLDI_CONFIG} --output-file ${NLDI_OPENAPI}
 #nldi openapi generate ${NLDI_CONFIG} --output-file /tmp/openapi_local.json --format json
-# gunicorn --bind localhost:8081 nldi.flask_app:APP
+# gunicorn --bind localhost:8081 nldi.orig_app:APP
 gunicorn --bind localhost:8081 nldi.server:APP --reload

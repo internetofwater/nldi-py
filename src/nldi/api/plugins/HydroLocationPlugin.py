@@ -38,8 +38,8 @@ class HydroLocationPlugin(PyGeoAPIPlugin):
         is propertly registered with the API, it will return the catchment plugin instance that is
         registered with the parent.
         """
-        if self.is_registered and "Catchment" in self.parent.plugins:
-            return self.parent.plugins["Catchment"]
+        if self.is_registered and "CatchmentPlugin" in self.parent.plugins:
+            return self.parent.plugins["CatchmentPlugin"]
         else:
             LOGGER.warning("Attempt to get catchment_lookup from an unregistered plugin.")
             return CatchmentPlugin("Catchment-From-HydroLocation", db_connect_url=self._db_connect_url)

@@ -15,7 +15,7 @@ from .APIPlugin import APIPlugin
 
 
 class CatchmentPlugin(APIPlugin):
-    def __init__(self, name, **kwargs):
+    def __init__(self, name: str | None = None, **kwargs: Dict[str, Any]):
         super().__init__(name, **kwargs)
         self.table_model = CatchmentModel
         self.geom_field = CatchmentModel.the_geom

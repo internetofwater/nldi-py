@@ -17,7 +17,7 @@ from .CrawlerSourcePlugin import CrawlerSourcePlugin
 
 
 class FeaturePlugin(APIPlugin):
-    def __init__(self, name, **kwargs):
+    def __init__(self, name: str | None = None, **kwargs: Dict[str, Any]):
         super().__init__(name, **kwargs)
         self.geom_field = FeatureSourceModel.location
         self.id_field = FeatureSourceModel.identifier

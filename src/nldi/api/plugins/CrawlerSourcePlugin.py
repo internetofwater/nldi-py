@@ -23,7 +23,7 @@ class CrawlerSourcePlugin(APIPlugin):
     as its ``.sources`` attribute.  See the API class for more information.
     """
 
-    def __init__(self, name, **kwargs: Dict[str, Any]):
+    def __init__(self, name: str | None = None, **kwargs: Dict[str, Any]):
         super().__init__(name, **kwargs)
         self.table_model = CrawlerSourceModel
 
