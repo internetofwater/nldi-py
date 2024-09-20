@@ -37,7 +37,7 @@ class APIPlugin:
         if self.is_registered:
             return self.parent.config["base_url"]
         else:
-            LOGGER.warning("Attempt to get base_url from an unregistered plugin.")
+            LOGGER.info("Attempt to get base_url from an unregistered plugin.")
             return "/"
 
     @property
@@ -63,7 +63,7 @@ class APIPlugin:
         if self.is_registered:
             return self.parent.db_engine
         else:
-            LOGGER.warning("Attempt to get db_engine from an unregistered plugin.")
+            LOGGER.info("Attempt to get db_engine from an unregistered plugin.")
             ## We are an orphaned pluggin, so we need to create our own engine if we can.
             LOGGER.debug(f"{self.__class__.__name__} creating database engine...")
             if not self._db_connect_url:

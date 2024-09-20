@@ -38,7 +38,8 @@ class HydroLocationPlugin(PyGeoAPIPlugin):
         is propertly registered with the API, it will return the catchment plugin instance that is
         registered with the parent.
         """
-        if self.is_registered and "CatchmentPlugin" in self.parent.plugins:
+        if self.is_registered:
+            self.parent.require_plugin("CatchmentPlugin")
             return self.parent.plugins["CatchmentPlugin"]
         else:
             LOGGER.warning("Attempt to get catchment_lookup from an unregistered plugin.")
@@ -52,8 +53,6 @@ class HydroLocationPlugin(PyGeoAPIPlugin):
     def get_by_coords(self, coords: str) -> dict:
         """
         Get a hydrolocation by coordinates.
-
-
 
         :param coords: _description_
         :type coords: str

@@ -11,7 +11,7 @@ from geoalchemy2 import WKTElement
 
 from ... import LOGGER, NAD83_SRID, util
 from ..schemas.nhdplus import CatchmentModel
-from . import APIPlugin
+from . import APIPlugin, CrawlerSourcePlugin, FlowlinePlugin, FeaturePlugin
 
 
 class BasinPlugin(APIPlugin):
@@ -21,30 +21,42 @@ class BasinPlugin(APIPlugin):
         self.geom_field = CatchmentModel.the_geom
         self.id_field = CatchmentModel.featureid
 
-    def get_by_id(self, id: str) -> Dict[str, Any]:
-        pass
-
-    def get_by_coords(self, coords: str, as_feature: bool = False) -> Union[dict, int]:
-        pass
-
     @property
     def crawler_source_lookup(self) -> CrawlerSourcePlugin:
         if self.is_registered:
             return self.parent.sources
         else:
-            LOGGER.warning("Attempt to get crawler_source_lookup from an unregistered plugin.")
+            LOGGER.info("Attempt to get crawler_source_lookup from an unregistered plugin.")
             return CrawlerSourcePlugin("CrawlerSource-From-Basin", db_connect_url=self._db_connect_url)
 
     @property
     def feature_lookup(self) -> FeaturePlugin:
         if self.is_registered:
-            return self.parent.flowlines
+            self.parent.require_plugin("FeaturePlugin")
+            return self.parent.plugins["FeaturePlugin"]
         else:
-            LOGGER.warning("Attempt to get flowline_lookup from an unregistered plugin.")
-            return FlowlinePlugin("Feature-From-Basin", db_connect_url=self._db_connect_url)
+            LOGGER.info("Attempt to get feature_lookup from an unregistered plugin.")
+            return FeaturePlugin("Feature-From-Basin", db_connect_url=self._db_connect_url)
 
-    def get_basin(self, source_name: str, identifier: str) -> Tuple[dict, int, str]:
-        source_name = source_name.lower()
+    @property
+    def flowline_lookup(self) -> FlowlinePlugin:
+        if self.is_registered:
+            self.parent.require_plugin("FlowlinePlugin")
+            return self.parent.plugins["FlowlinePlugin"]
+        else:
+            LOGGER.info("Attempt to get flowline_lookup from an unregistered plugin.")
+            return FlowlinePlugin("Flowline-From-Basin", db_connect_url=self._db_connect_url)
+
+    def get_by_id(
+        self,
+        identifier: str,
+        source_name: str | None = None,
+        simplify: bool = True,
+        split: bool = False,
+    ) -> Tuple[dict, int, str]:
+        source_name = source_name.lower() if source_name else "comid"
+        ## if unspecified, source_name is assumed to be comid
+
         try:
             if source_name != "comid":
                 src = self.crawler_source_lookup(source_name)
@@ -52,28 +64,21 @@ class BasinPlugin(APIPlugin):
                 start_comid = int(feature["properties"]["comid"])
                 is_point = feature["geometry"]["type"] == "Point"
             else:
-                self.flowline_lookup.get(identifier)
+                self.flowline_lookup.get_by_id(identifier)
                 start_comid = int(identifier)
                 isPoint = False
         except KeyError:
             msg = f"The feature {identifier} does not exist for '{source_name}'."  # noqa
-            return self.get_exception(
-                HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format, "NoApplicableCode", msg
-            )
+            raise KeyError(msg)
 
-        _ = request.params.get("simplified", "True").lower() == "true"
-        simplified = _
-
-        _ = request.params.get("splitCatchment", "False").lower() == "true"
-        splitCatchment = _
-
-        if isPoint and splitCatchment:
+        if isPoint and split:
             LOGGER.debug("Performing Split Catchment")
+            ## TODO: wtf is this?
             point = self.func.get_point(identifier, source_name)
 
             if point is None:
                 distance = self.func.get_distance(identifier, source_name)
-                LOGGER.debug(distance)
+                LOGGER.debug(f"Distance distance)
 
                 if distance <= SPLIT_CATCHMENT_THRESHOLD:
                     point = self.func.get_closest(identifier, source_name)

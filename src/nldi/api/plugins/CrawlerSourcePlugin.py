@@ -27,7 +27,7 @@ class CrawlerSourcePlugin(APIPlugin):
         super().__init__(name, **kwargs)
         self.table_model = CrawlerSourceModel
 
-    def get(self, identifier: str) -> Dict[str, Any]:
+    def get_by_id(self, identifier: str) -> Dict[str, Any]:
         """
         Retrieve a source from the database.
 

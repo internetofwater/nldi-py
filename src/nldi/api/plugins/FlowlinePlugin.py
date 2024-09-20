@@ -29,7 +29,7 @@ class FlowlinePlugin(APIPlugin):
             LOGGER.warning("Attempt to get relative_url from an unregistered plugin.")
             return "/linked-data/comid"
 
-    def get(self, identifier: str) -> Dict[str, Any]:
+    def get_by_id(self, identifier: str) -> Dict[str, Any]:
         LOGGER.debug(f"{self.__class__.__name__} : Fetching COMID with {identifier=}")
         with self.session() as session:
             # Retrieve data from database as feature
@@ -82,16 +82,12 @@ class FlowlinePlugin(APIPlugin):
         #         yield self._sqlalchemy_to_feature(item)
 
     def _sqlalchemy_to_feature(self, item) -> Dict[str, Any]:
-        if self.geom_field:
-            (feature, geojson) = item
-            geometry = json.loads(geojson)
-        else:
-            feature = item
-            geometry = None
+        (feature, geojson) = item
 
         try:
             mainstem = item.mainstem_lookup.uri
         except AttributeError:
+            LOGGER.warning(f"Mainstem not found for {feature.nhdplus_comid}")
             mainstem = ""
 
         navigation = util.url_join(self.relative_url, feature.nhdplus_comid, "navigation")
@@ -106,5 +102,5 @@ class FlowlinePlugin(APIPlugin):
                 "mainstem": mainstem,
                 "navigation": navigation,
             },
-            "geometry": geometry,
+            "geometry": json.loads(geojson),
         }

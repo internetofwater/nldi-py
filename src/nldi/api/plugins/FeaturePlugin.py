@@ -45,7 +45,7 @@ class FeaturePlugin(APIPlugin):
 
         LOGGER.debug(f"Getting source information for {source_suffix=}")
         try:
-            src = self.crawler_source_lookup.get(source_suffix)
+            src = self.crawler_source_lookup.get_by_id(source_suffix)
         except KeyError:
             raise KeyError(f"Source not found: {source_suffix=}")
 
@@ -68,7 +68,7 @@ class FeaturePlugin(APIPlugin):
         LOGGER.info(f"{self.__class__.__name__} GET all features from {source_suffix=}")
         LOGGER.debug(f"Getting source information for {source_suffix=}")
         try:
-            src = self.crawler_source_lookup.get(source_suffix)
+            src = self.crawler_source_lookup.get_by_id(source_suffix)
         except KeyError:
             raise KeyError(f"Source not found: {source_suffix=}")
 

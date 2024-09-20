@@ -79,7 +79,7 @@ def test_crawlersource_plugin_listall(nldi_db_connect_string):
 @pytest.mark.integration
 def test_crawlersource_plugin_lookup_one_source(nldi_db_connect_string, mock_source):
     p = CrawlerSourcePlugin("CrawlerSource", db_connect_url=nldi_db_connect_string)
-    sampled = p.get(mock_source["source_suffix"])
+    sampled = p.get_by_id(mock_source["source_suffix"])
 
     for k in mock_source:
         if k == "source_suffix":
@@ -95,7 +95,7 @@ def test_crawlersource_plugin_lookup_one_source(nldi_db_connect_string, mock_sou
 def test_crawlersource_plugin_lookup_one_source_notfound(nldi_db_connect_string):
     p = CrawlerSourcePlugin("CrawlerSource", db_connect_url=nldi_db_connect_string)
     with pytest.raises(KeyError):
-        sampled = p.get("nosuchsource")
+        sampled = p.get_by_id("nosuchsource")
 
 
 @pytest.mark.order(41)
@@ -180,7 +180,7 @@ def test_flowlineplugin_constructor(nldi_db_connect_string):
 @pytest.mark.integration
 def test_flowlineplugin_lookup(nldi_db_connect_string):
     p = FlowlinePlugin("FlowLine", db_connect_url=nldi_db_connect_string)
-    flowline = p.get("13293396")  # << This COMID is known to be in the test database
+    flowline = p.get_by_id("13293396")  # << This COMID is known to be in the test database
     assert flowline["type"] == "Feature"
     assert str(flowline["properties"]["comid"]) == "13293396"
     assert flowline["geometry"]["type"] == "LineString"
@@ -191,7 +191,7 @@ def test_flowlineplugin_lookup(nldi_db_connect_string):
 def test_flowlineplugin_lookup_notfound(nldi_db_connect_string):
     p = FlowlinePlugin("FlowLine", db_connect_url=nldi_db_connect_string)
     with pytest.raises(KeyError):
-        flowline = p.get("0000000")  # << this one is not in the test database
+        flowline = p.get_by_id("0000000")  # << this one is not in the test database
 
 
 @pytest.mark.order(42)
@@ -199,7 +199,7 @@ def test_flowlineplugin_lookup_notfound(nldi_db_connect_string):
 def test_flowlineplugin_lookup_badinput(nldi_db_connect_string):
     p = FlowlinePlugin("FlowLine", db_connect_url=nldi_db_connect_string)
     with pytest.raises(KeyError):
-        flowline = p.get("this_is_not_an_int")  # << COMIDs have to be integers
+        flowline = p.get_by_id("this_is_not_an_int")  # << COMIDs have to be integers
 
 
 # region CatchmentPlugin
@@ -346,7 +346,7 @@ def test_mainstem_plugin_constructor(nldi_db_connect_string):
 @pytest.mark.integration
 def test_mainstem_plugin_get_by_id(nldi_db_connect_string):
     p = MainstemPlugin("MainStem", db_connect_url=nldi_db_connect_string)
-    mainstem = p.get("13294360")
+    mainstem = p.get_by_id("13294360")
     assert isinstance(mainstem, dict)
     for k in ["nhdpv2_comid", "mainstem_id", "uri"]:
         assert k in mainstem
@@ -357,7 +357,7 @@ def test_mainstem_plugin_get_by_id(nldi_db_connect_string):
 def test_mainstem_plugin_get_by_id_notfound(nldi_db_connect_string):
     p = MainstemPlugin("MainStem", db_connect_url=nldi_db_connect_string)
     with pytest.raises(KeyError):
-        mainstem = p.get("00000000")
+        mainstem = p.get_by_id("00000000")
 
 
 # region FeaturePlugin
@@ -372,7 +372,7 @@ def test_feature_plugin_constructor(nldi_db_connect_string):
 @pytest.mark.integration
 def test_feature_plugin_src_lookup(nldi_db_connect_string):
     p = FeaturePlugin("Feature", db_connect_url=nldi_db_connect_string)
-    src = p.crawler_source_lookup.get("wqp")
+    src = p.crawler_source_lookup.get_by_id("wqp")
     assert src["source_suffix"] == "wqp"
 
 

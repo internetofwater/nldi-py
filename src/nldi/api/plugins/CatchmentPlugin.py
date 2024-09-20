@@ -26,7 +26,7 @@ class CatchmentPlugin(APIPlugin):
         if self.is_registered:
             return util.url_join(self.parent.base_url, "linked-data/comid")
         else:
-            LOGGER.warning("Attempt to get relative_url from an unregistered plugin.")
+            LOGGER.info("Attempt to get relative_url from an unregistered plugin.")
             return "/linked-data/comid"
 
     def get_by_id(self, id: str) -> Dict[str, Any]:

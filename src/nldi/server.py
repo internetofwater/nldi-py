@@ -5,7 +5,7 @@
 
 import http
 import os
-from typing import Dict, List, Tuple
+from typing import Any, Dict, List, Tuple
 
 import flask
 from flask_cors import CORS
@@ -15,7 +15,7 @@ from . import LOGGER, __version__, log, util
 from .api.main import API
 from .config import Configuration
 
-NLDI_API = None  # we have to start somewhere...
+NLDI_API = None  ## Global -- this will be assigned inside the app factory later.
 
 # region Preamble
 log.initialize(LOGGER, level="DEBUG")
@@ -38,6 +38,7 @@ ROOT = flask.Blueprint("nldi", __name__)
 def log_incoming_request() -> None:
     """Implement simple middleware function to log requests."""
     LOGGER.debug(f"{flask.request.method} {flask.request.url}")
+    # TODO: other pre-request activities can go here.
 
     ## Sets up a callback to update headers after the request is processed.
     @flask.after_this_request
@@ -147,7 +148,7 @@ def get_flowline_by_comid(comid=None):
     global NLDI_API
     NLDI_API.require_plugin("FlowlinePlugin")
     try:
-        r = NLDI_API.plugins["FlowlinePlugin"].get(comid)
+        r = NLDI_API.plugins["FlowlinePlugin"].get_by_id(comid)
     except KeyError:
         LOGGER.info(f"COMID {comid} not found; returning 404")
         return flask.Response(status=http.HTTPStatus.NOT_FOUND)
@@ -176,7 +177,7 @@ def get_flowline_by_position():
     ## TODO:  both lookups in the same try/except block?  keeping them separate lets us give
     # more specific error messages....   TBD.
     try:
-        flowline_feature = NLDI_API.plugins["FlowlinePlugin"].get(comid)
+        flowline_feature = NLDI_API.plugins["FlowlinePlugin"].get_by_id(comid)
     except KeyError:
         LOGGER.info(f"COMID {comid} not found using FlowLine; returning 404")
         return flask.Response(status=http.HTTPStatus.NOT_FOUND)
@@ -265,27 +266,40 @@ def get_navigation(source_name=None, identifier=None, nav_mode=None, data_source
 
 @ROOT.route("/linked-data/<path:source_name>")
 @ROOT.route("/linked-data/<path:source_name>/<path:identifier>")
-def get_source_features(source_name=None, identifier=None):
-    NLDI_API.require_plugin("FeaturePlugin")
+def get_source_features(source_name=None, identifier=None) -> List[Dict[str, Any]]:
+    """
+    Return one or more features from a given source.
 
+    This endpoint supports a "list mode" if no identifier given, returning all features from the source. If
+    an identifier is given, only that feature is returned (assuming it is found in the table).  In the case
+    where an identifier is provided but not found, a 404 is returned.
+
+    :param source_name: the suffix for the source to search, defaults to None
+    :type source_name: str, optional
+    :param identifier: The source-specific unique identifier for the feature to find, defaults to None
+    :type identifier: str, optional
+    :return: A GeoJSON FeatureCollection of the feature(s) found.
+    :rtype: List[Dict[str, Any]]
+    """
+    NLDI_API.require_plugin("FeaturePlugin")
     if identifier:
         try:
             feature = NLDI_API.plugins["FeaturePlugin"].get_by_id(identifier, source_name)
             features = [feature]
         except KeyError as e:
+            # Either the source or the identifier doesn't exist.
             return flask.Response(status=http.HTTPStatus.NOT_FOUND, response=str(e))
     else:  # No identifier given; return all features from this source
         try:
             features = NLDI_API.plugins["FeaturePlugin"].get_all(source_name)
         except KeyError as e:
+            # KeyError indicates that the source doesn't exist.
             return flask.Response(status=http.HTTPStatus.NOT_FOUND, response=str(e))
 
-    ## Formatting the response
-    content = util.stream_j2_template("FeatureCollection.j2", features)
     return flask.Response(
         headers={"Content-Type": "application/json"},
         status=http.HTTPStatus.OK,
-        response=content,
+        response=util.stream_j2_template("FeatureCollection.j2", features),
     )
 
 

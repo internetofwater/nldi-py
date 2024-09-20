@@ -10,7 +10,7 @@ class MainstemPlugin(APIPlugin):
         self.id_field = MainstemLookupModel.nhdpv2_comid
         self.table_model = MainstemLookupModel
 
-    def get(self, identifier: str):
+    def get_by_id(self, identifier: str):
         LOGGER.debug(f"{self.__class__.__name__} GET mainstem for: {identifier}")
         with self.session() as session:
             # Retrieve data from database as feature

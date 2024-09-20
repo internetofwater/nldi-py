@@ -75,7 +75,17 @@ def test_APIPlugin_required(global_config):
 def test_APIPlugin_functional_test(global_config):
     api = API(globalconfig=global_config)
     assert api.require_plugin("FlowlinePlugin") is True
-    flowline = api.plugins["FlowlinePlugin"].get("13293396")
+    flowline = api.plugins["FlowlinePlugin"].get_by_id("13293396")
     assert flowline["type"] == "Feature"
     assert str(flowline["properties"]["comid"]) == "13293396"
     assert flowline["geometry"]["type"] == "LineString"
+
+@pytest.mark.order(53)
+@pytest.mark.integration
+def test_catchment_plugin_functional_test(global_config):
+    api = API(globalconfig=global_config)
+    assert api.require_plugin("CatchmentPlugin") is True
+
+    catchment = api.plugins["CatchmentPlugin"].get_by_id("13297332")
+    assert catchment["type"] == "Feature"
+    assert catchment["geometry"]["type"] == "MultiPolygon"
