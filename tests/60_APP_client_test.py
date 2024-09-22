@@ -144,3 +144,29 @@ def test_source_linked_data_source(global_config):
     with _app.test_client() as client:
         response = client.get("/api/nldi/linked-data/wqp/USGS-05427930/navigation/mode/src")
         assert response.status_code == 200
+
+
+@pytest.mark.order(65)
+@pytest.mark.integration
+def test_nav_list_all_modes(global_config):
+    _api = API(globalconfig=global_config)
+    _app = app_factory(_api)
+    with _app.test_client() as client:
+        response = client.get("/api/nldi/linked-data/wqp/USGS-05427930/navigation")
+        assert response.status_code == 200
+        assert response.json["upstreamMain"].endswith('UM')
+        assert response.json["upstreamTributaries"].endswith('UT')
+        assert response.json["downstreamMain"].endswith('DM')
+        assert response.json["downstreamDiversions"].endswith('DD')
+        assert len(response.json) == 4
+
+
+@pytest.mark.order(65)
+@pytest.mark.integration
+def test_nav_UM_mode(global_config):
+    _api = API(globalconfig=global_config)
+    _app = app_factory(_api)
+    with _app.test_client() as client:
+        response = client.get("/api/nldi/linked-data/wqp/USGS-05427930/navigation/UM")
+        assert response.status_code == 200
+       

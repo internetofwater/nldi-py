@@ -228,6 +228,7 @@ def get_source_features(source_name=None, identifier=None) -> List[Dict[str, Any
     :return: A GeoJSON FeatureCollection of the feature(s) found.
     :rtype: List[Dict[str, Any]]
     """
+    global NLDI_API
     NLDI_API.require_plugin("FeaturePlugin")
     if identifier:
         try:
@@ -252,6 +253,7 @@ def get_source_features(source_name=None, identifier=None) -> List[Dict[str, Any
 
 @ROOT.route("/linked-data/<path:source_name>/<path:identifier>/basin")
 def get_basin(source_name=None, identifier=None):
+    global NLDI_API
     simplified = flask.request.args.get("simplified", "true").lower() == "true"
     split = flask.request.args.get("split", "false").lower() == "true"
     NLDI_API.require_plugin("BasinPlugin")
@@ -269,16 +271,32 @@ def get_basin(source_name=None, identifier=None):
     )
 
 
+## TODO: Split this into two routes with corresponding functions... rather than the if statement internally.
 @ROOT.route("/linked-data/<path:source_name>/<path:identifier>/navigation")  # noqa
 @ROOT.route("/linked-data/<path:source_name>/<path:identifier>/navigation/<path:nav_mode>")  # noqa
-def get_navigation_info(source_name=None, identifier=None, nav_mode=None):
-    r = flask.jsonify(
-        {
-            "message": "Not Implemented",
-            "params": {"source_name": source_name, "identifier": identifier, "nav_mode": nav_mode},
+def get_navigation_info(source_name: str | None = None, identifier: str | None = None, nav_mode: str | None = None):
+    global NLDI_API
+
+    source_name = source_name.lower()
+    # verify that the source exists:
+    try:
+        _ = NLDI_API.sources.get_by_id(source_name)
+    except KeyError:
+        return flask.Response(status=http.HTTPStatus.NOT_FOUND, response="Source not found: {source_name}")
+
+    if nav_mode is None:
+        ## This is the "list all navigation modes" logic
+        nav_url = util.url_join(NLDI_API.base_url, "linked-data", source_name, identifier, "navigation")
+        content = {
+            "upstreamMain": util.url_join(nav_url, "UM"),
+            "upstreamTributaries": util.url_join(nav_url, "UT"),
+            "downstreamMain": util.url_join(nav_url, "DM"),
+            "downstreamDiversions": util.url_join(nav_url, "DD"),
         }
-    )
-    return r  #     return get_response(API_.get_navigation_info(request, source_name, identifier, nav_mode))
+        return flask.jsonify(content)
+
+    raise NotImplementedError("get_navigation_info not implemented yet")
+    #     return get_response(API_.get_navigation_info(request, source_name, identifier, nav_mode))
 
 
 @ROOT.route("/linked-data/<path:source_name>/<path:identifier>/navigation/<path:nav_mode>/flowlines")  # noqa

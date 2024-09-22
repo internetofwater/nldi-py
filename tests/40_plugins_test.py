@@ -442,3 +442,4 @@ def test_basin_plugin_lookup_notfound(nldi_db_connect_string):
     p = BasinPlugin("Basin", db_connect_url=nldi_db_connect_string)
     with pytest.raises(KeyError):
         ff = p.get_by_id("USGS-0123456", "wqp")
+

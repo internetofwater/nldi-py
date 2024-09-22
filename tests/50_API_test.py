@@ -89,3 +89,5 @@ def test_catchment_plugin_functional_test(global_config):
     catchment = api.plugins["CatchmentPlugin"].get_by_id("13297332")
     assert catchment["type"] == "Feature"
     assert catchment["geometry"]["type"] == "MultiPolygon"
+
+
