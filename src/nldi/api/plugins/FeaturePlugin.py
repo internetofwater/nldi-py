@@ -36,7 +36,7 @@ class FeaturePlugin(APIPlugin):
         if self.is_registered:
             return self.parent.sources
         else:
-            LOGGER.warning("Attempt to get crawler_source_lookup from an unregistered plugin.")
+            LOGGER.info("Attempt to get crawler_source_lookup from an unregistered plugin.")
             return CrawlerSourcePlugin("CrawlerSource-From-Feature", db_connect_url=self._db_connect_url)
 
     def get_by_id(self, id: str, source_suffix: str) -> Dict[str, Any]:

@@ -11,10 +11,8 @@ from sqlalchemy import and_, func, or_, select, text
 from sqlalchemy.orm import aliased
 from sqlalchemy.sql.selectable import Select
 
-from .. import LOGGER, logger
+from .. import LOGGER
 from ..schemas.characteristic_data import CatchmentModel, FlowlineVAAModel
-
-
 
 # def basin(comid: int, simplify: bool) -> Select:
 #     """

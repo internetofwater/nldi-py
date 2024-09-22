@@ -6,6 +6,7 @@
 """API Plugin Support"""
 
 from .APIPlugin import APIPlugin
+from .BasinPlugin import BasinPlugin
 from .CatchmentPlugin import CatchmentPlugin
 from .CrawlerSourcePlugin import CrawlerSourcePlugin
 from .FeaturePlugin import FeaturePlugin
@@ -16,6 +17,7 @@ from .SplitCatchmentPlugin import SplitCatchmentPlugin
 
 __all__ = [
     "APIPlugin",
+    "BasinPlugin",
     "CatchmentPlugin",
     "CrawlerSourcePlugin",
     "FeaturePlugin",

@@ -194,7 +194,7 @@ def get_flowline_by_position():
 @ROOT.route("/linked-data/hydrolocation")
 def hydrolocation():
     global NLDI_API
-    NLDI_API.require_plugin("CatchmentPlugin") #< hydrolocation plugin requires catchment plugin internally.
+    NLDI_API.require_plugin("CatchmentPlugin")  # < hydrolocation plugin requires catchment plugin internally.
     NLDI_API.require_plugin("HydroLocationPlugin")
 
     if (coords := flask.request.args.get("coords")) is None:
@@ -211,15 +211,62 @@ def hydrolocation():
 # region Routes Per-Source
 
 
+@ROOT.route("/linked-data/<path:source_name>")
+@ROOT.route("/linked-data/<path:source_name>/<path:identifier>")
+def get_source_features(source_name=None, identifier=None) -> List[Dict[str, Any]]:
+    """
+    Return one or more features from a given source.
+
+    This endpoint supports a "list mode" if no identifier given, returning all features from the source. If
+    an identifier is given, only that feature is returned (assuming it is found in the table).  In the case
+    where an identifier is provided but not found, a 404 is returned.
+
+    :param source_name: the suffix for the source to search, defaults to None
+    :type source_name: str, optional
+    :param identifier: The source-specific unique identifier for the feature to find, defaults to None
+    :type identifier: str, optional
+    :return: A GeoJSON FeatureCollection of the feature(s) found.
+    :rtype: List[Dict[str, Any]]
+    """
+    NLDI_API.require_plugin("FeaturePlugin")
+    if identifier:
+        try:
+            feature = NLDI_API.plugins["FeaturePlugin"].get_by_id(identifier, source_name)
+            features = [feature]
+        except KeyError as e:
+            # Either the source or the identifier doesn't exist.
+            return flask.Response(status=http.HTTPStatus.NOT_FOUND, response=str(e))
+    else:  # No identifier given; return all features from this source
+        try:
+            features = NLDI_API.plugins["FeaturePlugin"].get_all(source_name)
+        except KeyError as e:
+            # KeyError indicates that the source doesn't exist.
+            return flask.Response(status=http.HTTPStatus.NOT_FOUND, response=str(e))
+
+    return flask.Response(
+        headers={"Content-Type": "application/json"},
+        status=http.HTTPStatus.OK,
+        response=util.stream_j2_template("FeatureCollection.j2", features),
+    )
+
+
 @ROOT.route("/linked-data/<path:source_name>/<path:identifier>/basin")
 def get_basin(source_name=None, identifier=None):
-    r = flask.jsonify(
-        {
-            "message": "Not Implemented",
-            "params": {"source_name": source_name, "identifier": identifier},
-        }
+    simplified = flask.request.args.get("simplified", "true").lower() == "true"
+    split = flask.request.args.get("split", "false").lower() == "true"
+    NLDI_API.require_plugin("BasinPlugin")
+    try:
+        features = NLDI_API.plugins["BasinPlugin"].get_by_id(
+            identifier, source_name, simplified=simplified, split=split
+        )
+    except KeyError as e:
+        return flask.Response(status=http.HTTPStatus.NOT_FOUND, response=str(e))
+    content = util.stream_j2_template("FeatureCollection.j2", features)
+    return flask.Response(
+        headers={"Content-Type": "application/json"},
+        status=http.HTTPStatus.OK,
+        response=content,
     )
-    return r  # return get_response(API_.get_basin(request, source_name, identifier))
 
 
 @ROOT.route("/linked-data/<path:source_name>/<path:identifier>/navigation")  # noqa
@@ -262,45 +309,6 @@ def get_navigation(source_name=None, identifier=None, nav_mode=None, data_source
 
 
 #     return get_response(API_.get_navigation(request, source_name, identifier, nav_mode, data_source))
-
-
-@ROOT.route("/linked-data/<path:source_name>")
-@ROOT.route("/linked-data/<path:source_name>/<path:identifier>")
-def get_source_features(source_name=None, identifier=None) -> List[Dict[str, Any]]:
-    """
-    Return one or more features from a given source.
-
-    This endpoint supports a "list mode" if no identifier given, returning all features from the source. If
-    an identifier is given, only that feature is returned (assuming it is found in the table).  In the case
-    where an identifier is provided but not found, a 404 is returned.
-
-    :param source_name: the suffix for the source to search, defaults to None
-    :type source_name: str, optional
-    :param identifier: The source-specific unique identifier for the feature to find, defaults to None
-    :type identifier: str, optional
-    :return: A GeoJSON FeatureCollection of the feature(s) found.
-    :rtype: List[Dict[str, Any]]
-    """
-    NLDI_API.require_plugin("FeaturePlugin")
-    if identifier:
-        try:
-            feature = NLDI_API.plugins["FeaturePlugin"].get_by_id(identifier, source_name)
-            features = [feature]
-        except KeyError as e:
-            # Either the source or the identifier doesn't exist.
-            return flask.Response(status=http.HTTPStatus.NOT_FOUND, response=str(e))
-    else:  # No identifier given; return all features from this source
-        try:
-            features = NLDI_API.plugins["FeaturePlugin"].get_all(source_name)
-        except KeyError as e:
-            # KeyError indicates that the source doesn't exist.
-            return flask.Response(status=http.HTTPStatus.NOT_FOUND, response=str(e))
-
-    return flask.Response(
-        headers={"Content-Type": "application/json"},
-        status=http.HTTPStatus.OK,
-        response=util.stream_j2_template("FeatureCollection.j2", features),
-    )
 
 
 # region APP Creation

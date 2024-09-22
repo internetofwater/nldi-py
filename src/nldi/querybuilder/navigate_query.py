@@ -36,6 +36,9 @@ NavModesDesc = {
 }
 
 
+def navmode_description(nav_mode: NavigationModes) -> str:
+    return NavModesDesc[nav_mode]
+
 
 def trim_navigation(nav_mode: str, comid: int, trim_tolerance: float, measure: float):
     scaled_measure = 1 - ((measure - FlowlineModel.fmeasure) / (FlowlineModel.tmeasure - FlowlineModel.fmeasure))

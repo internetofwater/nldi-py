@@ -43,7 +43,7 @@ from nldi.lookup.catchment import CatchmentLookup
 from nldi.lookup.flowline import FlowlineLookup
 from nldi.lookup.pygeoapi import PygeoapiLookup
 from nldi.lookup.source import CrawlerSourceLookup
-from nldi.plugin import load_plugin
+from nldi.orig_plugin import load_plugin
 from nldi.util import TEMPLATES, sort_sources, stream_j2_template, to_json, url_join
 
 from . import LOGGER, log

@@ -395,3 +395,50 @@ def test_feature_plugin_get_all(nldi_db_connect_string):
     for f in features:
         assert f["type"] == "Feature"
         assert f["properties"]["source"] == "huc12pp"
+
+
+# region BasinPlugin
+@pytest.mark.order(48)
+@pytest.mark.integration
+def test_basin_plugin_constructor(nldi_db_connect_string):
+    p = BasinPlugin("Basin", db_connect_url=nldi_db_connect_string)
+    assert p.db_is_alive() is True
+
+
+@pytest.mark.order(48)
+@pytest.mark.integration
+def test_basin_plugin_required_plugins(nldi_db_connect_string):
+    ## Behavior has already been tested in the relevant plugins above.  We are just checking that BasinPlugin has access
+    ## to the required plugins (source lookup, feature lookup, flowline lookup, and the pygeoapi lookups).
+    p = BasinPlugin("Feature", db_connect_url=nldi_db_connect_string)
+    src = p.crawler_source_lookup.get_by_id("wqp")
+    assert src["source_suffix"] == "wqp"
+
+    f = p.feature_lookup.get_by_id("USGS-05427930", "wqp")
+    assert f["type"] == "Feature"
+
+    f = p.flowline_lookup.get_by_id("13293396")
+    assert f["type"] == "Feature"
+
+    f = p.hydrolocation_lookup.get_by_coords("POINT(-89.22401470690966 42.82769689708948)")
+    assert f["type"] == "FeatureCollection"
+
+    f = p.splitcatchment_lookup.get_by_coords("POINT(-89.22401470690966 42.82769689708948)")
+    assert f["type"] == "Feature"
+
+
+@pytest.mark.order(48)
+@pytest.mark.integration
+def test_basin_plugin_lookup(nldi_db_connect_string):
+    p = BasinPlugin("Basin", db_connect_url=nldi_db_connect_string)
+    ff = p.get_by_id("USGS-05427930", "wqp")
+    assert len(ff) == 1
+    assert ff[0]["type"] == "Feature"
+
+
+@pytest.mark.order(48)
+@pytest.mark.integration
+def test_basin_plugin_lookup_notfound(nldi_db_connect_string):
+    p = BasinPlugin("Basin", db_connect_url=nldi_db_connect_string)
+    with pytest.raises(KeyError):
+        ff = p.get_by_id("USGS-0123456", "wqp")
