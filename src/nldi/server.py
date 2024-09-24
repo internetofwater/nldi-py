@@ -5,6 +5,7 @@
 
 import http
 import os
+import sys
 from typing import Any, Dict, List, Tuple
 
 import flask
@@ -14,6 +15,9 @@ from pygeoapi.util import render_j2_template  ##TODO: can we drop this dependenc
 from . import LOGGER, __version__, log, util
 from .api.main import API
 from .config import Configuration
+from .querybuilder.navigate_query import navigation as build_nav_query
+from .querybuilder.navigate_query import trim_navigation as trim_nav_query
+from .querybuilder.lookup_query import estimate_measure
 
 NLDI_API = None  ## Global -- this will be assigned inside the app factory later.
 
@@ -143,6 +147,7 @@ def sources() -> flask.Response:
     return flask.jsonify(content)
 
 
+## THis route short-circuits the normal source lookup, and goes straight to the flowline plugin, which is specific to the 'comid' source.
 @ROOT.route("/linked-data/comid/<int:comid>")
 def get_flowline_by_comid(comid=None):
     global NLDI_API
@@ -152,9 +157,15 @@ def get_flowline_by_comid(comid=None):
     except KeyError:
         LOGGER.info(f"COMID {comid} not found; returning 404")
         return flask.Response(status=http.HTTPStatus.NOT_FOUND)
-    return flask.jsonify(r)
+
+    return flask.Response(
+        headers={"Content-Type": "application/json"},
+        status=http.HTTPStatus.OK,
+        response=util.stream_j2_template("FeatureCollection.j2", [r]),
+    )
 
 
+# Much like the above, this route short-circuits the normal source lookup, a behavior specific to the 'comid' source.
 @ROOT.route("/linked-data/comid/position")
 def get_flowline_by_position():
     global NLDI_API
@@ -271,62 +282,179 @@ def get_basin(source_name=None, identifier=None):
     )
 
 
-## TODO: Split this into two routes with corresponding functions... rather than the if statement internally.
-@ROOT.route("/linked-data/<path:source_name>/<path:identifier>/navigation")  # noqa
-@ROOT.route("/linked-data/<path:source_name>/<path:identifier>/navigation/<path:nav_mode>")  # noqa
-def get_navigation_info(source_name: str | None = None, identifier: str | None = None, nav_mode: str | None = None):
+@ROOT.route("/linked-data/<path:source_name>/<path:identifier>/navigation")  # << NOTE: no nav_mode here.
+def get_navigation_modes(source_name: str | None = None, identifier: str | None = None):
     global NLDI_API
 
     source_name = source_name.lower()
+
     # verify that the source exists:
     try:
         _ = NLDI_API.sources.get_by_id(source_name)
     except KeyError:
         return flask.Response(status=http.HTTPStatus.NOT_FOUND, response="Source not found: {source_name}")
 
-    if nav_mode is None:
-        ## This is the "list all navigation modes" logic
-        nav_url = util.url_join(NLDI_API.base_url, "linked-data", source_name, identifier, "navigation")
-        content = {
-            "upstreamMain": util.url_join(nav_url, "UM"),
-            "upstreamTributaries": util.url_join(nav_url, "UT"),
-            "downstreamMain": util.url_join(nav_url, "DM"),
-            "downstreamDiversions": util.url_join(nav_url, "DD"),
-        }
-        return flask.jsonify(content)
-
-    raise NotImplementedError("get_navigation_info not implemented yet")
-    #     return get_response(API_.get_navigation_info(request, source_name, identifier, nav_mode))
+    nav_url = util.url_join(NLDI_API.base_url, "linked-data", source_name, identifier, "navigation")
+    content = {
+        "upstreamMain": util.url_join(nav_url, "UM"),
+        "upstreamTributaries": util.url_join(nav_url, "UT"),
+        "downstreamMain": util.url_join(nav_url, "DM"),
+        "downstreamDiversions": util.url_join(nav_url, "DD"),
+    }
+    return flask.jsonify(content)
 
 
-@ROOT.route("/linked-data/<path:source_name>/<path:identifier>/navigation/<path:nav_mode>/flowlines")  # noqa
-def get_flowline_navigation(source_name=None, identifier=None, nav_mode=None):  # noqa
-    r = flask.jsonify(
+@ROOT.route("/linked-data/<path:source_name>/<path:identifier>/navigation/<path:nav_mode>")
+def get_navigation_info(source_name: str | None = None, identifier: str | None = None, nav_mode: str | None = None):
+    source_name = source_name.lower()
+
+    # verify that the source exists:
+    try:
+        _ = NLDI_API.sources.get_by_id(source_name)
+    except KeyError:
+        return flask.Response(status=http.HTTPStatus.NOT_FOUND, response="Source not found: {source_name}")
+
+    nav_url = util.url_join(NLDI_API.base_url, "linked-data", source_name, identifier, "navigation")
+
+    content = [
         {
-            "message": "Not Implemented",
-            "params": {"source_name": source_name, "identifier": identifier},
+            "source": "Flowlines",
+            "sourceName": "NHDPlus flowlines",
+            "features": util.url_join(nav_url, nav_mode, "flowlines"),
         }
+    ]
+    for source in NLDI_API.sources.get_all():
+        src_id = source["source_suffix"]
+        content.append(
+            {
+                "source": src_id,
+                "sourceName": source["source_name"],
+                "features": util.url_join(nav_url, nav_mode, src_id.lower()),
+            }
+        )
+    return flask.jsonify(content)
+
+
+@ROOT.route("/linked-data/<path:source_name>/<path:identifier>/navigation/<path:nav_mode>/flowlines")
+def get_flowline_navigation(source_name=None, identifier=None, nav_mode=None):
+    global NLDI_API
+    NLDI_API.require_plugin("FeaturePlugin")
+    NLDI_API.require_plugin("FlowlinePlugin")
+
+    source_name = source_name.lower()
+    try:
+        _d = flask.request.args["distance"]
+        distance = float(_d)
+    except KeyError as e:
+        return flask.Response(status=http.HTTPStatus.BAD_REQUEST, response="No distance provided")
+    except (TypeError, ValueError) as e:
+        return flask.Response(status=http.HTTPStatus.BAD_REQUEST, response="Invalid distance provided")
+
+    trim_start = False
+    try:
+        _t = flask.request.args["trimStart"]
+        trim_start = _t.lower() == "true"
+    except KeyError as e:
+        trim_start = False
+    except (TypeError, ValueError) as e:
+        return flask.Response(status=http.HTTPStatus.BAD_REQUEST, response="Invalid trimStart provided")
+
+    try:
+        if source_name == "comid":
+            _id = NLDI_API.plugins["FlowlinePlugin"].get_by_id(identifier)
+            start_comid = int(_id)
+        else:
+            feature = NLDI_API.plugins["FeaturePlugin"].get_by_id(identifier, source_name)        #<<< ATTENTION: ``feature`` is instantiated here.
+            start_comid = int(feature["properties"]["comid"])
+    except (KeyError, ValueError):
+        return flask.Response(
+            status=http.HTTPStatus.INTERNAL_SERVER_ERROR, response=f"Error getting COMID for {identifier=}, {source_name=}"
+        )
+
+    LOGGER.info(f"Attempting {nav_mode} navigation for {distance=}, with {trim_start=}")
+    nav_results = build_nav_query(nav_mode, start_comid, distance)
+
+    if trim_start is True:
+        if source_name == "comid": ##<< this should never happen for trimmed navigation.
+            return flask.Response(status=http.HTTPStatus.BAD_REQUEST, response="Cannot trim navigation from COMID source.")
+        ## ATTENTION: ``feature`` must be instantiated before this point.
+        try:
+            trim_tolerance = float(request.params.get("trimTolerance", 0.0))
+        except ValueError:
+            msg = "Request parameter 'trimTolerance' must be a number."
+            return flask.Response(status=http.HTTPStatus.BAD_REQUEST, response=msg)
+
+        LOGGER.debug(f"Trimming flowline with {trim_tolerance=}")
+        try:
+            measure = feature["properties"]["measure"]
+            if not measure: #only happens if measure is supplied as zero
+                measure = estimate_measure(identifier, source_name)
+            measure = float(measure)
+            LOGGER.debug(f"Trim navigation: {measure=}")
+        except KeyError:
+            msg = "Required field 'measure' is not present."
+            return flask.Response(status=http.HTTPStatus.BAD_REQUEST, response=msg)
+        except ValueError:
+            msg = "Required field 'measure' must be a number."
+            return flask.Response(status=http.HTTPStatus.BAD_REQUEST, response=msg)
+
+        trim_nav = trim_nav_query(nav_mode, start_comid, trim_tolerance, measure)
+        features = NLDI.plugins['FlowlinePlugin'].trim_navigation(nav, trim_nav)
+    else:
+        features = NLDI_API.plugins['FlowlinePlugin'].lookup_navigation(nav_results)
+
+    content = util.stream_j2_template("FeatureCollection.j2", features)
+
+    return flask.Response(
+        headers={"Content-Type": "application/json"},
+        status=http.HTTPStatus.OK,
+        response=content,
     )
-    return r  # return get_response(API_.get_flowlines(request, source_name, identifier, nav_mode))
 
 
-@ROOT.route("/linked-data/<path:source_name>/<path:identifier>/navigation/<path:nav_mode>/<path:data_source>")  # noqa
-def get_navigation(source_name=None, identifier=None, nav_mode=None, data_source=None):  # noqa
-    r = flask.jsonify(
-        {
-            "message": "Not Implemented",
-            "params": {
-                "source_name": source_name,
-                "identifier": identifier,
-                "nav_mode": nav_mode,
-                "data_source": data_source,
-            },
-        }
+@ROOT.route("/linked-data/<path:source_name>/<path:identifier>/navigation/<path:nav_mode>/<path:data_source>")
+def get_navigation(source_name=None, identifier=None, nav_mode=None, data_source=None):
+    global NLDI_API
+    NLDI_API.require_plugin("FeaturePlugin")
+    NLDI_API.require_plugin("FlowlinePlugin")
+
+    def _get_start_comid(identifier: str, source_name: str) -> int:
+        global NLDI_API
+        if source_name == "comid":
+            _id = NLDI_API.plugins["FlowlinePlugin"].get_by_id(identifier)
+            return int(_id)
+        else:
+            feature = NLDI_API.plugins["FeaturePlugin"].get_by_id(identifier, source_name)
+            return int(feature["properties"]["comid"])
+
+    source_name = source_name.lower()
+    source2_name = data_source.lower()
+    try:
+        _d = flask.request.args["distance"]
+        distance = float(_d)
+    except KeyError as e:
+        return flask.Response(status=http.HTTPStatus.BAD_REQUEST, response="No distance provided")
+    except (TypeError, ValueError) as e:
+        return flask.Response(status=http.HTTPStatus.BAD_REQUEST, response="Invalid distance provided")
+
+    try:
+        start_comid = _get_start_comid(identifier, source_name)
+    except (KeyError, ValueError):
+        return flask.Response(
+            status=http.HTTPStatus.INTERNAL_SERVER_ERROR,
+            response=f"Error getting COMID for {identifier=}",
+        )
+
+    srcinfo = NLDI_API.sources.get_by_id(source_name)
+    nav_results = build_nav_query(nav_mode, start_comid, distance)
+    features = NLDI_API.plugins["FeaturePlugin"].lookup_navigation(nav_results, srcinfo)
+
+    return flask.Response(
+        headers={"Content-Type": "application/json"},
+        status=http.HTTPStatus.OK,
+        response=util.stream_j2_template("FeatureCollection.j2", features),
     )
-    return r
 
-
-#     return get_response(API_.get_navigation(request, source_name, identifier, nav_mode, data_source))
 
 
 # region APP Creation
@@ -358,4 +486,4 @@ def app_factory(api: API) -> flask.Flask:
 APP = app_factory(API(globalconfig=CONFIG))
 ## ^^^^^^^^  this is the standard startup, where APP is the thing we care about.
 ## But for testing or special cases, you can send a different API in (with a different
-## ``globalconfig``).
+## ``globalconfig``) to make a custom app.

@@ -18,9 +18,14 @@ class CrawlerSourcePlugin(APIPlugin):
     API Plugin for managing the Crawler Source table.
 
     This plugin is required for much of the NLDI functionality, since it provides the
-    information about the sources of the data that NLDI uses.  It is not registered as
+    information about the sources of the data that NLDI uses. It is not registered as
     a plugin in the API (although it could be), but is instead used directly by the API
     as its ``.sources`` attribute.  See the API class for more information.
+
+    Crawler sources do not have a spatial component, so this plugin does not have the
+    ``get_by_coords()`` method that is present in the other plugins.  It does have the
+    ``get_by_id()`` method, which is used to retrieve a source by its ``source_suffix``.
+    It also includes a method to retrieve all sources in the table.
     """
 
     def __init__(self, name: str | None = None, **kwargs: Dict[str, Any]):
@@ -33,8 +38,8 @@ class CrawlerSourcePlugin(APIPlugin):
 
         IMPORTANT!!!  Note that the identifier supplied as an argument to this method is
         the source's ``source_suffix``.  This is treated as a unique identifier by the
-        business logic of the NLDI API, but there is actually NO unique constraint on this
-        column in the database.  This column is NOT the primary key for the crawler
+        business logic of the NLDI API, but there is actually **NO** unique constraint
+        on this column in the database.  This column is NOT the primary key for the crawler
         source table.  The primary key is the ``crawler_source_id`` column, which is an
         integer value.
         """
@@ -63,6 +68,9 @@ class CrawlerSourcePlugin(APIPlugin):
         Note that we are choosing to return the data as a list of dictionaries, rather than
         as a generator.  The sources table is small, and this approach simplifies the code
         use a fair bit.
+
+        : return: A list of dictionaries, each representing a row in the CrawlerSource table.
+        : rtype: List[Dict]
         """
         LOGGER.debug(f"GET all sources from {self.table_model.__tablename__}")
         with self.session() as session:
@@ -81,11 +89,17 @@ class CrawlerSourcePlugin(APIPlugin):
 
         This method will insert a new source into the database, or update an existing source
         if it happens to have the same ``crawler_source_id`` as an existing source.  This
-        "upsert" using "ON CONFLICT" clause specific to the postgres dialect of SQL.
+        "upsert" using "ON CONFLICT" clause is specific to the postgres dialect of SQL.
 
-        NOTE that this is a (hopefully) non-breaking change in behavior.  Previous factors of this
+        **NOTE:** that this is a (hopefully) non-breaking change in behavior.  Previous factors of this
         function presumed that the to-be-inserted source did not already exist, and simply
-        inserted (and trapped for failure).
+        inserted a new row. In practice, this method is called by the ``align_sources()`` method,
+        below, which deletes all sources before inserting new ones.
+
+        : param source: A dictionary representing the source to insert.
+        : type source: Dict[str, str]
+        : return: True if the source was inserted, False otherwise.
+        : rtype: bool
         """
         source_suffix = source["source_suffix"].lower()
         source["source_suffix"] = source_suffix
@@ -121,7 +135,7 @@ class CrawlerSourcePlugin(APIPlugin):
         Delete a named source from the database.
 
         Note that the source_id is the primary key for the table, so this is the value
-        to supply for deletions.  This is not the same as the source_suffix, which is
+        to supply for deletions.  This is not the same as the ``source_suffix``, which is
         in-practice unique, but this is not guaranteed.  The crawler source table has
         no constraints on any columns other than the primary key.
 
@@ -151,9 +165,9 @@ class CrawlerSourcePlugin(APIPlugin):
         """
         Align the sources in the database with the provided list of sources.
 
-        This "upsert" (using the ``insert_source()`` method) sources in the database, one
-        at a time. The list is assumed to be well-formatted with valid sources and all
-        columns present.
+        This uses an "upsert" (using the ``insert_source()`` method) to add sources
+        to the database, one at a time. The list is assumed to be well-formatted with
+        valid sources and all columns present.
 
         If the ``force`` parameter is True, all sources in the database will be deleted
         before inserting the new ones. This is the default, as this preserves backward
@@ -163,6 +177,9 @@ class CrawlerSourcePlugin(APIPlugin):
         :param sources: A list of sources to insert into the database.
         :type Dict[str, str]
         :param force: If True, delete all sources in the database before inserting the new ones.
+        :type force: bool
+        :return: True if the sources were inserted, False otherwise.
+        :rtype: bool
         """
         if force:
             # Delete all sources in the crawler source table and replace them with the provided list.

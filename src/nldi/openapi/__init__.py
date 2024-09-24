@@ -177,7 +177,7 @@ def get_oas(cfg: dict) -> dict:
 
     comid = {"source_suffix": "comid", "source_name": "NHDPlus comid"}
     sources = [comid, *sort_sources(cfg["sources"])]
-    _sources = [_src["source_suffix"] for _src in cfg["sources"]]
+    sources_enumerated = [_src["source_suffix"] for _src in cfg["sources"]]
     for src in sources:
         src_id = src["source_suffix"].lower()
         src_name = src["source_name"]
@@ -376,7 +376,7 @@ def get_oas(cfg: dict) -> dict:
                         "name": "dataSource",
                         "in": "path",
                         "required": True,
-                        "schema": {"type": "string", "example": "nwissite", "enum": _sources},
+                        "schema": {"type": "string", "example": "nwissite", "enum": sources_enumerated},
                     },
                     {"$ref": "#/components/parameters/distance"},
                 ],

@@ -3,6 +3,8 @@
 # SPDX-License-Identifier: CC0
 #
 
+"""Catchment Plugin"""
+
 import json
 from typing import Any, Dict, List, Union
 
@@ -15,6 +17,15 @@ from .APIPlugin import APIPlugin
 
 
 class CatchmentPlugin(APIPlugin):
+    """
+    NHD Catchment Plugin
+
+    This plugin provides a mechanism to query the NHDPlus catchment data.  A catchment
+    is the land surface area flowing directly into an NHDPlus feature.  This plugin
+    provides methods to find catchments either by its COMID or by a point geometry.
+
+    """
+
     def __init__(self, name: str | None = None, **kwargs: Dict[str, Any]):
         super().__init__(name, **kwargs)
         self.table_model = CatchmentModel
@@ -67,7 +78,7 @@ class CatchmentPlugin(APIPlugin):
             geojson = sqlalchemy.func.ST_AsGeoJSON(CatchmentModel.the_geom).label("geojson")
             # Retrieve data from database as feature
             point = WKTElement(coords, srid=NAD83_SRID)
-            LOGGER.debug(f"Using this point for selection: {point}")
+            # LOGGER.debug(f"Using this point for selection: {point}")
             intersects = sqlalchemy.func.ST_Intersects(CatchmentModel.the_geom, point)
             r = session.query(CatchmentModel, geojson).where(intersects).first()
             ## Setting up the query ^^^^^^^^^^^^^^^ like this means that r is a tuple of (CatchmentModel, GeoJSON_string).

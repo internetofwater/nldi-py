@@ -8,6 +8,7 @@
 from enum import StrEnum
 from typing import Any
 
+import sqlalchemy
 from sqlalchemy import and_, case, func, or_, select, text
 from sqlalchemy.orm import aliased
 
@@ -26,6 +27,7 @@ class NavigationModes(StrEnum):  ## StrEnum requires python 3.11 or better
     UT = "UT"
     # PP = "PP"
 
+
 ## Convenience dictionary to map the mode enum to a human-readable description
 NavModesDesc = {
     NavigationModes.DM: "Downstream navigation on the Main channel",
@@ -40,42 +42,48 @@ def navmode_description(nav_mode: NavigationModes) -> str:
     return NavModesDesc[nav_mode]
 
 
-def trim_navigation(nav_mode: str, comid: int, trim_tolerance: float, measure: float):
-    scaled_measure = 1 - ((measure - FlowlineModel.fmeasure) / (FlowlineModel.tmeasure - FlowlineModel.fmeasure))
+def navigation(
+    nav_mode: NavigationModes,
+    comid: int,
+    distance: float | None = None,
+    coastal_fcode: int = COASTAL_FCODE,
+) -> sqlalchemy.sql.selectable.Select:
+    """
+    Create a query for navigation.
 
-    if nav_mode in [NavigationModes.DD, NavigationModes.DM]:
-        geom = func.ST_AsGeoJSON(func.ST_LineSubstring(FlowlineModel.shape, scaled_measure, 1), 9, 0)
-    elif nav_mode in [NavigationModes.UT, NavigationModes.UM]:
-        geom = func.ST_AsGeoJSON(func.ST_LineSubstring(FlowlineModel.shape, 0, scaled_measure), 9, 0)
+    The navigation query logic depends on the navigation mode.  The navigation modes are defined
+    in the NavigationModes enum.  The navigation query is created by calling the appropriate
+    navigation function based on the navigation mode.  The navigation function is selected from
+    the _modes dictionary, which is hard-coded in this module.
 
-    if 100 - measure >= trim_tolerance:
-        LOGGER.debug("Forming trim query")
-        nav_trim = case(
-            (FlowlineModel.nhdplus_comid == text(":comid"), geom), else_=func.ST_AsGeoJSON(FlowlineModel.shape, 9, 0)
-        )
-
-        query = select([FlowlineModel.nhdplus_comid.label("comid"), nav_trim.label("geom")])
+    This function's sole purpose is to proxy the call to the appropriate navigation function, based
+    on the value of the ``nav_mode`` parameter.
+    """
+    _modes = {
+        NavigationModes.DM: navigate_dm,
+        NavigationModes.DD: navigate_dd,
+        NavigationModes.UM: navigate_um,
+        NavigationModes.UT: navigate_ut,
+    }
+    if nav_mode not in _modes:
+        LOGGER.error(f"Invalid navigation mode: {nav_mode}")
+        raise ValueError(f"Invalid navigation mode: {nav_mode}")
     else:
-        query = select(
-            [FlowlineModel.nhdplus_comid.label("comid"), func.ST_AsGeoJSON(FlowlineModel.shape, 9, 0).label("geom")]
-        )
-
-    return query.params(comid=comid)
+        func = _modes[nav_mode]
+    return func(comid, distance, coastal_fcode)
 
 
-def get_navigation(nav_mode: str, comid: int, distance: float = None, coastal_fcode: int = COASTAL_FCODE) -> Any:
-    LOGGER.debug(f"Doing navigation for {comid} with mode {nav_mode}")
-    if nav_mode == NavigationModes.DM:
-        return navigate_dm(comid, distance, coastal_fcode)
-    elif nav_mode == NavigationModes.DD:
-        return navigate_dd(comid, distance, coastal_fcode)
-    elif nav_mode == NavigationModes.UM:
-        return navigate_um(comid, distance, coastal_fcode)
-    elif nav_mode == NavigationModes.UT:
-        return navigate_ut(comid, distance, coastal_fcode)
+def navigate_dm(
+    comid: int,
+    distance: float | None,
+    coastal_fcode: int,
+) -> sqlalchemy.sql.selectable.Select:
+    """
+    Create a navigation query for the DM mode.
 
-
-def navigate_dm(comid, distance, coastal_fcode):
+    The DM mode is the Downstream navigation on the Main channel.
+    """
+    LOGGER.debug(f"Creating navigation query for DM mode: {comid=}, {distance=}, {coastal_fcode=}")
     nav = (
         select(
             [
@@ -108,7 +116,12 @@ def navigate_dm(comid, distance, coastal_fcode):
     return query.params(distance=distance, comid=comid, coastal_fcode=coastal_fcode)
 
 
-def navigate_dd(comid, distance, coastal_fcode):
+def navigate_dd(
+    comid: int,
+    distance: float | None,
+    coastal_fcode: int,
+) -> sqlalchemy.sql.selectable.Select:
+    LOGGER.debug(f"Creating navigation query for DD mode: {comid=}, {distance=}, {coastal_fcode=}")
     nav = (
         select(
             [
@@ -141,7 +154,12 @@ def navigate_dd(comid, distance, coastal_fcode):
     return query.params(distance=distance, comid=comid, coastal_fcode=coastal_fcode)
 
 
-def navigate_um(comid, distance, coastal_fcode):
+def navigate_um(
+    comid: int,
+    distance: float | None,
+    coastal_fcode: int,
+) -> sqlalchemy.sql.selectable.Select:
+    LOGGER.debug(f"Creating navigation query for UM mode: {comid=}, {distance=}, {coastal_fcode=}")
     nav = (
         select(
             [
@@ -174,7 +192,12 @@ def navigate_um(comid, distance, coastal_fcode):
     return query.params(distance=distance, comid=comid, coastal_fcode=coastal_fcode)
 
 
-def navigate_ut(comid, distance=0, coastal_fcode=COASTAL_FCODE):
+def navigate_ut(
+    comid: int,
+    distance: float | None,
+    coastal_fcode: int,
+) -> sqlalchemy.sql.selectable.Select:
+    LOGGER.debug(f"Creating navigation query for UT mode: {comid=}, {distance=}, {coastal_fcode=}")
     nav = (
         select(
             [
@@ -204,3 +227,31 @@ def navigate_ut(comid, distance=0, coastal_fcode=COASTAL_FCODE):
     query = select([nav_ut.c.comid]).select_from(nav_ut)
 
     return query.params(distance=distance, comid=comid, coastal_fcode=coastal_fcode)
+
+
+def trim_navigation(
+    nav_mode: str,
+    comid: int,
+    trim_tolerance: float,
+    measure: float,
+) -> sqlalchemy.sql.selectable.Select:
+    scaled_measure = 1 - ((measure - FlowlineModel.fmeasure) / (FlowlineModel.tmeasure - FlowlineModel.fmeasure))
+
+    if nav_mode in [NavigationModes.DD, NavigationModes.DM]:
+        geojson = func.ST_AsGeoJSON(func.ST_LineSubstring(FlowlineModel.shape, scaled_measure, 1), 9, 0)
+    elif nav_mode in [NavigationModes.UT, NavigationModes.UM]:
+        geojson = func.ST_AsGeoJSON(func.ST_LineSubstring(FlowlineModel.shape, 0, scaled_measure), 9, 0)
+
+    if 100 - measure >= trim_tolerance:
+        LOGGER.debug("Forming trim query")
+        nav_trim = case(
+            (FlowlineModel.nhdplus_comid == text(":comid"), geojson), else_=func.ST_AsGeoJSON(FlowlineModel.shape, 9, 0)
+        )
+
+        query = select([FlowlineModel.nhdplus_comid.label("comid"), nav_trim.label("geojson")])
+    else:
+        query = select(
+            [FlowlineModel.nhdplus_comid.label("comid"), func.ST_AsGeoJSON(FlowlineModel.shape, 9, 0).label("geojson")]
+        )
+
+    return query.params(comid=comid)

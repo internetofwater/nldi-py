@@ -6,10 +6,6 @@
 """
 Split Catchment Plugin
 
-This plugin provides a mechanism for proxying requests to a PyGeoAPI
-instance running elsewhere, and uses the result of that query to compose
-a response on the NLDI service.
-
 """
 
 from typing import Any, Dict, List
@@ -25,8 +21,25 @@ from .PyGeoAPIPlugin import PyGeoAPIPlugin
 
 
 class SplitCatchmentPlugin(PyGeoAPIPlugin):
+    """
+    Split Catchment Plugin
+
+    This plugin provides a mechanism for proxying requests to the PyGeoAPI service offering a
+    split catchment algorithm (running elsewhere).  This plugin is little more than a proxy
+    to that service, and adds no additional business logic.
+
+    The nature of this plugin is such that it does not make sense to query by ID. ``get_by_id()``
+    is not implemented in this plugin. The coordinate lookup in ``get_by_coords()`` is the primary
+    method for this plugin.
+
+    Note that the external split catchment service can take a long time to respond.  The timeout
+    for this service is set to 2x the default timeout for PyGeoAPI service calls. This is to allow
+    the split catchment algorithm to complete its work before the timeout is reached.
+    """
+
     @property
     def splitcatchment_service_endpoint(self) -> str:
+        """Return the url for the split catchment service endpoint."""
         return util.url_join(self.pygeoapi_url, "processes", "nldi-splitcatchment", "execution")
 
     def get_by_coords(self, coords: str) -> Dict[str, Any]:
@@ -34,7 +47,7 @@ class SplitCatchmentPlugin(PyGeoAPIPlugin):
         query split catchment
 
         :param coords: WKT of point element
-
+        :type coords: str
         :returns: GeoJSON features
         """
         LOGGER.debug(f"{__class__.__name__} get_by_coords: {coords}")

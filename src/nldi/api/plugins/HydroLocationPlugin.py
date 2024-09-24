@@ -3,14 +3,7 @@
 # SPDX-License-Identifier: CC0
 #
 
-"""
-HydroLocation Plugin
-
-This plugin provides a mechanism for proxying requests to a PyGeoAPI
-instance running elsewhere, and uses the result of that query to further
-search within the NLDI database.
-
-"""
+"""HydroLocation Plugin"""
 
 from typing import Any, Dict, List
 
@@ -28,21 +21,37 @@ from .PyGeoAPIPlugin import PyGeoAPIPlugin
 
 
 class HydroLocationPlugin(PyGeoAPIPlugin):
+    """
+    Provides a mechanism for sending requests to the HydroLocation PyGeoAPI service running elsewhere.
+
+    The business logic of this plugin requires that it coordinate with other plugins.  Namely,
+    ``HydroLocationPlugin`` needs to look up catchments in the NLDI database (using ``CatchmentPlugin``).
+    The preferred mechanism is to use the parent API's plugin registry to get the catchment plugin
+    instance.  If this plugin is not registered with the parent API, this pluging will create a new instance
+    of the catchment plugin with a default name and database connection URL.
+
+    The nature of this plugin is such that it does not make sense to query by ID. ``get_by_id()`` is
+    not implemented in this plugin. The coordinate lookup in ``get_by_coords()`` is the primary
+    method for this plugin.
+    """
+
     @property
     def catchment_lookup(self):
         """
         Return a catchment lookup plugin.
 
-        This is a property that returns a CatchmentPlugin instance.  If the plugin is not registered,
-        it will create a new instance with a default name and database connection URL.  If this plugin
-        is propertly registered with the API, it will return the catchment plugin instance that is
-        registered with the parent.
+        This is a property that returns a CatchmentPlugin instance.  The logic of finding
+        or creating an appropriate ``CatchmentPlugin`` is handled here.
+
+        If the plugin is not registered, it will create a new instance with a default name and
+        database connection URL.  If this plugin is propertly registered with the API, it will
+        return the catchment plugin instance that is registered with the parent.
         """
         if self.is_registered:
             self.parent.require_plugin("CatchmentPlugin")
             return self.parent.plugins["CatchmentPlugin"]
         else:
-            LOGGER.warning("Attempt to get catchment_lookup from an unregistered plugin.")
+            LOGGER.info("Attempt to get catchment_lookup from an unregistered plugin.")
             return CatchmentPlugin("Catchment-From-HydroLocation", db_connect_url=self._db_connect_url)
 
     @property
@@ -54,12 +63,8 @@ class HydroLocationPlugin(PyGeoAPIPlugin):
         """
         Get a hydrolocation by coordinates.
 
-        :param coords: _description_
-        :type coords: str
-        :raises ProviderQueryError: _description_
-        :raises KeyError: _description_
-        :return: _description_
-        :rtype: dict
+        TODO: Full description of what a hydrolocation is and what it does.
+
         """
         LOGGER.debug(f"{__class__.__name__} get_by_coords: {coords}")
         point = shapely.wkt.loads(coords)
@@ -81,7 +86,7 @@ class HydroLocationPlugin(PyGeoAPIPlugin):
         except KeyError as err:
             LOGGER.error(f"Error querying catchment lookup: {err}")
             raise ProviderQueryError from err
-        LOGGER.debug("Found COMID: {nhdplus_comid} for the catchment at {coords}")
+        LOGGER.debug(f"Found COMID: {nhdplus_comid} for the catchment at {coords}")
         nav_url = util.url_join(self.base_url, "linked-data", "comid", nhdplus_comid, "navigation")
 
         LOGGER.debug(f"Getting measure for {nhdplus_comid}")

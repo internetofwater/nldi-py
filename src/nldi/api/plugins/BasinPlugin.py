@@ -9,7 +9,7 @@ from typing import Any, Dict, List, Tuple, Union
 import sqlalchemy
 from geoalchemy2 import WKTElement
 
-from ... import LOGGER, NAD83_SRID, querybuilder, util
+from ... import LOGGER, querybuilder, util
 from ...schemas.nhdplus import CatchmentModel
 from .APIPlugin import APIPlugin
 from .CrawlerSourcePlugin import CrawlerSourcePlugin
@@ -122,7 +122,7 @@ class BasinPlugin(APIPlugin):
                 start_comid = int(identifier)
                 is_point = False
             else:
-                src = self.crawler_source_lookup.get_by_id(source_name)
+                #src = self.crawler_source_lookup.get_by_id(source_name)
                 feature = self.feature_lookup.get_by_id(identifier, source_name)
                 start_comid = int(feature["properties"]["comid"])
                 is_point = feature["geometry"]["type"] == "Point"

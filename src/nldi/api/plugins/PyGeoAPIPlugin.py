@@ -6,10 +6,6 @@
 """
 PyGeoAPI Plugin
 
-This plugin provides a mechanism for proxying requests to a PyGeoAPI
-instance running elsewhere.  This is a base class for other plugins
-to inherit from.
-
 """
 
 import json
@@ -23,6 +19,13 @@ from .APIPlugin import APIPlugin
 
 
 class PyGeoAPIPlugin(APIPlugin):
+    """
+    Provides a mechanism for proxying requests to a PyGeoAPI instance running elsewhere.
+
+    This is a base class for other plugins, notably the ``HydroLocationPlugin`` and
+    ``SplitCatchmentPlugin``.  This class provides a single source for common utility functions
+    and constants used by those subclasses.
+    """
     DEFAULT_PYGEOAPI_URL = "https://labs-beta.waterdata.usgs.gov/api/nldi/pygeoapi"
     HTTP_TIMEOUT = 20  # seconds
     DEFAULT_PROPS = {
@@ -43,6 +46,17 @@ class PyGeoAPIPlugin(APIPlugin):
 
     @property
     def pygeoapi_url(self) -> str:
+        """
+        Get the URL of the PyGeoAPI instance to which requests will be sent.
+
+        The parent API is configurable, and that configuration includes a custom URL
+        for this value.  If left unconfigured, or if this plugin is running in
+        "unregistered" state (e.g. for testing purposes), this string will default
+        to a known URL.
+
+        :return: The URL of the PyGeoAPI service.
+        :rtype: str
+        """
         if self.is_registered:
             return self.parent.config.get("pygeoapi_url", self.DEFAULT_PYGEOAPI_URL)
         else:

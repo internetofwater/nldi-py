@@ -12,8 +12,9 @@ from typing import Any, Dict, Tuple
 import sqlalchemy
 from sqlalchemy.engine import URL as DB_URL
 
-from .. import LOGGER, __version__
-from ..util import load_yaml
+from .. import LOGGER, __version__, util
+
+# from ..util import load_yaml
 from . import plugins
 # import APIPlugin, CrawlerSourcePlugin
 
@@ -29,9 +30,7 @@ class API:
     def __init__(self, globalconfig: dict):
         self.plugins: dict = {}
         self.config = deepcopy(globalconfig)
-        # self.db_info = globalconfig["server"]["data"]
-        # NOTE:  ^^^^^^^^^^^^^^ We are tracking db connection information at the API level.
-        # All plugins will use this connection information, as well as any cached ENGINEs
+
         self.base_url = globalconfig["base_url"]
 
         self.sources = plugins.CrawlerSourcePlugin("PrivateSources")
@@ -39,14 +38,24 @@ class API:
         # NOTE: the sources table is a plugin, same as the other content plugins, but it is a special
         # case. Without the sources table, there's really not much else to do. So, we will handle it
         # here as a must-have special case in the initializer.
-        LOGGER.debug(f"New API instance with db_info: {self.db_connection_string!r}")
+        if not self.sources.db_is_alive():
+            LOGGER.error("Failed to initialize database connection to retrieve source table.")
+            raise RuntimeError("Failed to initialize database connection to retrieve source table.")
+        LOGGER.info(f"New API instance with db_info: {self.db_connection_string!r}")
 
     @cached_property
     def db_info(self) -> Dict[str, Any]:
+        """
+        Get database connection information from the global config, loaded at runtime.
+
+        We are tracking db connection information at the API level.
+        All registered plugins will use this connection information, as well as any cached ENGINEs
+        """
         return self.config["server"]["data"]
 
     @property
     def db_connection_string(self) -> DB_URL:
+        """Compose a database connection string from the configuration info dictionary."""
         return DB_URL.create(
             "postgresql+psycopg2",  # Default SQL dialect/driver
             username=self.db_info.get("user", "nldi"),
@@ -61,21 +70,41 @@ class API:
         """
         Create a database engine for the API.
 
-        This engine is cached for the life of the API object.  All plugins will use this engine rather
+        This engine is cached for the life of the API object. All plugins will use this engine rather
         than creating their own.  Each plugin will have its own session, however.
 
-        :return: Database engine, suitable for use with ``sessionmaker``
+        :return: Database engine, suitable for use with a session maker.
         :rtype: sqlalchemy.engine
         """
         LOGGER.debug(f"{self.__class__.__name__} creating database engine...")
         engine = sqlalchemy.create_engine(
             self.db_connection_string,
-            connect_args={"client_encoding": "utf8", "application_name": "nldi"},
+            connect_args={
+                "client_encoding": "utf8",
+                "application_name": "nldi",
+                "connect_timeout": 20, ## seconds to wait for a connection
+                # TODO: is 20 seconds enough time?
+            },
             pool_pre_ping=True,
         )
         return engine
 
     def register_plugin(self, plugin: plugins.APIPlugin) -> bool:
+        """
+        Register a plugin with the API.
+
+        The internal registry of plugins is nothing more than a dictionary. The key is the plugin's name
+        (which can be over-ridden at the plugin level) and the value is the plugin object itself. Registration
+        gives the plugins access to the API's database connection information, its config information, etc.
+
+        For this system to work, each registered plugin must have a ``parent`` attribute, which will point
+        back to this API object, and it must implement the ``db_is_alive`` method.
+
+        :param plugin: The plugin to register
+        :type plugin: plugins.APIPlugin
+        :return: Success or Failure of registration
+        :rtype: bool
+        """
         self.plugins[plugin.name] = plugin
         plugin.parent = self
         ## On the "fail-fast" principle, we will check if the plugin can connect to the database before moving on.
@@ -90,11 +119,11 @@ class API:
             return False
 
     def require_plugin(self, plugin_name: str) -> bool:
-        LOGGER.debug("Loading Required plugin: {plugin_name}")
+        LOGGER.debug(f"Required plugin: {plugin_name}")
         if plugin_name not in self.plugins:
-            LOGGER.debug(f"Plugin {plugin_name} not found in registry.  Attempting to load...")
+            LOGGER.info(f"Required plugin {plugin_name} not found in registry.  Attempting to load...")
         else:
-            return True
+            return True  # << already registered; we're done here.
 
         try:
             pkgname = ".plugins"
@@ -124,9 +153,9 @@ class API:
         :return: OpenAPI document
         :rtype: dict
         """
-        OAS_SCHEMAS = load_yaml(pathlib.Path(__file__).parent / "schemas.yaml")
-        OAS_PARAMETERS = load_yaml(pathlib.Path(__file__).parent / "parameters.yaml")
-        OAS_RESPONSES = load_yaml(pathlib.Path(__file__).parent / "responses.yaml")
+        OAS_SCHEMAS = util.load_yaml(pathlib.Path(__file__).parent / "schemas.yaml")
+        OAS_PARAMETERS = util.load_yaml(pathlib.Path(__file__).parent / "parameters.yaml")
+        OAS_RESPONSES = util.load_yaml(pathlib.Path(__file__).parent / "responses.yaml")
 
         RESPONSES = {  # noqa: N806
             "400": {"$ref": "#/components/responses/400"},
@@ -134,7 +163,7 @@ class API:
             "406": {"$ref": "#/components/responses/406"},
             "500": {"$ref": "#/components/responses/500"},
         }
-        LOGGER.debug("Generating OpenAPI JSON Specification")
+        LOGGER.info("Generating OpenAPI JSON Specification")
 
         oas = {
             "openapi": "3.0.1",
@@ -183,6 +212,26 @@ class API:
             ],
         }
         paths = dict()
+
+        tags = [
+            {
+                "description": "NLDI home",
+                "externalDocs": {
+                    "description": "information",
+                    "url": "https://github.com/internetofwater/nldi-services",
+                },
+                "name": "nldi",
+            },
+            {
+                "description": "NHDPlus Version 2 COMID",
+                "externalDocs": {
+                    "description": "information",
+                    "url": "https://www.usgs.gov/national-hydrography/national-hydrography-dataset",  # noqa
+                },
+                "name": "comid",
+            },
+        ]
+
         paths["/"] = {
             "get": {
                 "summary": "getLandingPage",
@@ -196,7 +245,6 @@ class API:
                 },
             }
         }
-
         paths["/openapi"] = {
             "get": {
                 "summary": "getOpenAPI",
@@ -210,7 +258,6 @@ class API:
                 },
             }
         }
-
         paths["/linked-data"] = {
             "get": {
                 "summary": "getDataSources",
@@ -226,38 +273,13 @@ class API:
                 },
             }
         }
-        paths["/linked-data/comid"] = {
+        paths["/linked-data/hydrolocation"] = {
             "get": {
-                "summary": "ComID_ByCoordinates",
-                "description": ("returns the feature closest to a " "provided set of coordinates"),
-                "tags": ["comid"],
-                "operationId": "ComID_ByCoordinates",
+                "summary": "getHydrologicLocation",
+                "description": ("Returns the hydrologic location closest to " "a provided set of coordinates."),
+                "tags": ["nldi"],
+                "operationId": "getHydrologicLocation",
                 "parameters": [{"$ref": "#/components/parameters/coords"}],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Feature"}}},
-                    },
-                    **RESPONSES,
-                },
-            }
-        }
-
-        paths["/linked-data/comid/{comid}"] = {
-            "get": {
-                "summary": "ComID_ById",
-                "description": ("returns registered feature as WGS84 lat/lon " "GeoJSON if it exists"),
-                "tags": ["comid"],
-                "operationId": "ComID_ById",
-                "parameters": [
-                    {
-                        "name": "comid",
-                        "in": "path",
-                        "description": "NHDPlus common identifier",
-                        "required": True,
-                        "schema": {"type": "integer", "example": 13294314},
-                    }
-                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -266,17 +288,7 @@ class API:
                                 "schema": {
                                     "$ref": "#/components/schemas/FeatureCollection"  # noqa
                                 }
-                            },
-                            "application/ld+json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/FeatureCollection"  # noqa
-                                }
-                            },
-                            "application/vnd.geo+json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/FeatureCollection"  # noqa
-                                }
-                            },
+                            }
                         },
                     },
                     **RESPONSES,
@@ -284,8 +296,290 @@ class API:
             }
         }
 
-        oas["paths"] = paths
+        ## A set of paths per source --
+        comid_source = {"source_suffix": "comid", "source_name": "NHDPlus COMID"}
+        all_sources = [comid_source, *self.config["sources"]]
+        source_names_enumerated = {source["source_suffix"]: source for source in self.config["sources"]}
+        LOGGER.info(f"Generating paths for {len(all_sources)} sources: {[k['source_suffix'] for k in all_sources]}")
 
+        for src in all_sources:
+            src_id = src["source_suffix"].lower()
+            src_name = src["source_name"]
+            src_path = f"/linked-data/{src_id}"
+            src_title = f"get{src_id.title()}"
+            LOGGER.debug(f"Processing source {src_id}")
+
+            if src_id == "comid":
+                src_by_pos = util.url_join("/", src_path, "position")
+                paths[src_by_pos] = {
+                    "get": {
+                        "summary": f"{src_title}ByCoordinates",
+                        "description": ("returns the feature closest to a " "provided set of coordinates"),
+                        "tags": [src_id],
+                        "operationId": f"{src_title}ByCoordinates",
+                        "parameters": [{"$ref": "#/components/parameters/coords"}],
+                        "responses": {
+                            "200": {
+                                "description": "OK",
+                                "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Feature"}}},
+                            },
+                            **RESPONSES,
+                        },
+                    }
+                }
+
+                id_field = "{comid}"
+                parameters = [
+                    {
+                        "name": "comid",
+                        "in": "path",
+                        "description": "NHDPlus common identifier",
+                        "required": True,
+                        "schema": {"type": "integer", "example": 13294314},
+                    }
+                ]
+            else:
+                paths[src_path] = {
+                    "get": {
+                        "summary": src_title,
+                        "description": src_name,
+                        "tags": [src_id],
+                        "operationId": src_title,
+                        "responses": {
+                            "200": {
+                                "description": "OK",
+                                "content": {
+                                    "application/json": {
+                                        "schema": {
+                                            "$ref": "#/components/schemas/FeatureCollection"  # noqa
+                                        }
+                                    },
+                                    "application/ld+json": {
+                                        "schema": {
+                                            "$ref": "#/components/schemas/FeatureCollection"  # noqa
+                                        }
+                                    },
+                                },
+                            },
+                            **RESPONSES,
+                        },
+                    }
+                }
+            tags.append({"description": src_name, "name": src_id})
+            id_field = "{identifier}"
+            parameters = [{"$ref": "#/components/parameters/identifier"}]
+
+            src_by_feature = util.url_join("/", src_path, id_field)
+            paths[src_by_feature] = {
+                "get": {
+                    "summary": f"{src_title}ById",
+                    "description": ("returns registered feature as WGS84 lat/lon " "GeoJSON if it exists"),
+                    "tags": [src_id],
+                    "operationId": f"{src_title}ById",
+                    "parameters": parameters,
+                    "responses": {
+                        "200": {
+                            "description": "OK",
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "$ref": "#/components/schemas/FeatureCollection"  # noqa
+                                    }
+                                },
+                                "application/ld+json": {
+                                    "schema": {
+                                        "$ref": "#/components/schemas/FeatureCollection"  # noqa
+                                    }
+                                },
+                                "application/vnd.geo+json": {
+                                    "schema": {
+                                        "$ref": "#/components/schemas/FeatureCollection"  # noqa
+                                    }
+                                },
+                            },
+                        },
+                        **RESPONSES,
+                    },
+                }
+            }
+
+            src_by_basin = util.url_join("/", src_by_feature, "basin")
+            paths[src_by_basin] = {
+                "get": {
+                    "summary": f"{src_title}Basin",
+                    "description": (
+                        "returns the aggregated basin for the " "specified feature in WGS84 lat/lon GeoJSON"
+                    ),
+                    "tags": [src_id],
+                    "operationId": f"{src_title}Basin",
+                    "parameters": [
+                        *parameters,
+                        {"$ref": "#/components/parameters/simplified"},
+                        {"$ref": "#/components/parameters/splitCatchment"},
+                    ],
+                    "responses": {
+                        "200": {
+                            "description": "OK",
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "$ref": "#/components/schemas/FeatureCollection"  # noqa
+                                    }
+                                },
+                                "application/vnd.geo+json": {
+                                    "schema": {
+                                        "$ref": "#/components/schemas/FeatureCollection"  # noqa
+                                    }
+                                },
+                            },
+                        },
+                        **RESPONSES,
+                    },
+                }
+            }
+
+            src_by_nav = util.url_join("/", src_by_feature, "navigation")
+            paths[src_by_nav] = {
+                "get": {
+                    "summary": f"{src_title}NavigationOptions",
+                    "description": "returns valid navigation end points",
+                    "tags": [src_id],
+                    "operationId": f"{src_title}NavigationOptions",
+                    "parameters": parameters,
+                    "responses": {
+                        "200": {
+                            "description": "OK",
+                            "content": {
+                                "application/json": {
+                                    "schema": {"type": "object", "additionalProperties": {"type": "object"}}
+                                }
+                            },
+                        },
+                        **RESPONSES,
+                    },
+                }
+            }
+
+            src_by_nav_md = util.url_join("/", src_by_nav, "{navigationMode}")
+            paths[src_by_nav_md] = {
+                "get": {
+                    "summary": f"{src_title}Navigation",
+                    "description": "returns the navigation",
+                    "tags": [src_id],
+                    "operationId": f"{src_title}Navigation",
+                    "parameters": [*parameters, {"$ref": "#/components/parameters/navigationMode"}],
+                    "responses": {
+                        "200": {
+                            "description": "OK",
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "$ref": "#/components/schemas/DataSourceList"  # noqa
+                                    }
+                                }
+                            },
+                        },
+                        **RESPONSES,
+                    },
+                }
+            }
+
+            src_by_nav_ds = util.url_join("/", src_by_nav_md, "{dataSource}")
+            paths[src_by_nav_ds] = {
+                "get": {
+                    "summary": f"{src_title}NavigationDataSource",
+                    "description": (
+                        "returns all features found along the "
+                        "specified navigation as points in WGS84 "
+                        "lat/lon GeoJSON"
+                    ),
+                    "tags": [src_id],
+                    "operationId": f"{src_title}NavigationDataSource",
+                    "parameters": [
+                        *parameters,
+                        {"$ref": "#/components/parameters/navigationMode"},
+                        {
+                            "name": "dataSource",
+                            "in": "path",
+                            "required": True,
+                            "schema": {"type": "string", "example": "nwissite", "enum": source_names_enumerated},
+                        },
+                        {"$ref": "#/components/parameters/distance"},
+                    ],
+                    "responses": {
+                        "200": {
+                            "description": "OK",
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "$ref": "#/components/schemas/FeatureCollection"  # noqa
+                                    }
+                                },
+                                "application/vnd.geo+json": {
+                                    "schema": {
+                                        "$ref": "#/components/schemas/FeatureCollection"  # noqa
+                                    }
+                                },
+                                "application/ld+json": {
+                                    "schema": {
+                                        "$ref": "#/components/schemas/FeatureCollection"  # noqa
+                                    }
+                                },
+                            },
+                        },
+                        **RESPONSES,
+                    },
+                }
+            }
+
+            extra = []
+            if src_id != "comid":
+                extra = [
+                    {"$ref": "#/components/parameters/trimStart"},
+                    {"$ref": "#/components/parameters/trimTolerance"},
+                ]
+
+            src_by_nav_fl = util.url_join("/", src_by_nav_md, "flowlines")
+            paths[src_by_nav_fl] = {
+                "get": {
+                    "summary": f"{src_title}NavigationFlowlines",
+                    "description": ("returns the flowlines for the specified " "navigation in WGS84 lat/lon GeoJSON"),
+                    "tags": [src_id],
+                    "operationId": f"{src_title}NavigationFlowlines",
+                    "parameters": [
+                        *parameters,
+                        {"$ref": "#/components/parameters/navigationMode"},
+                        {"$ref": "#/components/parameters/distance"},
+                        *extra,
+                    ],
+                    "responses": {
+                        "200": {
+                            "description": "OK",
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "$ref": "#/components/schemas/FeatureCollection"  # noqa
+                                    }
+                                },
+                                "application/vnd.geo+json": {
+                                    "schema": {
+                                        "$ref": "#/components/schemas/FeatureCollection"  # noqa
+                                    }
+                                },
+                                "application/ld+json": {
+                                    "schema": {
+                                        "$ref": "#/components/schemas/FeatureCollection"  # noqa
+                                    }
+                                },
+                            },
+                        },
+                        **RESPONSES,
+                    },
+                }
+            }
+
+        oas["paths"] = paths
+        oas["tags"] = tags
         return oas
 
     def __repr__(self):

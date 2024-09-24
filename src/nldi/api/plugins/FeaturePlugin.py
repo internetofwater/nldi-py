@@ -2,6 +2,7 @@
 # coding: utf-8
 # SPDX-License-Identifier: CC0
 #
+"""Feature Plugin"""
 
 import json
 from typing import Any, Dict, List, Union
@@ -9,9 +10,8 @@ from typing import Any, Dict, List, Union
 import sqlalchemy
 from geoalchemy2 import WKTElement
 
-from ... import LOGGER, NAD83_SRID, util
+from ... import LOGGER, util
 from ...schemas.nldi_data import FeatureSourceModel
-
 from .APIPlugin import APIPlugin
 from .CrawlerSourcePlugin import CrawlerSourcePlugin
 
@@ -26,9 +26,9 @@ class FeaturePlugin(APIPlugin):
 
     def relative_url(self, srcname: str) -> str:
         if self.is_registered:
-            return util.url_join(self.parent.base_url, "linked-data/{srcname}")
+            return util.url_join(self.parent.base_url, f"linked-data/{srcname}")
         else:
-            LOGGER.warning("Attempt to get relative_url from an unregistered plugin.")
+            LOGGER.info("Attempt to get relative_url from an unregistered plugin.")
             return "/linked-data/{srcname}"
 
     @property
@@ -93,24 +93,30 @@ class FeaturePlugin(APIPlugin):
                 _return.append(self._sqlalchemy_to_feature(row, geojson, src))
         return _return
 
-    def lookup_navigation(self, nav: str):
-        raise NotImplementedError("FeaturePlugin.lookup_navigation() is not implemented.")
-        # crawler_source_id = self.source.get("crawler_source_id")
-        # crawler_source_id_ = FeatureSourceModel.crawler_source_id
+    def lookup_navigation(self, nav: str, srcinfo: Dict[str, Any]):
+        crawler_source_id = srcinfo.get("crawler_source_id")
+        crawler_source_id_ = FeatureSourceModel.crawler_source_id
 
-        # with self.session() as session:
-        #     # Retrieve data from database as feature
-        #     query = session.join(nav, self.table_model.comid == nav.c.comid).filter(
-        #         crawler_source_id_ == crawler_source_id
-        #     )
-        #     hits = query.count()
+        with self.session() as session:
+            # Retrieve data from database as feature
+            geojson = sqlalchemy.func.ST_AsGeoJSON(self.geom_field).label("geojson")
+            q = (
+                session.query(self.table_model, geojson)
+                .join(nav, self.table_model.comid == nav.c.comid)
+                .filter(crawler_source_id_ == crawler_source_id)
+            )
+            hits = q.count()
 
-        #     if hits is None:
-        #         raise ProviderItemNotFoundError("Not found")
+            if hits is None:
+                raise KeyError("Not found")
 
-        #     LOGGER.debug(f"Returning {hits} hits")
-        #     for item in query.all():
-        #         yield self._sqlalchemy_to_feature(item)
+            LOGGER.debug(f"Returning {hits} hits")
+
+            _return = []  ##TODO: This should really be a generator, but the db connection keeps closing after only a handful of rows processed.
+            for item in q:
+                row, geojson = item
+                _return.append(self._sqlalchemy_to_feature(row, geojson, srcinfo))
+        return _return
 
     def _sqlalchemy_to_feature(self, feature, geojson, srcinfo) -> Dict[str, Any]:
         try:
