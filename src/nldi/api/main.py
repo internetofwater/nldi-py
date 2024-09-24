@@ -1,7 +1,10 @@
 #!/usr/bin/env python
 # coding: utf-8
 # SPDX-License-Identifier: CC0
+# SPDX-FileCopyrightText: 2024-present USGS
+# See the full copyright notice in LICENSE.md
 #
+"""API Main Object"""
 
 import importlib
 import pathlib
@@ -82,7 +85,7 @@ class API:
             connect_args={
                 "client_encoding": "utf8",
                 "application_name": "nldi",
-                "connect_timeout": 20, ## seconds to wait for a connection
+                "connect_timeout": 20,  ## seconds to wait for a connection
                 # TODO: is 20 seconds enough time?
             },
             pool_pre_ping=True,

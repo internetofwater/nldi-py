@@ -9,7 +9,10 @@ CLI interface testing
 Tests "routing" to ensure that subcommands and switches are working as expected.
 """
 
+import os
+
 import pytest
+
 from nldi.cmdline import cli as nldi_cmd
 
 
@@ -25,7 +28,7 @@ def test_cli(runner):
 
 @pytest.mark.order(5)
 @pytest.mark.unittest
-def test_subcommands(runner):
+def test_subcommands(runner, env_update):
     """
     Subcommands we expect are present.
 
@@ -43,6 +46,6 @@ def test_subcommands(runner):
     assert result.exit_code != 0
     assert "Error: No such command" in result.output
 
+    # os.environ.update(env_update)
     # result = runner.invoke(nldi_cmd, ["config", "align-sources", "./tests/data/sources_config.yml"])
     # assert result.exit_code == 0
-    # assert "Undefined environment variable NLDI_URL in config file" in result.output

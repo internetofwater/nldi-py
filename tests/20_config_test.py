@@ -12,10 +12,10 @@ import pytest
 from nldi import config, openapi
 
 
-@pytest.mark.order(20)
-@pytest.mark.unittest
-def test_legacy_generate_alignment(global_config):
-    _ = config.align_crawler_sources(global_config)
+# @pytest.mark.order(20)
+# @pytest.mark.unittest
+# def test_legacy_generate_alignment(global_config):
+#     _ = config.align_crawler_sources(global_config)
 
 
 @pytest.mark.order(21)

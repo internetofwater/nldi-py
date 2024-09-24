@@ -1,3 +1,11 @@
+#!/usr/bin/env python
+# coding: utf-8
+# SPDX-License-Identifier: CC0
+# SPDX-FileCopyrightText: 2024-present USGS
+# See the full copyright notice in LICENSE.md
+#
+"""API Plugin Base Class"""
+
 from contextlib import contextmanager
 from typing import Any, Dict, List
 
@@ -191,7 +199,7 @@ class APIPlugin:
         a simple health check to see if the plugin will work. It is not a comprehensive test
         of database functionality, but it is a good first step to see if the plugin failed
         to initialize properly.
-        
+
         :return: success/failure
         :rtype: bool
         """

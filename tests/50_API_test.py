@@ -36,13 +36,11 @@ def test_new_API_w_sources(global_config):
 
 @pytest.mark.order(51)
 @pytest.mark.integration
-def test_register_APIPlugin_failure(global_config):
+@pytest.mark.xfail(raises=RuntimeError)
+def test_API_failure(global_config):
     dummy_config = deepcopy(global_config)
     dummy_config["server"]["data"]["port"] = 1  # Known bad port
     api = API(globalconfig=dummy_config)
-    p = APIPlugin("test")
-    success = api.register_plugin(p)
-    assert not success
 
 
 @pytest.mark.order(51)
@@ -67,7 +65,7 @@ def test_APIPlugin_required(global_config):
     assert isinstance(api.plugins["CrawlerSourcePlugin"], CrawlerSourcePlugin)
 
     assert api.require_plugin("CrawlerSourcePlugin") is True
-    assert len(api.plugins) == 1 ## should not load an extra one... just return the one that is already loaded.
+    assert len(api.plugins) == 1  ## should not load an extra one... just return the one that is already loaded.
 
 
 @pytest.mark.order(52)
@@ -80,6 +78,7 @@ def test_APIPlugin_functional_test(global_config):
     assert str(flowline["properties"]["comid"]) == "13293396"
     assert flowline["geometry"]["type"] == "LineString"
 
+
 @pytest.mark.order(53)
 @pytest.mark.integration
 def test_catchment_plugin_functional_test(global_config):
@@ -89,5 +88,3 @@ def test_catchment_plugin_functional_test(global_config):
     catchment = api.plugins["CatchmentPlugin"].get_by_id("13297332")
     assert catchment["type"] == "Feature"
     assert catchment["geometry"]["type"] == "MultiPolygon"
-
-

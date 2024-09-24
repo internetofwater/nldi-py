@@ -2,6 +2,8 @@
 # coding: utf-8
 # SPDX-License-Identifier: CC0
 #
+# See the full copyright notice in LICENSE.md
+
 
 """HydroLocation Plugin"""
 

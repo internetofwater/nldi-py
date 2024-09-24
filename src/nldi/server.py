@@ -446,7 +446,11 @@ def get_navigation(source_name=None, identifier=None, nav_mode=None, data_source
         )
 
     srcinfo = NLDI_API.sources.get_by_id(source_name)
-    nav_results = build_nav_query(nav_mode, start_comid, distance)
+    try:
+        nav_results = build_nav_query(nav_mode, start_comid, distance)
+    except ValueError as e:
+        return flask.Response(status=http.HTTPStatus.BAD_REQUEST, response=str(e))
+        
     features = NLDI_API.plugins["FeaturePlugin"].lookup_navigation(nav_results, srcinfo)
 
     return flask.Response(

@@ -40,7 +40,7 @@ gevent = "^24.2.1"
 psycopg2 = "^2.9.9"
 pygeofilter = {extras = ["backend-sqlalchemy"], version = "^0.2.4"}
 geoalchemy = "^0.7.2"
-gunicorn = "^22.0.0"
+gunicorn = "^23.0.0"
 pygeoif = "^1.5.0"
 jsonschema = "^4.23.0"
 flask-cors = "^4.0.1"

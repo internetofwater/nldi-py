@@ -11,7 +11,6 @@ reasonable results.  Business logic for each endpoint is tested separately in th
 """
 
 import pytest
-import logging
 
 from nldi.server import app_factory
 from nldi.api import API
@@ -48,7 +47,7 @@ def test_API_feature_by_comid(global_config):
     assert response.status_code == 200
     assert response.headers["Content-Type"] == "application/json"
     # compare result with current "production" response from https://labs.waterdata.usgs.gov/api/nldi/linked-data/comid/13297166
-    logging.warning(response.json)
+
     assert response.json["type"] == "FeatureCollection"
     f = response.json["features"][0]
     assert f["properties"]["source"] == "comid"
@@ -173,9 +172,14 @@ def test_source_linked_data_flowlines(global_config):
     _api = API(globalconfig=global_config)
     _app = app_factory(_api)
     with _app.test_client() as client:
-        response = client.get("/api/nldi/linked-data/wqp/USGS-05427930/navigation/UM/flowlines")
+        response = client.get("/api/nldi/linked-data/wqp/USGS-05427930/navigation/UM/flowlines?distance=10")
         assert response.status_code == 200
 
+        response = client.get("/api/nldi/linked-data/wqp/USGS-05427930/navigation/UM/flowlines")
+        assert response.status_code == 400  ## distance param requried
+
+        response = client.get("/api/nldi/linked-data/wqp/USGS-05427930/navigation/UM/flowlines?distance=abc")
+        assert response.status_code == 400  ## distance param must be a number
 
 @pytest.mark.order(61)
 @pytest.mark.unittest
@@ -184,8 +188,8 @@ def test_source_linked_data_source(global_config):
     _api = API(globalconfig=global_config)
     _app = app_factory(_api)
     with _app.test_client() as client:
-        response = client.get("/api/nldi/linked-data/wqp/USGS-05427930/navigation/mode/src")
-        assert response.status_code == 200
+        response = client.get("/api/nldi/linked-data/wqp/USGS-05427930/navigation/mode/src?distance=10")
+        assert response.status_code == 400
 
 
 @pytest.mark.order(65)

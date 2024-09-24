@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 # SPDX-License-Identifier: CC0
+# See also the notice in LICENSE.md
 #
 
 """API Plugin Support"""

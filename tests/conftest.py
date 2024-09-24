@@ -156,6 +156,7 @@ def global_config(nldi_db_container, config_yaml, env_update):
     _def = load_yaml(config_yaml)
     #    _def["database"] = nldi_db_container
     _def["base_url"] = "http://localhost/nldi"
+    
 
     return _def
 
