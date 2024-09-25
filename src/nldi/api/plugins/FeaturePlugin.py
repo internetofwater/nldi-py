@@ -60,7 +60,7 @@ class FeaturePlugin(APIPlugin):
                 .first()
             )
             if item is None:
-                raise KeyError(f"No such feature found: {id=} / {source_suffix=}.")
+                raise KeyError(f"No such feature found: {id=} / source='{source_suffix}'.")
             row, geojson = item
             ## NOTE: We have to call this here (while session is active) so that the database relationships can be resolved.
             result = self._sqlalchemy_to_feature(row, geojson, src)

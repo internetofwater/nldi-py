@@ -10,7 +10,7 @@ from typing import Any, Dict, List, Tuple
 
 import flask
 from flask_cors import CORS
-from pygeoapi.util import render_j2_template  ##TODO: can we drop this dependency? Need to figure out templating
+# from pygeoapi.util import render_j2_template  ##TODO: can we drop this dependency? Need to figure out templating
 
 from . import LOGGER, __version__, log, util
 from .api.main import API
@@ -107,7 +107,7 @@ def openapi_spec() -> Tuple[dict, int, str]:
             template = "openapi/swagger.html"
         data = {"openapi-document-path": f"openapi"}  ##NOTE: intentionally using relative path here.
 
-        content = render_j2_template(NLDI_API.config, template, data)
+        content = util.render_j2_template(NLDI_API.config, template, data)
         return flask.Response(
             headers={"Content-Type": "text/html"},
             status=http.HTTPStatus.OK,
@@ -247,13 +247,18 @@ def get_source_features(source_name=None, identifier=None) -> List[Dict[str, Any
             features = [feature]
         except KeyError as e:
             # Either the source or the identifier doesn't exist.
-            return flask.Response(status=http.HTTPStatus.NOT_FOUND, response=str(e))
+            _r = flask.jsonify(type="error", description=str(e))
+            _r.status = http.HTTPStatus.NOT_FOUND
+            return _r
     else:  # No identifier given; return all features from this source
         try:
             features = NLDI_API.plugins["FeaturePlugin"].get_all(source_name)
         except KeyError as e:
             # KeyError indicates that the source doesn't exist.
-            return flask.Response(status=http.HTTPStatus.NOT_FOUND, response=str(e))
+            return flask.Response(
+                status=http.HTTPStatus.NOT_FOUND,
+                response=flask.jsonify({"type": "error", "description": str(e)}),
+            )
 
     return flask.Response(
         headers={"Content-Type": "application/json"},
@@ -364,19 +369,24 @@ def get_flowline_navigation(source_name=None, identifier=None, nav_mode=None):
             _id = NLDI_API.plugins["FlowlinePlugin"].get_by_id(identifier)
             start_comid = int(_id)
         else:
-            feature = NLDI_API.plugins["FeaturePlugin"].get_by_id(identifier, source_name)        #<<< ATTENTION: ``feature`` is instantiated here.
+            feature = NLDI_API.plugins["FeaturePlugin"].get_by_id(
+                identifier, source_name
+            )  # <<< ATTENTION: ``feature`` is instantiated here.
             start_comid = int(feature["properties"]["comid"])
     except (KeyError, ValueError):
         return flask.Response(
-            status=http.HTTPStatus.INTERNAL_SERVER_ERROR, response=f"Error getting COMID for {identifier=}, {source_name=}"
+            status=http.HTTPStatus.INTERNAL_SERVER_ERROR,
+            response=f"Error getting COMID for {identifier=}, {source_name=}",
         )
 
     LOGGER.info(f"Attempting {nav_mode} navigation for {distance=}, with {trim_start=}")
     nav_results = build_nav_query(nav_mode, start_comid, distance)
 
     if trim_start is True:
-        if source_name == "comid": ##<< this should never happen for trimmed navigation.
-            return flask.Response(status=http.HTTPStatus.BAD_REQUEST, response="Cannot trim navigation from COMID source.")
+        if source_name == "comid":  ##<< this should never happen for trimmed navigation.
+            return flask.Response(
+                status=http.HTTPStatus.BAD_REQUEST, response="Cannot trim navigation from COMID source."
+            )
         ## ATTENTION: ``feature`` must be instantiated before this point.
         try:
             trim_tolerance = float(request.params.get("trimTolerance", 0.0))
@@ -387,7 +397,7 @@ def get_flowline_navigation(source_name=None, identifier=None, nav_mode=None):
         LOGGER.debug(f"Trimming flowline with {trim_tolerance=}")
         try:
             measure = feature["properties"]["measure"]
-            if not measure: #only happens if measure is supplied as zero
+            if not measure:  # only happens if measure is supplied as zero
                 measure = estimate_measure(identifier, source_name)
             measure = float(measure)
             LOGGER.debug(f"Trim navigation: {measure=}")
@@ -399,9 +409,9 @@ def get_flowline_navigation(source_name=None, identifier=None, nav_mode=None):
             return flask.Response(status=http.HTTPStatus.BAD_REQUEST, response=msg)
 
         trim_nav = trim_nav_query(nav_mode, start_comid, trim_tolerance, measure)
-        features = NLDI.plugins['FlowlinePlugin'].trim_navigation(nav, trim_nav)
+        features = NLDI.plugins["FlowlinePlugin"].trim_navigation(nav, trim_nav)
     else:
-        features = NLDI_API.plugins['FlowlinePlugin'].lookup_navigation(nav_results)
+        features = NLDI_API.plugins["FlowlinePlugin"].lookup_navigation(nav_results)
 
     content = util.stream_j2_template("FeatureCollection.j2", features)
 
@@ -427,8 +437,9 @@ def get_navigation(source_name=None, identifier=None, nav_mode=None, data_source
             feature = NLDI_API.plugins["FeaturePlugin"].get_by_id(identifier, source_name)
             return int(feature["properties"]["comid"])
 
-    source_name = source_name.lower()
+    source1_name = source_name.lower()
     source2_name = data_source.lower()
+
     try:
         _d = flask.request.args["distance"]
         distance = float(_d)
@@ -438,27 +449,27 @@ def get_navigation(source_name=None, identifier=None, nav_mode=None, data_source
         return flask.Response(status=http.HTTPStatus.BAD_REQUEST, response="Invalid distance provided")
 
     try:
-        start_comid = _get_start_comid(identifier, source_name)
+        start_comid = _get_start_comid(identifier, source1_name)
     except (KeyError, ValueError):
         return flask.Response(
             status=http.HTTPStatus.INTERNAL_SERVER_ERROR,
             response=f"Error getting COMID for {identifier=}",
         )
 
-    srcinfo = NLDI_API.sources.get_by_id(source_name)
+    source2_info = NLDI_API.sources.get_by_id(source2_name)
+
     try:
         nav_results = build_nav_query(nav_mode, start_comid, distance)
     except ValueError as e:
         return flask.Response(status=http.HTTPStatus.BAD_REQUEST, response=str(e))
-        
-    features = NLDI_API.plugins["FeaturePlugin"].lookup_navigation(nav_results, srcinfo)
+
+    features = NLDI_API.plugins["FeaturePlugin"].lookup_navigation(nav_results, source2_info)
 
     return flask.Response(
         headers={"Content-Type": "application/json"},
         status=http.HTTPStatus.OK,
         response=util.stream_j2_template("FeatureCollection.j2", features),
     )
-
 
 
 # region APP Creation

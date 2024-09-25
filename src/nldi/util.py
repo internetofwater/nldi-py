@@ -41,7 +41,7 @@ from typing import IO, Any, Union
 import yaml
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
-from . import LOGGER
+from . import LOGGER, __version__
 
 THISDIR = Path(__file__).parent.resolve()
 TEMPLATES = THISDIR / "templates"
@@ -246,3 +246,136 @@ def _(fromwhere: dict) -> dict:
     """Already a dictionary... nothing to do here."""
     # assumes that the necessary keys are present
     return fromwhere
+
+
+# region Borrowed from PyGeoAPI
+
+# The following functions were borrowed from the PyGeoAPI project, which is licensed under the MIT License.
+# The PyGeoAPI license is here: https://docs.pygeoapi.io/en/0.9.0/license.html, and reproduced below:
+#
+# The MIT License (MIT)
+# Copyright &copy; 2018-2020 Tom Kralidis
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+# associated documentation files (the “Software”), to deal in the Software without restriction, including
+# without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the
+# following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT
+# LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+# NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+# IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
+# THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+# See https://docs.pygeoapi.io/en/0.9.0/_modules/pygeoapi/util.html for the original source code.
+
+
+#    We include these utils here to remove the dependency on the entire pygeoapi packate..  This
+#    We are just using a couple of helpler utilities to render templates for openapi, so don't need
+#    the whole thing.
+
+def render_j2_template(config, template, data):
+    """
+    render Jinja2 template
+
+    :param config: dict of configuration
+    :param template: template (relative path)
+    :param data: dict of data
+
+    :returns: string of rendered template
+    """
+
+    try:
+        templates_path = config["server"]["templates"]["path"]
+        env = Environment(loader=FileSystemLoader(templates_path))
+        LOGGER.debug("using custom templates: {}".format(templates_path))
+    except (KeyError, TypeError):
+        env = Environment(loader=FileSystemLoader(TEMPLATES))
+        LOGGER.debug("using default templates: {}".format(TEMPLATES))
+
+    env.filters["to_json"] = to_json
+    env.globals.update(to_json=to_json)
+
+    env.filters["get_path_basename"] = get_path_basename
+    env.globals.update(get_path_basename=get_path_basename)
+
+    env.filters["get_breadcrumbs"] = get_breadcrumbs
+    env.globals.update(get_breadcrumbs=get_breadcrumbs)
+
+    env.filters["filter_dict_by_key_value"] = filter_dict_by_key_value
+    env.globals.update(filter_dict_by_key_value=filter_dict_by_key_value)
+
+    template = env.get_template(template)
+    return template.render(config=config, data=data, version=__version__)
+
+
+def to_json(dict_, pretty=False):
+    """
+    Serialize dict to json
+
+    :param dict_: `dict` of JSON representation
+    :param pretty: `bool` of whether to prettify JSON (default is `False`)
+
+    :returns: JSON string representation
+    """
+    if pretty:
+        indent = 4
+    else:
+        indent = None
+
+    return json.dumps(dict_, default=json_serial, indent=indent)
+
+
+def get_path_basename(urlpath):
+    """
+    Helper function to derive file basename
+
+    :param urlpath: URL path
+
+    :returns: string of basename of URL path
+    """
+    return os.path.basename(urlpath)
+
+
+def get_breadcrumbs(urlpath):
+    """
+    helper function to make breadcrumbs from a URL path
+
+    :param urlpath: URL path
+
+    :returns: `list` of `dict` objects of labels and links
+    """
+    links = []
+
+    tokens = urlpath.split("/")
+
+    s = ""
+    for t in tokens:
+        if s:
+            s += "/" + t
+        else:
+            s = t
+        links.append(
+            {
+                "href": s,
+                "title": t,
+            }
+        )
+
+    return links
+
+
+def filter_dict_by_key_value(dict_, key, value):
+    """
+    helper function to filter a dict by a dict key
+
+    :param dict_: ``dict``
+    :param key: dict key
+    :param value: dict key value
+
+    :returns: filtered ``dict``
+    """
+    return {k: v for (k, v) in dict_.items() if v[key] == value}

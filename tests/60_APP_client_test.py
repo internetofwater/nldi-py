@@ -7,13 +7,13 @@
 Test suite for nldi-py package
 
 This test suite is for the API endpoints, to see if they map to the correct business logic and produce
-reasonable results.  Business logic for each endpoint is tested separately in the various plugins tests.
+reasonable results.  Busines s logic for each endpoint is tested separately in the various plugins tests.
 """
 
 import pytest
 
-from nldi.server import app_factory
 from nldi.api import API
+from nldi.server import app_factory
 
 
 @pytest.mark.order(60)
@@ -181,6 +181,7 @@ def test_source_linked_data_flowlines(global_config):
         response = client.get("/api/nldi/linked-data/wqp/USGS-05427930/navigation/UM/flowlines?distance=abc")
         assert response.status_code == 400  ## distance param must be a number
 
+
 @pytest.mark.order(61)
 @pytest.mark.unittest
 def test_source_linked_data_source(global_config):
@@ -189,6 +190,9 @@ def test_source_linked_data_source(global_config):
     _app = app_factory(_api)
     with _app.test_client() as client:
         response = client.get("/api/nldi/linked-data/wqp/USGS-05427930/navigation/mode/src?distance=10")
+        assert response.status_code == 400  # invalid mode "mode"
+
+        response = client.get("/api/nldi/linked-data/wqp/USGS-05427930/navigation/UM/src?distance=10")
         assert response.status_code == 400
 
 
