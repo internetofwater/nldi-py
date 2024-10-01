@@ -13,7 +13,8 @@ export NLDI_HOME=./tests/data
 export NLDI_CONFIG="${NLDI_HOME}/sources_config.yml"
 export NLDI_OPENAPI="${NLDI_HOME}/local.openapi.yml"
 
+docker run -e POSTGRES_PASSWORD=changeMe eb2324ecc7bb
 # nldi openapi generate ${NLDI_CONFIG} --output-file ${NLDI_OPENAPI}
 #nldi openapi generate ${NLDI_CONFIG} --output-file /tmp/openapi_local.json --format json
 # gunicorn --bind localhost:8081 nldi.orig_app:APP
-gunicorn --bind localhost:8081 nldi.server:APP --reload
+#gunicorn --bind localhost:8081 nldi.server:APP --reload

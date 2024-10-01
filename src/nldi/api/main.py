@@ -41,9 +41,7 @@ class API:
         # NOTE: the sources table is a plugin, same as the other content plugins, but it is a special
         # case. Without the sources table, there's really not much else to do. So, we will handle it
         # here as a must-have special case in the initializer.
-        if not self.sources.db_is_alive():
-            LOGGER.error("Failed to initialize database connection to retrieve source table.")
-            raise RuntimeError("Failed to initialize database connection to retrieve source table.")
+
         LOGGER.info(f"New API instance with db_info: {self.db_connection_string!r}")
 
     @cached_property

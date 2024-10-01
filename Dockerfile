@@ -27,44 +27,47 @@
 #
 # =================================================================
 
-FROM python:3.11-alpine as build
+FROM python:3.11-alpine AS build
 
 LABEL maintainer="Benjamin Webb <bwebb@lincolninst.edu>"
 LABEL description="Docker image for the NLDI API"
 # ENV settings
-ENV TZ=${TZ} \
-  LANG=${LANG} \
+# ENV TZ=${TZ} \
+
+ENV LANG=${LANG} \
   PIP_NO_CACHE_DIR=1
 
 # Install operating system dependencies
 RUN \
-  apk update && apk add --no-cache curl build-base libpq-dev proj-util proj-dev gdal-dev geos-dev
-RUN pip install poetry
+  apk update && apk add --no-cache curl build-base libpq-dev # geos-dev # python3-dev musl-dev linux-headers proj-util proj-dev
+# RUN pip install poetry
 
 ADD . /nldi
 WORKDIR /nldi
-RUN /bin/true\
-    && poetry config virtualenvs.create false \
-    && poetry install --no-interaction --no-root \
-    && rm -rf /root/.cache/pypoetry
+# RUN /bin/true\
+#     && poetry config virtualenvs.create false \
+#     && poetry install --no-interaction --no-root \
+#     && rm -rf /root/.cache/pypoetry
 
-FROM python:3.11-alpine as nldi
-RUN apk update && apk add --no-cache gcompat libstdc++ curl proj-util libpq-dev
+RUN pip install --no-cache-dir ./dist/nldi_py-0.1.0-py3-none-any.whl
+
+FROM python:3.11-alpine AS nldi
+# RUN apk update && apk add --no-cache gcompat libstdc++ curl proj-util libpq-dev
 ADD . /nldi
 WORKDIR /nldi
 COPY --from=build /usr/local/lib/python3.11/site-packages/ /usr/local/lib/python3.11/site-packages/
-COPY --from=build /usr/lib/libgdal.so.35 /usr/lib/libgeos.so.3.12.2 /usr/lib/libproj.so.25 /usr/lib/libgeos_c.so.1.18.2 /usr/lib/
-COPY --from=build /usr/local/bin/pygeoapi /usr/local/bin/gunicorn /usr/local/bin/
+# COPY --from=build /usr/lib/libgdal.so.35 /usr/lib/libgeos.so.3.12.2 /usr/lib/libproj.so.25 /usr/lib/libgeos_c.so.1.18.2 /usr/lib/
+# COPY --from=build /usr/local/bin/pygeoapi /usr/local/bin/gunicorn /usr/local/bin/
 
-RUN \
-  ln -s /usr/lib/libgdal.so.35 /usr/lib/libgdal.so \
-  && ln -s /usr/lib/libgeos.so.3.12.2 /usr/lib/libgeos.so \
-#  && ln -s /usr/lib/libproj.so.25 /usr/lib/libproj.so \
-  && ln -s /usr/lib/libgeos_c.so.1.18.2 /usr/lib/libgeos_c.so.1 \
-  && ln -s /usr/lib/libgeos_c.so.1 /usr/lib/libgeos_c.so
+# RUN \
+#   ln -s /usr/lib/libgdal.so.35 /usr/lib/libgdal.so \
+#   && ln -s /usr/lib/libgeos.so.3.12.2 /usr/lib/libgeos.so \
+# #  && ln -s /usr/lib/libproj.so.25 /usr/lib/libproj.so \
+#   && ln -s /usr/lib/libgeos_c.so.1.18.2 /usr/lib/libgeos_c.so.1 \
+#   && ln -s /usr/lib/libgeos_c.so.1 /usr/lib/libgeos_c.so
 
-RUN cp /nldi/docker/default.source.yml /nldi/local.source.yml \
-    && cp /nldi/docker/pygeoapi.config.yml /nldi/pygeoapi.config.yml \
-    && cp /nldi/docker/entrypoint.sh /entrypoint.sh
+# RUN cp /nldi/docker/default.source.yml /nldi/local.source.yml \
+#     && cp /nldi/docker/pygeoapi.config.yml /nldi/pygeoapi.config.yml \
+#     && cp /nldi/docker/entrypoint.sh /entrypoint.sh
 
 # ENTRYPOINT ["/entrypoint.sh"]

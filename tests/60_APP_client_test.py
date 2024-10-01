@@ -130,6 +130,16 @@ def test_source_linked_data_all_features(global_config):
 
 
 @pytest.mark.order(61)
+@pytest.mark.integration
+def test_source_linked_data_no_such_source(global_config):
+    _api = API(globalconfig=global_config)
+    _app = app_factory(_api)
+    with _app.test_client() as client:
+        response = client.get("/api/nldi/linked-data/xyz")
+        assert response.status_code == 404
+
+
+@pytest.mark.order(61)
 @pytest.mark.unittest
 def test_source_linked_data_basin(global_config):
     # @ROOT.route("/linked-data/<path:source_name>/<path:identifier>/basin")
@@ -189,11 +199,14 @@ def test_source_linked_data_source(global_config):
     _api = API(globalconfig=global_config)
     _app = app_factory(_api)
     with _app.test_client() as client:
-        response = client.get("/api/nldi/linked-data/wqp/USGS-05427930/navigation/mode/src?distance=10")
-        assert response.status_code == 400  # invalid mode "mode"
+        ###NOTE:  Validations within the business logic will consider each path element in turn, left to right.
+        response = client.get("/api/nldi/linked-data/wqp/USGS-05427930/navigation/mode/xyz?distance=10")
+        assert response.status_code == 400  # invalid mode "mode" is considered before "source_not_found"
 
-        response = client.get("/api/nldi/linked-data/wqp/USGS-05427930/navigation/UM/src?distance=10")
-        assert response.status_code == 400
+        response = client.get("/api/nldi/linked-data/wqp/USGS-05427930/navigation/UM/xyz?distance=10")
+        assert (
+            response.status_code == 404
+        )  # With a valid "mode", the secondary source is considered.  no such source "xyz"
 
 
 @pytest.mark.order(65)

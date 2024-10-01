@@ -57,7 +57,7 @@ class CrawlerSourcePlugin(APIPlugin):
             source_suffix = sqlalchemy.func.lower(CrawlerSourceModel.source_suffix)
             item = q.filter(source_suffix == source_name).first()
             if item is None:
-                raise KeyError(f"No such source: source_suffix={source_name}.")
+                raise KeyError(f"No such source: {source_name=}.")
                 # NOTE: I switched from the custom "notfound" exception to the more standard KeyError, as this is how
                 # most python code is written (i.e. a KeyError is raised when a key is not found in a dictionary).
         return self._to_feature_dict(item)

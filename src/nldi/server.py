@@ -254,11 +254,11 @@ def get_source_features(source_name=None, identifier=None) -> List[Dict[str, Any
         try:
             features = NLDI_API.plugins["FeaturePlugin"].get_all(source_name)
         except KeyError as e:
+            LOGGER.info("No Such Source: {source_name}")
             # KeyError indicates that the source doesn't exist.
-            return flask.Response(
-                status=http.HTTPStatus.NOT_FOUND,
-                response=flask.jsonify({"type": "error", "description": str(e)}),
-            )
+            _r = flask.jsonify(type="error", description=str(e))
+            _r.status = http.HTTPStatus.NOT_FOUND
+            return _r
 
     return flask.Response(
         headers={"Content-Type": "application/json"},
@@ -450,18 +450,24 @@ def get_navigation(source_name=None, identifier=None, nav_mode=None, data_source
 
     try:
         start_comid = _get_start_comid(identifier, source1_name)
-    except (KeyError, ValueError):
+    except (KeyError, ValueError) as e:
         return flask.Response(
             status=http.HTTPStatus.INTERNAL_SERVER_ERROR,
-            response=f"Error getting COMID for {identifier=}",
+            response=f"Error getting COMID for {identifier=}: {str(e)}",
         )
-
-    source2_info = NLDI_API.sources.get_by_id(source2_name)
 
     try:
         nav_results = build_nav_query(nav_mode, start_comid, distance)
     except ValueError as e:
         return flask.Response(status=http.HTTPStatus.BAD_REQUEST, response=str(e))
+
+    try:
+        source2_info = NLDI_API.sources.get_by_id(source2_name)
+        LOGGER.info(f"source2_info: {source2_info}")
+    except KeyError as e:
+        _r = flask.jsonify(description=str(e), type="error")
+        _r.status = http.HTTPStatus.NOT_FOUND
+        return _r
 
     features = NLDI_API.plugins["FeaturePlugin"].lookup_navigation(nav_results, source2_info)
 
@@ -489,6 +495,7 @@ def app_factory(api: API) -> flask.Flask:
     if app is None:
         raise RuntimeError("NLDI API Server >> Failed to initialize Flask app")
     NLDI_API = api
+    
     app.url_map.strict_slashes = False
     CORS(app)
     app.register_blueprint(ROOT, url_prefix="/api/nldi")

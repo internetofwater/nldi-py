@@ -273,9 +273,10 @@ def _(fromwhere: dict) -> dict:
 # See https://docs.pygeoapi.io/en/0.9.0/_modules/pygeoapi/util.html for the original source code.
 
 
-#    We include these utils here to remove the dependency on the entire pygeoapi packate..  This
+#    We include these utils here to remove the dependency on the entire pygeoapi package..
 #    We are just using a couple of helpler utilities to render templates for openapi, so don't need
 #    the whole thing.
+
 
 def render_j2_template(config, template, data):
     """
@@ -334,7 +335,6 @@ def get_path_basename(urlpath):
     Helper function to derive file basename
 
     :param urlpath: URL path
-
     :returns: string of basename of URL path
     """
     return os.path.basename(urlpath)
@@ -345,7 +345,6 @@ def get_breadcrumbs(urlpath):
     helper function to make breadcrumbs from a URL path
 
     :param urlpath: URL path
-
     :returns: `list` of `dict` objects of labels and links
     """
     links = []
@@ -379,3 +378,27 @@ def filter_dict_by_key_value(dict_, key, value):
     :returns: filtered ``dict``
     """
     return {k: v for (k, v) in dict_.items() if v[key] == value}
+
+
+def json_serial(obj):
+    """
+    helper function to convert to JSON non-default
+    types (source: https://stackoverflow.com/a/22238613)
+    :param obj: `object` to be evaluated
+    :returns: JSON non-default type to `str`
+    """
+    if isinstance(obj, (datetime, date, time)):
+        return obj.isoformat()
+    elif isinstance(obj, bytes):
+        try:
+            LOGGER.debug("Returning as UTF-8 decoded bytes")
+            return obj.decode("utf-8")
+        except UnicodeDecodeError:
+            LOGGER.debug("Returning as base64 encoded JSON object")
+            return base64.b64encode(obj)
+    elif isinstance(obj, Decimal):
+        return float(obj)
+
+    msg = "{} type {} not serializable".format(obj, type(obj))
+    LOGGER.error(msg)
+    raise TypeError(msg)
