@@ -20,26 +20,26 @@ class APIPlugin:
     """
     Base class for all API plugins.
 
-    The various plugins that make up the NLDI API are all subclasses of this class.  This class
+    The various plugins that make up the NLDI API are all subclasses of this class.  It
     provides a common interface for all plugins, including methods for getting data from the
     database, and for checking the status of the database connection.  Any lookup or query
     operation that is common to all plugins should be implemented here.
 
-    The APIPlugin class is intentionally **NOT** an abstract class.  It is possible to create
-    an instance of this class, but this would have no purpose for real-world use.  This class
-    can be instantiated for testing and development purposes, but in normal operation, it is
-    intended to be subclassed.
+    The APIPlugin class is intentionally **NOT** an abstract base class.  It is possible
+    to create an instance of this class, but this would have no purpose for real-world use.
+    This class can be instantiated for testing and development purposes, but in normal
+    operation, it is intended to be subclassed.
 
-    The initializer for this class takes a single optional argument, ``name``, which is a string
-    that is used to identify the plugin.  That name is typically used as the key in a dictionary
-    of plugins within the API. If no name is provided, the name is taken to be the name of the
-    class itself.
+    The initializer for this class takes a single optional argument, ``name``, which
+    is a string that is used to identify the plugin in the ``API`` plugin registry. If
+    no name is provided, the name is taken to be the name of the class itself.
 
     Optionally, the initializer can take a keyword argument, ``db_connect_url``, which is a
-    connection URL for the database.  This is used to create a database engine for the plugin.
-    Again, this is typically not done in real-world use, as the plugins are designed to re-use
-    the database connection of the API. Allowing for independent database connections allows
-    plugins to be used (and tested) in isolation from the API.
+    connection URL for the database it should use to perform its queries.  This parameter
+    is typicall not used, as the plugin design calls for it to use the parent's (i.e. the
+    ``API`` database connection).  Specifying a ``db_connect_url`` in the intializer is
+    useful during testing and development, when the plugin may not be registered with
+    the API.
     """
 
     def __init__(self, name: str | None = None, **kwargs: Dict[str, Any]):
@@ -55,18 +55,29 @@ class APIPlugin:
     def __str__(self) -> str:
         return f"{self.__class__.__name__}({self.name})"
 
+    @property
+    def is_registered(self) -> bool:
+        """
+        Test to see if the plugin is registered with an API.
+
+        :return: True if the plugin is registered, False otherwise.
+        :rtype: bool
+        """
+        return self.parent is not None
+
     def get_by_id(self, id: str) -> Any:
         """
         Get a record from the database by its ID.
 
         This is a generic method for getting a record from the database by its ID.  In
         this base class, it is not implemented, but it is intended to be implemented in
-        subclasses. Exactly what an "ID" is will depend on the plugin.
+        subclasses. Exactly what an "ID" is will depend on the plugin, as will the
+        return type (Geojson, ORM object, etc.)
 
-        :param id: _description_
+        :param id: A plugin-specific identifier for the record to find.
         :type id: str
-        :raises NotImplementedError: _description_
-        :return: _description_
+        :raises NotImplementedError: This method is not implemented in the base class.
+        :return: The record that matches the ID.
         :rtype: Any
         """
         raise NotImplementedError
@@ -76,7 +87,8 @@ class APIPlugin:
         Get a record from the database by its coordinates.
 
         This is a generic method for getting a record from the database by its spatial
-        location.  The coordinates are passed as a string in the form of a WKT point.
+        location.  The coordinates are passed as a string in the form of a WKT point (e.g.
+        ``POINT(123.0 45.0)``.
 
         For some plugins, the coordinates may be used to query a database table for a
         record that contains the point.  For other plugins, the idea of a spatial search
@@ -85,19 +97,10 @@ class APIPlugin:
         :param coords: A point to use for the search, in WKT format.
         :type coords: str
         :raises NotImplementedError: This method is not implemented in the base class.
-        :return: The record that contains the point.
+        :return: The record that intersect the point spatially.
         :rtype: Any
         """
         raise NotImplementedError
-
-    @property
-    def is_registered(self) -> bool:
-        """
-        Test to see if the plugin is registered with the API.
-
-        :return: True if the plugin is registered, False otherwise.
-        """
-        return self.parent is not None
 
     @property
     def base_url(self) -> str:
@@ -105,9 +108,12 @@ class APIPlugin:
         Get the base URL for the plugin.
 
         The ``base_url`` is used to construct other URLs returned as properties of various
-        plugins.  The base URL is typically the root URL of the API, but it can be overridden
+        plugins. The base URL is typically the root URL of the API, but it can be overridden
         by the plugin.  If the plugin is registered with the API, the base URL is taken from
-        the API configuration.  If the plugin is not registered, the base URL is assumed to be
+        the API itself -- that information is defined in the global config in the API
+        constructor.
+
+        If the plugin is not registered, the base URL is assumed to be
         "/".  This is a fallback for testing and development purposes.
 
         :return: The base URL for the plugin.
@@ -158,9 +164,9 @@ class APIPlugin:
 
         This is a convenience method to create a session object for the plugin's
         database engine.  I've moved away from ``sessionmaker`` because I find it
-        more flexible to create the session object directly. And a sqlalchemy
-        ``Session`` is already a context manager (so we don't have to worry about
-        closing it, so long as it is used correctly by the caller.)
+        more flexible to create the session object directly. And a SQLalchemy
+        ``Session`` is already a context manager, so we don't have to worry about
+        closing it -- so long as it is used correctly by the caller.
 
         :return: A session object
         :rtype: sqlalchemy.orm.session.Session
@@ -172,13 +178,14 @@ class APIPlugin:
         """
         Make a ``sqlalchemy`` query object for the plugin's table model.
 
-        We are asking for the session to be passed in rather than relying on
-        self.session() to create it. This is to allow for the possibility of
-        using the same session for multiple queries or for non-query operations
-        like add, update, delete.
+        This method is deprecated.
 
-        This query object is the foundation for higher level methods such
-        as ``get``.
+        This method is retained for backward compatibility.  It is a convenience method
+        which creates a SQLAlchemy ``Query`` object with the table and geometry-as-geojson
+        information pre-specified.
+
+        We are moving away from this construct, insisting that the caller explicitly
+        define what they want queries to return.
 
         :param session: An open session object
         :type session: sqlalchemy.orm.session.Session

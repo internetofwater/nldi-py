@@ -148,7 +148,6 @@ def test_source_linked_data_basin(global_config):
     with _app.test_client() as client:
         response = client.get("/api/nldi/linked-data/wqp/USGS-05427930/basin")
         assert response.status_code == 200
-    ##NOTE: I was unable to get any basin response to work from labs.waterdata.usgs.gov, so I can't compare the result.
 
 
 @pytest.mark.order(61)

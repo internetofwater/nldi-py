@@ -28,6 +28,11 @@ class CrawlerSourcePlugin(APIPlugin):
     ``get_by_coords()`` method that is present in the other plugins.  It does have the
     ``get_by_id()`` method, which is used to retrieve a source by its ``source_suffix``.
     It also includes a method to retrieve all sources in the table.
+
+    Unlike other plugins, this plugin has a method to insert a source into the database (all
+    other plugins are read-only). These update/write methods are not plumbed to endpoints
+    in the API, so they are not exposed to the outside world.  They are used internally to
+    manage the sources table.
     """
 
     def __init__(self, name: str | None = None, **kwargs: Dict[str, Any]):
@@ -38,7 +43,7 @@ class CrawlerSourcePlugin(APIPlugin):
         """
         Retrieve a source from the database.
 
-        IMPORTANT!!!  Note that the identifier supplied as an argument to this method is
+        **IMPORTANT!!!**  Note that the identifier supplied as an argument to this method is
         the source's ``source_suffix``.  This is treated as a unique identifier by the
         business logic of the NLDI API, but there is actually **NO** unique constraint
         on this column in the database.  This column is NOT the primary key for the crawler
@@ -62,7 +67,7 @@ class CrawlerSourcePlugin(APIPlugin):
                 # most python code is written (i.e. a KeyError is raised when a key is not found in a dictionary).
         return self._to_feature_dict(item)
 
-    def get_all(self) -> List[Dict]:
+    def get_all(self) -> List[Dict[str, str]]:
         """
         List all items in the CrawlerSource table.
 
@@ -71,8 +76,8 @@ class CrawlerSourcePlugin(APIPlugin):
         as a generator.  The sources table is small, and this approach simplifies the code
         use a fair bit.
 
-        : return: A list of dictionaries, each representing a row in the CrawlerSource table.
-        : rtype: List[Dict]
+        :return: A list of dictionaries, each representing a row in the CrawlerSource table.
+        :rtype: List[Dict[str, str]]
         """
         LOGGER.debug(f"GET all sources from {self.table_model.__tablename__}")
         with self.session() as session:
@@ -85,7 +90,7 @@ class CrawlerSourcePlugin(APIPlugin):
         item_dict.pop("_sa_instance_state")  # Internal SQLAlchemy metadata
         return item_dict
 
-    def insert_source(self, source) -> bool:
+    def insert_source(self, source: Dict[str, str]) -> bool:
         """
         Insert a source in the CrawlerSource table.
 
@@ -98,10 +103,10 @@ class CrawlerSourcePlugin(APIPlugin):
         inserted a new row. In practice, this method is called by the ``align_sources()`` method,
         below, which deletes all sources before inserting new ones.
 
-        : param source: A dictionary representing the source to insert.
-        : type source: Dict[str, str]
-        : return: True if the source was inserted, False otherwise.
-        : rtype: bool
+        :param source: A dictionary representing the source to insert.
+        :type source: Dict[str, str]
+        :return: True if the source was inserted, False otherwise.
+        :rtype: bool
         """
         source_suffix = source["source_suffix"].lower()
         source["source_suffix"] = source_suffix
@@ -177,7 +182,7 @@ class CrawlerSourcePlugin(APIPlugin):
         table without purging the existing configuration.
 
         :param sources: A list of sources to insert into the database.
-        :type Dict[str, str]
+        :type sources: Dict[str, str]
         :param force: If True, delete all sources in the database before inserting the new ones.
         :type force: bool
         :return: True if the sources were inserted, False otherwise.

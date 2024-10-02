@@ -31,6 +31,8 @@ author or the affirmer.
 
 ## Prior Work
 
+### nldi-py
+
 This software is derived from the original `nldi-py` project, which bears
 the following copyright notice:
 

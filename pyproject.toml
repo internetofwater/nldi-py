@@ -58,6 +58,7 @@ ipykernel = "^6.29.4"
 mypy = "^1.9.0"
 coverage = { extras = ["toml"], version = "^6.5.0" }
 testcontainers = "^4.7.2"
+ghp-import = "^2.1.0"
 
 
 [tool.poetry.group.doc.dependencies]

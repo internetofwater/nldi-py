@@ -22,9 +22,11 @@ class CatchmentPlugin(APIPlugin):
     """
     NHD Catchment Plugin
 
-    This plugin provides a mechanism to query the NHDPlus catchment data.  A catchment
-    is the land surface area flowing directly into an NHDPlus feature.  This plugin
-    provides methods to find catchments either by its COMID or by a point geometry.
+    This plugin provides a mechanism to query the NHDPlus catchment data.
+
+    A catchment is the land surface area flowing directly into an NHDPlus
+    feature.  This plugin provides methods to find NHD Catchments either by
+    its COMID or by a point geometry.
 
     """
 
@@ -36,6 +38,20 @@ class CatchmentPlugin(APIPlugin):
 
     @property
     def relative_url(self):
+        """
+        Get the relative URL used to construct properties of the returned GeoJSON.
+
+        Some properties of the returned feature are URLs which indicate subsequent services
+        that can be used to retrieve additional information about the feature (e.g. navigation).
+        This property is used as the base of those URLs, as they are all relative to this
+        plugin's base URL.
+
+        The relative url is dependent on the parent's (i.e. the ``API``) base URL.  For un-registered
+        plugins, a default URL is returned.
+
+        :return: The relative URL for this plugin
+        :rtype: str
+        """
         if self.is_registered:
             return util.url_join(self.parent.base_url, "linked-data/comid")
         else:
@@ -44,12 +60,13 @@ class CatchmentPlugin(APIPlugin):
 
     def get_by_id(self, id: str) -> Dict[str, Any]:
         """
-        Retrieve a catchment by its featureid.
+        Retrieve a catchment by its COMID.
 
-        The featureid is the unique COMID identifier for a catchment in the NHDPlus database.
-        The returned data is a GeoJSON feature as a python dictionary.
+        The featureid is the unique COMID identifier for a Catchment in the
+        NHDPlus database. The returned data is a GeoJSON feature (either polygon
+        or multipolygon) as a python dictionary.
 
-        :param id: featureid of the catchment
+        :param id: comid of the catchment
         :returns: dict of GeoJSON feature
         """
         LOGGER.debug(f"{self.__class__.__name__} GET Catchment by ID: {id}")
@@ -62,17 +79,18 @@ class CatchmentPlugin(APIPlugin):
 
     def get_by_coords(self, coords: str, as_feature: bool = False) -> Union[dict, int]:
         """
-        Perform a spatial query against the nhdplus/catchmentsp table.
+        Perform a spatial query against the NHDPlus/catchmentsp table.
 
         The spatial search uses a point geometry to find the catchment, which is passed in as
         the ``coords`` parameter. The point geometry is expected to be in the form of a WKT
         (in the form 'POINT(longitude latitude)')in NAD83 (EPSG:4269) coordinates.  We do
         not parse this string, but pass it directly to ``geoalchemy``'s ``WKTElement`` object
-        for interpretation.
+        for interpretation. Malformed point geometries will raise an exception.
 
         :param coords: WKT of point element
         :param asGeoJSON: return data as GeoJSON feature (default: False)
-        :returns: dict of 0..n GeoJSON features (if asGeoJSON is True) else the ``featureid`` of the matching catchment.
+        :returns: dict of 0..n GeoJSON features (if asGeoJSON is True) else the
+            ``featureid`` of the matching catchment.
         """
         LOGGER.debug(f"{self.__class__.__name__} GET Catchment by Coordinates: {coords}")
 

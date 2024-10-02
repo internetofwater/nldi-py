@@ -21,12 +21,13 @@ class FlowlinePlugin(APIPlugin):
     """
     NHD Flowline Plugin
 
-    This plugin provides a mechanism to query the NHDPlus flowline data.  ``NHDFlowine`` is a table
-    in the NHDPlus database (see https://www.usgs.gov/ngp-standards-and-specifications/national-hydrography-dataset-nhd-data-dictionary-feature-classes)
-    holding information about the surface drainage network.
+    This plugin provides a mechanism to query the NHDPlus flowline data.
+    ``NHDFlowine`` is a table in the NHDPlus database holding information about the surface
+    drainage network. See https://www.usgs.gov/ngp-standards-and-specifications/national-hydrography-dataset-nhd-data-dictionary-feature-classes
 
-    This plugin allows a flowline to be retrieved by its NHDPlus COMID. Returned data is a GeoJSON ``Feature``
-    representing the flowline geometry and minimal properties related to navigation up and down stream.
+    This plugin allows a flowline to be retrieved by its NHDPlus COMID. The returned
+    data is a GeoJSON ``Feature`` representing the flowline geometry and minimal properties
+    related to navigation up and down stream.
     """
 
     def __init__(self, name: str | None = None, **kwargs: Dict[str, Any]):
@@ -37,10 +38,24 @@ class FlowlinePlugin(APIPlugin):
 
     @property
     def relative_url(self):
+        """
+        Get the relative URL used to construct properties of the returned GeoJSON.
+
+        Some properties of the returned feature are URLs which indicate subsequent services
+        that can be used to retrieve additional information about the feature (e.g. navigation).
+        This property is used as the base of those URLs, as they are all relative to this
+        plugin's base URL.
+
+        The relative url is dependent on the parent's (i.e. the ``API``) base URL.  For un-registered
+        plugins, a default URL is returned.
+
+        :return: The relative URL for this plugin
+        :rtype: str
+        """
         if self.is_registered:
             return util.url_join(self.parent.base_url, "linked-data/comid")
         else:
-            LOGGER.warning("Attempt to get relative_url from an unregistered plugin.")
+            LOGGER.info("Attempt to get relative_url from an unregistered plugin.")
             return "/linked-data/comid"
 
     def get_by_id(self, identifier: str) -> Dict[str, Any]:
@@ -71,6 +86,15 @@ class FlowlinePlugin(APIPlugin):
             return self._sqlalchemy_to_feature(item)
 
     def lookup_navigation(self, nav: str):
+        """
+        TODO:  Fuller description of navigation lookup
+
+        :param nav: _description_
+        :type nav: str
+        :raises KeyError: _description_
+        :return: _description_
+        :rtype: _type_
+        """
         with self.session() as session:
             geojson = sqlalchemy.func.ST_AsGeoJSON(self.geom_field).label("geojson")
             q = session.query(self.table_model, geojson).join(nav, FlowlineModel.nhdplus_comid == nav.c.comid)
@@ -84,6 +108,16 @@ class FlowlinePlugin(APIPlugin):
         return _results
 
     def trim_navigation(self, nav, nav_trim):
+        """
+        TODO: Fuller description of trimmed navigation.
+
+        :param nav: _description_
+        :type nav: _type_
+        :param nav_trim: _description_
+        :type nav_trim: _type_
+        :return: _description_
+        :rtype: _type_
+        """
         with self.session() as session:
             q = (
                 session.query(self.table_model, nav_trim.c.geojson)
@@ -100,12 +134,20 @@ class FlowlinePlugin(APIPlugin):
             return _results
 
     def _sqlalchemy_to_feature(self, item) -> Dict[str, Any]:
+        """
+        Turn a SQLAlchemy result into a GeoJSON feature.
+
+        :param item: A tuple of (FlowlineModel, geojson)
+        :type item: Tuple[FlowlineModel, str]
+        :return: A GeoJSON feature
+        :rtype: Dict[str, Any]
+        """
         (feature, geojson) = item
 
         try:
             mainstem = item.mainstem_lookup.uri
         except AttributeError:
-            LOGGER.warning(f"Mainstem not found for {feature.nhdplus_comid}")
+            LOGGER.info(f"Mainstem not found for {feature.nhdplus_comid}")
             mainstem = ""
 
         navigation = util.url_join(self.relative_url, feature.nhdplus_comid, "navigation")
@@ -113,11 +155,11 @@ class FlowlinePlugin(APIPlugin):
         return {
             "type": "Feature",
             "properties": {
-                "identifier": feature.permanent_identifier,
+                "identifier": str(feature.permanent_identifier),
                 "source": "comid",
                 "sourceName": "NHDPlus comid",
-                "comid": feature.nhdplus_comid,
-                "mainstem": mainstem,
+                "comid": str(feature.nhdplus_comid),
+                # "mainstem": mainstem,  ##< mainstem is not in current production reponse from labs.waterdata.usgs.gov
                 "navigation": navigation,
             },
             "geometry": json.loads(geojson),

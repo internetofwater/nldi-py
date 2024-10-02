@@ -16,18 +16,46 @@ import sqlalchemy
 from sqlalchemy.engine import URL as DB_URL
 
 from .. import LOGGER, __version__, util
-
-# from ..util import load_yaml
 from . import plugins
-# import APIPlugin, CrawlerSourcePlugin
 
 
 class API:
     """
-    The main API class for the NLDI API.
+    The main API class for NLDI services.
 
-    This class is the main entry point for the NLDI API.  It is responsible for managing the plugins
-    that provide the API's functionality.  It also manages the database connection information.
+    This class is the main entry point for the NLDI API. It is responsible for
+    managing the various plugins which provide the API's functionality.  It also
+    shared resources used by those plugins, most notably the database connection.
+
+    An API object is created with a configuration dictionary. This dictionary
+    is loaded from a YAML file at runtime, and is structured/modeled on the config
+    dictionary used in ``pygeoapi`` applications.  Important keys and sub-keys in
+    the config dictionary are:
+
+    * server
+
+      * data
+
+        * dbname
+        * host
+        * password
+        * port
+        * user
+
+    * metadata
+
+      * identification
+
+        * title
+        * description
+        * terms_of_service
+
+    The ``server.data`` dictionary contains the connection information for the
+    API's database.
+
+    The ``metadta.identification`` dictionary contains information used to construct
+    the OpenAPI document for the API.
+
     """
 
     def __init__(self, globalconfig: dict):
@@ -47,16 +75,33 @@ class API:
     @cached_property
     def db_info(self) -> Dict[str, Any]:
         """
-        Get database connection information from the global config, loaded at runtime.
+        Get database connection information from the global configuration.
 
-        We are tracking db connection information at the API level.
-        All registered plugins will use this connection information, as well as any cached ENGINEs
+        The returned dictionary is a copy of the dict found in ``server.data`` of
+        the global configuration.  That is, it contains keys for ``dbname``,
+        ``host``, ``password``, ``port``, and ``user``.
+
+        This property is maintined mostly for backward compatibility -- some utility functions
+        want the database information in this form. The preferred way to access the database
+        connection information is via the ``db_connection_string`` property.
+
+        :return: Database connection information
+        :rtype: dict
         """
         return self.config["server"]["data"]
 
     @property
     def db_connection_string(self) -> DB_URL:
-        """Compose a database connection string from the configuration info dictionary."""
+        """
+        Compose a database connection string from the configuration info dictionary.
+
+        This property is a pre-formatted and validated connection string for the API's database,
+        as may be used to create a database engine in SQLAlchemy.  This implies that the
+        API object may connect to exactly one database for the life of the object.
+
+        :return: Database connection string
+        :rtype: sqlalchemy.engine.URL
+        """
         return DB_URL.create(
             "postgresql+psycopg2",  # Default SQL dialect/driver
             username=self.db_info.get("user", "nldi"),
@@ -67,15 +112,22 @@ class API:
         )
 
     @cached_property
-    def db_engine(self) -> sqlalchemy.engine:
+    def db_engine(self) -> sqlalchemy.engine.Engine:
         """
         Create a database engine for the API.
 
-        This engine is cached for the life of the API object. All plugins will use this engine rather
-        than creating their own.  Each plugin will have its own session, however.
+        The database engine is a SQLAlchemy data structure used to track details of the
+        database connection. It is used later when it comes time to form individual
+        sessions in which queries are executed. The ``db_engine`` is re-used by all
+        registered plugins as a way of economizing on this datastructure (only one
+        engine is needed, as everything connects to the same db server).
+
+        **IMPORTANT** this property is *cached*, so that new engines are not created
+        whenever this property is referenced. Repeated access to this property of the
+        ``API`` will return the same engine each time rather than creating a new engine.
 
         :return: Database engine, suitable for use with a session maker.
-        :rtype: sqlalchemy.engine
+        :rtype: sqlalchemy.engine.Engine
         """
         LOGGER.debug(f"{self.__class__.__name__} creating database engine...")
         engine = sqlalchemy.create_engine(
@@ -94,12 +146,16 @@ class API:
         """
         Register a plugin with the API.
 
-        The internal registry of plugins is nothing more than a dictionary. The key is the plugin's name
-        (which can be over-ridden at the plugin level) and the value is the plugin object itself. Registration
-        gives the plugins access to the API's database connection information, its config information, etc.
+        The plugins are how individual services are "attached" to this ``API``. Registering a
+        plugin enrolls it in an internal data structure. The registry of plugins is nothing
+        more than a python dictionary. The key is the plugin's class name (which can be over-ridden
+        at the plugin level) and the value is the plugin object itself. Registration
+        gives the plugins access to the API's database connection information, its config
+        information, etc.
 
-        For this system to work, each registered plugin must have a ``parent`` attribute, which will point
-        back to this API object, and it must implement the ``db_is_alive`` method.
+        For this system to work, each registered plugin must have a ``parent`` attribute,
+        which will point back to this API object, and it must implement the ``db_is_alive``
+        method.  See more information in the ``APIPlugin`` class description.
 
         :param plugin: The plugin to register
         :type plugin: plugins.APIPlugin
@@ -120,6 +176,20 @@ class API:
             return False
 
     def require_plugin(self, plugin_name: str) -> bool:
+        """
+        Direct the API to load a plugin.
+
+        This method is used to load a plugin that has not yet been registered with the API.  The
+        plugin is loaded by name, and then registered with the API.  If the plugin is already
+        registered, this method does nothing.
+
+        :param plugin_name: The name of the plugin to load
+        :type plugin_name: str
+        :raises ImportError: If unable to load the required module
+        :raises RuntimeError: If unable to register the plugin
+        :return: indication of success
+        :rtype: bool
+        """
         LOGGER.debug(f"Required plugin: {plugin_name}")
         if plugin_name not in self.plugins:
             LOGGER.info(f"Required plugin {plugin_name} not found in registry.  Attempting to load...")
@@ -148,12 +218,25 @@ class API:
         """
         Generate an OpenAPI document for the API.
 
-        This method will generate an OpenAPI document based on the plugins that have been registered with
-        the API.  The document will include all of the paths and tags defined by the plugins.
+        This method will generate an OpenAPI JSON document based on the information
+        found in the global configuration supplied in the constructor. The structure
+        of the OAS document and the included endpoints match the current NLDI spec.
+        Those paths are largely hard-coded in this method rather than being dynamically
+        generated by the currently-loaded plugins. This is because plugins only load
+        when they are needed, yet we still need to generate the OpenAPI document for
+        services that are not yet loaded.
+
+        Note that the OpenAPI document is generated as a dictionary, not as a JSON string
+        (despite the name of the method suggesting json output). The dictionary must be
+        serialized to JSON as a part of the Flask framework (using ``jsonify`` or similar).
 
         :return: OpenAPI document
-        :rtype: dict
+        :rtype: Dict[str, Any]
         """
+        # TODO: load the endpoint descriptions from docstrings -- perhaps one function in the API per endpoint?
+        # This would require that we add methods here for each endpoint, which might be a good idea for other
+        # reasons as well.  It would also give us consistent docstring format for the plugins.
+
         OAS_SCHEMAS = util.load_yaml(pathlib.Path(__file__).parent / "schemas.yaml")
         OAS_PARAMETERS = util.load_yaml(pathlib.Path(__file__).parent / "parameters.yaml")
         OAS_RESPONSES = util.load_yaml(pathlib.Path(__file__).parent / "responses.yaml")

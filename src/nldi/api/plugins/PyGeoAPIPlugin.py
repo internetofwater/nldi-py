@@ -27,6 +27,7 @@ class PyGeoAPIPlugin(APIPlugin):
     ``SplitCatchmentPlugin``.  This class provides a single source for common utility functions
     and constants used by those subclasses.
     """
+
     DEFAULT_PYGEOAPI_URL = "https://labs-beta.waterdata.usgs.gov/api/nldi/pygeoapi"
     HTTP_TIMEOUT = 20  # seconds
     DEFAULT_PROPS = {

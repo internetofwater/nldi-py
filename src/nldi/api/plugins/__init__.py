@@ -15,6 +15,7 @@ from .FlowlinePlugin import FlowlinePlugin
 from .HydroLocationPlugin import HydroLocationPlugin
 from .MainstemPlugin import MainstemPlugin
 from .SplitCatchmentPlugin import SplitCatchmentPlugin
+from .PyGeoAPIPlugin import PyGeoAPIPlugin
 
 __all__ = [
     "APIPlugin",

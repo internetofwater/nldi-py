@@ -156,7 +156,7 @@ def global_config(nldi_db_container, config_yaml, env_update):
     _def = load_yaml(config_yaml)
     #    _def["database"] = nldi_db_container
     _def["base_url"] = "http://localhost/nldi"
-    
+
 
     return _def
 
@@ -182,3 +182,82 @@ def mock_source():
         "ingest_type": "point",
         "feature_type": "varies",
     }
+
+
+@pytest.fixture(scope="session")
+def prod_env_update():
+    """
+    Update environment variables for tests.
+
+    The current YAML parser will substitute environment variables in the
+    configuration file. If an undefined variable is encountered, it will
+    raise an exception. This fixture will provide the necessary environment
+    variables to the test environment so that the configuration file can be
+    loaded.
+
+    These values are not especially meaningful -- but provide defaults suitable
+    for testing the loading of the config file.
+
+    Note that this fixture does not modify the current environment... it is
+    just the dictionary that a test should use to update the environment prior
+    to loading the configuration file.
+
+    >>> import os
+    >>> os.environ.update(env_update)
+    >>> # now load the configuration file
+    """
+    secretfile = pathlib.Path(__file__).parent / "data" / "secret.env"
+    returnvalue = dict(NLDI_URL="http://localhost/nldi")
+    try:
+        with open(secretfile, "r") as f:
+            lines = f.readlines()
+            for line in lines:
+                key, value = line.strip().split("=")
+                returnvalue[key] = value.strip('"')
+    except FileNotFoundError:
+        raise FileNotFoundError(f"Secret file not found: {secretfile}")
+
+    return returnvalue
+
+@pytest.fixture(scope="session")
+def prod_db_container(prod_env_update) -> dict:
+    """Not really a container, but the naming convention is useful to match local testing setup."""
+    db_info = {
+        "user": prod_env_update["NLDI_DB_USERNAME"],
+        "password": prod_env_update["NLDI_DB_PASSWORD"],
+        "host":  prod_env_update["NLDI_DB_HOST"],
+        "port": int(prod_env_update["NLDI_DB_PORT"]),
+        "dbname": prod_env_update["NLDI_DB_NAME"],
+    }
+    return db_info
+
+@pytest.fixture
+def prod_db_connect_string(prod_db_container) -> str:
+    return DB_URL.create(
+        "postgresql+psycopg2",
+        username=prod_db_container["user"],
+        password=prod_db_container["password"],
+        host=prod_db_container["host"],
+        port=prod_db_container["port"],
+        database=prod_db_container["dbname"],
+    )
+
+
+@pytest.fixture(scope="session")
+def prod_global_config(prod_db_container, config_yaml, prod_env_update):
+    """
+    Provide global cofiguration definition for tests.
+
+    This is a dict of general config information. It is composed of information from the
+    config file, environemnt variables, and the database connection information.
+    """
+    from nldi.util import load_yaml
+
+    prod_env_update["NLDI_DB_HOST"] = prod_db_container["host"]
+    os.environ.update(prod_env_update)
+    _def = load_yaml(config_yaml)
+    #    _def["database"] = nldi_db_container
+    _def["base_url"] = "http://localhost/nldi"
+
+
+    return _def
