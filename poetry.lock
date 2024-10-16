@@ -628,6 +628,20 @@ SQLAlchemy = ">=1.4"
 shapely = ["Shapely (>=1.7)"]
 
 [[package]]
+name = "geomet"
+version = "1.1.0"
+description = "Pure Python conversion library for common geospatial data formats"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "geomet-1.1.0-py3-none-any.whl", hash = "sha256:4372fe4e286a34acc6f2e9308284850bd8c4aa5bc12065e2abbd4995900db12f"},
+    {file = "geomet-1.1.0.tar.gz", hash = "sha256:51e92231a0ef6aaa63ac20c443377ba78a303fd2ecd179dc3567de79f3c11605"},
+]
+
+[package.dependencies]
+click = "*"
+
+[[package]]
 name = "gevent"
 version = "24.2.1"
 description = "Coroutine-based network library"
@@ -3188,4 +3202,4 @@ testing = ["coverage (>=5.0.3)", "zope.event", "zope.testing"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "9f495ec6d3443be398697e3832c220692618a9b8477a83786461008ec564ffcd"
+content-hash = "5bd9b1afae7834ddece87e04396ec2ff4690118bf868da8ee02b04dfce169d50"

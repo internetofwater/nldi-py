@@ -62,7 +62,7 @@ class PyGeoAPIPlugin(APIPlugin):
         if self.is_registered:
             return self.parent.config.get("pygeoapi_url", self.DEFAULT_PYGEOAPI_URL)
         else:
-            LOGGER.warning("Attempt to get pygeoapi_url from an unregistered plugin.")
+            LOGGER.info("Attempt to get pygeoapi_url from an unregistered plugin.")
             return self.DEFAULT_PYGEOAPI_URL
 
     @classmethod

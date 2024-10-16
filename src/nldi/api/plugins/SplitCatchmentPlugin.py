@@ -12,8 +12,9 @@ Split Catchment Plugin
 
 from typing import Any, Dict, List
 
+from geomet import wkt
 import httpx
-import shapely
+# import shapely
 import sqlalchemy
 from sqlalchemy.engine import URL as DB_URL
 
@@ -53,11 +54,12 @@ class SplitCatchmentPlugin(PyGeoAPIPlugin):
         :returns: GeoJSON features
         """
         LOGGER.debug(f"{__class__.__name__} get_by_coords: {coords}")
-        point = shapely.wkt.loads(coords)
+        point = wkt.loads(coords)
+        # point = shapely.wkt.loads(coords)
         request_payload = {
             "inputs": [
-                {"id": "lon", "type": "text/plain", "value": str(point.x)},
-                {"id": "lat", "type": "text/plain", "value": str(point.y)},
+                {"id": "lon", "type": "text/plain", "value": str(point['coordinates'][0])},
+                {"id": "lat", "type": "text/plain", "value": str(point['coordinates'][1])},
                 {"id": "upstream", "type": "text/plain", "value": "true"},
             ]
         }

@@ -219,7 +219,12 @@ class APIPlugin:
             except sqlalchemy.exc.OperationalError as e:
                 LOGGER.error(f"Database connection error: {e}")
                 return False
-            return nrows >= 1
+            success = nrows >= 1
+            if success:
+                LOGGER.debug(f"Database connection is working: {nrows} rows found.")
+            else:
+                LOGGER.error(f"Database connection is not working: {nrows} rows found.")
+            return success
         else:
             ## if no table defined, we just run a dummy query to see if the connection is working.
             try:

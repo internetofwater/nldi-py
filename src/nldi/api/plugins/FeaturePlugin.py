@@ -10,7 +10,6 @@ import json
 from typing import Any, Dict, List, Union
 
 import sqlalchemy
-from geoalchemy2 import WKTElement
 
 from ... import LOGGER, util
 from ...schemas.nldi_data import FeatureSourceModel

@@ -55,9 +55,9 @@ def test_read_yaml_file(config_yaml, prod_env_update):
     assert len(sources) == 3
     suffixes = [src["source_suffix"] for src in sources]
     assert "WQP" in suffixes
-    assert "nwissite" in suffixes
+    assert "nwissite" in suffixes 
     assert "huc12pp" in suffixes
-    assert cfg["server"]["data"]["host"] == "nrecmbwyuylslk.cmibrclwinzt.us-west-2.rds.amazonaws.com"
+    assert cfg["server"]["data"]["host"] == "nldi-db-development-rds-tzixjritdc4o.cmibrclwinzt.us-west-2.rds.amazonaws.com"
 
 
 # region /api/nldi/linked-data
