@@ -235,3 +235,12 @@ def test_nav_UM_mode(global_config):
         assert response.status_code == 200
     assert len(response.json) >= 4  # 4 is minimum for our test database (3 sources plus 'flowlines')
     assert response.json[0]["source"] == "Flowlines"
+
+@pytest.mark.order(65)
+@pytest.mark.integration
+def test_nav_UM_mode_wqp(global_config):
+    _api = API(globalconfig=global_config)
+    _app = app_factory(_api)
+    with _app.test_client() as client:
+        response = client.get("/api/nldi/linked-data/wqp/USGS-05427930/navigation/UM/flowlines?distance=10")
+        assert response.status_code == 200

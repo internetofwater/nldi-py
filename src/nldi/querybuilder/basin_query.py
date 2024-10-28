@@ -12,7 +12,7 @@ from sqlalchemy.orm import aliased
 from sqlalchemy.sql.selectable import Select
 
 from .. import LOGGER
-from ..schemas.characteristic_data import CatchmentModel, FlowlineVAAModel
+from ..schemas.nhdplus import CatchmentModel, FlowlineVAAModel
 
 # def basin(comid: int, simplify: bool) -> Select:
 #     """
@@ -69,29 +69,32 @@ def basin_from_comid(comid: int, simplified: bool = True) -> Any:
     :rtype: sqlalchemy.sql.selectable.Select
     """
     nav = (
-        select([FlowlineVAAModel.comid, FlowlineVAAModel.hydroseq, FlowlineVAAModel.startflag])
+        # select([FlowlineVAAModel.comid, FlowlineVAAModel.hydroseq, FlowlineVAAModel.startflag])
+        select(FlowlineVAAModel.comid, FlowlineVAAModel.hydroseq, FlowlineVAAModel.startflag)
         .where(FlowlineVAAModel.comid == text(":comid"))
         .cte("nav", recursive=True)
     )
 
-    x = aliased(FlowlineVAAModel, name="x")
+    vaa = aliased(FlowlineVAAModel, name="vaa")
     nav_basin = nav.union(
-        select([x.comid, x.hydroseq, x.startflag]).where(
+        #select([vaa.comid, vaa.hydroseq, vaa.startflag]).where(
+        select(vaa.comid, vaa.hydroseq, vaa.startflag).where(
             and_(
                 (nav.c.startflag != 1),
-                or_((x.dnhydroseq == nav.c.hydroseq), and_((x.dnminorhyd != 0), (x.dnminorhyd == nav.c.hydroseq))),
+                or_((vaa.dnhydroseq == nav.c.hydroseq), and_((vaa.dnminorhyd != 0), (vaa.dnminorhyd == nav.c.hydroseq))),
             )
         )
     )
 
     if simplified:
         _geom = func.ST_AsGeoJSON(func.ST_Simplify(func.ST_Union(CatchmentModel.the_geom), 0.001), 9, 0).label(
-            "the_geom"
+            "geojson"
         )
     else:
-        _geom = func.ST_AsGeoJSON(func.ST_Union(CatchmentModel.the_geom), 9, 0).label("the_geom")
+        _geom = func.ST_AsGeoJSON(func.ST_Union(CatchmentModel.the_geom), 9, 0).label("geojson")
 
     # Create the final query
-    query = select([_geom]).select_from(nav_basin).join(CatchmentModel, nav_basin.c.comid == CatchmentModel.featureid)
+    #query = select([_geom]).select_from(nav_basin).join(CatchmentModel, nav_basin.c.comid == CatchmentModel.featureid)
+    query = select(_geom).select_from(nav_basin).join(CatchmentModel, nav_basin.c.comid == CatchmentModel.featureid)
 
     return query.params(comid=comid)

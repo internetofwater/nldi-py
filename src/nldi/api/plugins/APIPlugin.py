@@ -229,7 +229,7 @@ class APIPlugin:
             ## if no table defined, we just run a dummy query to see if the connection is working.
             try:
                 with self._db_engine.connect() as c:
-                    c.execute("SELECT 1")
+                    c.execute(sqlalchemy.text("SELECT 1"))
             except sqlalchemy.exc.OperationalError as e:
                 LOGGER.error(f"Database connection error: {e}")
                 return False

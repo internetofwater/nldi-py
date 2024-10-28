@@ -137,14 +137,14 @@ def navigate_dd(
         .cte("nav", recursive=True)
     )
 
-    x = aliased(FlowlineVAAModel, name="x")
+    vaa = aliased(FlowlineVAAModel, name="vaa")
     nav_dd = nav.union(
-        select([x.comid, x.dnhydroseq, x.dnminorhyd, x.fcode, nav.c.stoplength, x.terminalflag]).where(
+        select([vaa.comid, vaa.dnhydroseq, vaa.dnminorhyd, vaa.fcode, nav.c.stoplength, vaa.terminalflag]).where(
             and_(
-                (x.fcode != text(":coastal_fcode")),
+                (vaa.fcode != text(":coastal_fcode")),
                 (nav.c.terminalflag != 1),
-                (x.pathlength + x.lengthkm >= nav.c.stoplength),
-                or_(x.hydroseq == nav.c.dnhydroseq, and_(nav.c.dnminorhyd != 0, x.hydroseq == nav.c.dnminorhyd)),
+                (vaa.pathlength + vaa.lengthkm >= nav.c.stoplength),
+                or_(vaa.hydroseq == nav.c.dnhydroseq, and_(nav.c.dnminorhyd != 0, vaa.hydroseq == nav.c.dnminorhyd)),
             )
         )
     )
@@ -162,32 +162,32 @@ def navigate_um(
     LOGGER.debug(f"Creating navigation query for UM mode: {comid=}, {distance=}, {coastal_fcode=}")
     nav = (
         select(
-            [
+
                 FlowlineVAAModel.comid,
                 FlowlineVAAModel.levelpathid,
                 FlowlineVAAModel.uphydroseq,
                 FlowlineVAAModel.fcode,
                 (FlowlineVAAModel.pathlength + text(":distance")).label("stoplength"),  # noqa
-            ]
+
         )
         .where(FlowlineVAAModel.comid == text(":comid"))
         .cte("nav", recursive=True)
     )
 
-    x = aliased(FlowlineVAAModel, name="x")
+    vaa = aliased(FlowlineVAAModel, name="x")
     nav_um = nav.union(
-        select([x.comid, x.levelpathid, x.uphydroseq, x.fcode, nav.c.stoplength]).where(
+        select(vaa.comid, vaa.levelpathid, vaa.uphydroseq, vaa.fcode, nav.c.stoplength).where(
             and_(
-                (x.hydroseq == nav.c.uphydroseq),
-                (x.levelpathid == nav.c.levelpathid),
-                (x.fcode != text(":coastal_fcode")),
-                (x.pathlength <= nav.c.stoplength),
+                (vaa.hydroseq == nav.c.uphydroseq),
+                (vaa.levelpathid == nav.c.levelpathid),
+                (vaa.fcode != text(":coastal_fcode")),
+                (vaa.pathlength <= nav.c.stoplength),
             )
         )
     )
 
     # Create the final query
-    query = select([nav_um.c.comid]).select_from(nav_um)
+    query = select(nav_um.c.comid).select_from(nav_um)
 
     return query.params(distance=distance, comid=comid, coastal_fcode=coastal_fcode)
 
@@ -212,14 +212,14 @@ def navigate_ut(
         .cte("nav", recursive=True)
     )
 
-    x = aliased(FlowlineVAAModel, name="x")
+    vaa = aliased(FlowlineVAAModel, name="x")
     nav_ut = nav.union(
-        select([x.comid, x.hydroseq, x.startflag, x.fcode, nav.c.stoplength]).where(
+        select([vaa.comid, vaa.hydroseq, vaa.startflag, vaa.fcode, nav.c.stoplength]).where(
             and_(
-                (x.fcode != text(":coastal_fcode")),
+                (vaa.fcode != text(":coastal_fcode")),
                 (nav.c.startflag != 1),
-                (x.pathlength <= nav.c.stoplength),
-                or_(x.dnhydroseq == nav.c.hydroseq, and_(x.dnminorhyd != 0, x.dnminorhyd == nav.c.hydroseq)),
+                (vaa.pathlength <= nav.c.stoplength),
+                or_(vaa.dnhydroseq == nav.c.hydroseq, and_(vaa.dnminorhyd != 0, vaa.dnminorhyd == nav.c.hydroseq)),
             )
         )
     )

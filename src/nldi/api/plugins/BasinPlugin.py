@@ -281,7 +281,7 @@ class BasinPlugin(APIPlugin):
 
     def _get_basin_from_comid(self, comid: int, simplified: bool):
         basin = querybuilder.basin_from_comid(comid, simplified)
-        LOGGER.debug(basin.compile(self._db_engine))
+        LOGGER.info("%s", basin.compile(self._db_engine))
 
         with self.session() as session:
             result = session.execute(basin).fetchone()
@@ -290,6 +290,6 @@ class BasinPlugin(APIPlugin):
 
             return {
                 "type": "Feature",
-                "geometry": json.loads(result.the_geom),
+                "geometry": json.loads(result.geojson),
                 "properties": {},
             }

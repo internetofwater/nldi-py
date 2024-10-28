@@ -55,9 +55,9 @@ def test_read_yaml_file(config_yaml, prod_env_update):
     assert len(sources) == 3
     suffixes = [src["source_suffix"] for src in sources]
     assert "WQP" in suffixes
-    assert "nwissite" in suffixes 
+    assert "nwissite" in suffixes
     assert "huc12pp" in suffixes
-    assert cfg["server"]["data"]["host"] == "nldi-db-development-rds-tzixjritdc4o.cmibrclwinzt.us-west-2.rds.amazonaws.com"
+    assert cfg["server"]["data"]["host"] == "nldi-db-development.dev-nwis.usgs.gov"
 
 
 # region /api/nldi/linked-data
@@ -193,10 +193,13 @@ def test_source_linked_data_basin(prod_global_config):
         assert test_response.status_code == 200
 
     # NOTE: the current production service does not propperly lower-case the source name.  must use all upper-case
-    prod_response = httpx.get("https://labs-beta.waterdata.usgs.gov/api/nldi/linked-data/WQP/USGS-05427930/basin")
+    prod_response = httpx.get("https://labs-beta.waterdata.usgs.gov/api/nldi/linked-data/WQP/USGS-05427930/basin?f=json")
     assert prod_response.status_code == 200
+    # we should get a FeatureCollection with exactly one feature in it (the basin) and no properties.
+    assert len(test_response.json["features"]) == 1
+    assert len(prod_response.json()["features"]) == 1
     assert (
-        test_response.json["feature"][0]["geometry"]["type"] == prod_response.json()["feature"][0]["geometry"]["type"]
+        test_response.json["features"][0]["geometry"]["type"] == prod_response.json()["features"][0]["geometry"]["type"]
     )
     ## TODO compare coordinates? or just assume that the geometry is correct?  Maybe compute the area of the polygons and compare that?
 
