@@ -382,7 +382,7 @@ def get_flowline_navigation(source_name=None, identifier=None, nav_mode=None):
     LOGGER.info(f"Attempting {nav_mode} navigation for {distance=}, with {trim_start=}")
     nav_results = build_nav_query(nav_mode, start_comid, distance)
     LOGGER.info(f"Navigation query: {nav_results}")
-    
+
     if trim_start is True:
         if source_name == "comid":  ##<< this should never happen for trimmed navigation.
             return flask.Response(
