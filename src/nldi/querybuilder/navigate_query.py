@@ -96,7 +96,7 @@ def navigate_dm(
         .cte("nav", recursive=True)
     )
 
-    vaa = aliased(FlowlineVAAModel, name="x")
+    vaa = aliased(FlowlineVAAModel, name="vaa")
     nav_dm = nav.union(
         select(vaa.comid, vaa.terminalpathid, vaa.dnhydroseq, vaa.fcode, nav.c.stoplength).where(
             and_(
@@ -168,7 +168,7 @@ def navigate_um(
         .cte("nav", recursive=True)
     )
 
-    vaa = aliased(FlowlineVAAModel, name="x")
+    vaa = aliased(FlowlineVAAModel, name="vaa")
     nav_um = nav.union(
         select(vaa.comid, vaa.levelpathid, vaa.uphydroseq, vaa.fcode, nav.c.stoplength).where(
             and_(
@@ -204,7 +204,7 @@ def navigate_ut(
         .cte("nav", recursive=True)
     )
 
-    vaa = aliased(FlowlineVAAModel, name="x")
+    vaa = aliased(FlowlineVAAModel, name="vaa")
     nav_ut = nav.union(
         select(vaa.comid, vaa.hydroseq, vaa.startflag, vaa.fcode, nav.c.stoplength).where(
             and_(
