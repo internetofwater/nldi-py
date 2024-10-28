@@ -86,32 +86,30 @@ def navigate_dm(
     LOGGER.debug(f"Creating navigation query for DM mode: {comid=}, {distance=}, {coastal_fcode=}")
     nav = (
         select(
-            [
-                FlowlineVAAModel.comid,
-                FlowlineVAAModel.terminalpathid,
-                FlowlineVAAModel.dnhydroseq,
-                FlowlineVAAModel.fcode,
-                (FlowlineVAAModel.pathlength + FlowlineVAAModel.lengthkm - text(":distance")).label("stoplength"),  # noqa
-            ]
+            FlowlineVAAModel.comid,
+            FlowlineVAAModel.terminalpathid,
+            FlowlineVAAModel.dnhydroseq,
+            FlowlineVAAModel.fcode,
+            (FlowlineVAAModel.pathlength + FlowlineVAAModel.lengthkm - text(":distance")).label("stoplength"),  # noqa
         )
         .where(FlowlineVAAModel.comid == text(":comid"))
         .cte("nav", recursive=True)
     )
 
-    x = aliased(FlowlineVAAModel, name="x")
+    vaa = aliased(FlowlineVAAModel, name="x")
     nav_dm = nav.union(
-        select([x.comid, x.terminalpathid, x.dnhydroseq, x.fcode, nav.c.stoplength]).where(
+        select(vaa.comid, vaa.terminalpathid, vaa.dnhydroseq, vaa.fcode, nav.c.stoplength).where(
             and_(
-                (x.hydroseq == nav.c.dnhydroseq),
-                (x.terminalpathid == nav.c.terminalpathid),
-                (x.fcode != text(":coastal_fcode")),
-                (x.pathlength + x.lengthkm >= nav.c.stoplength),
+                (vaa.hydroseq == nav.c.dnhydroseq),
+                (vaa.terminalpathid == nav.c.terminalpathid),
+                (vaa.fcode != text(":coastal_fcode")),
+                (vaa.pathlength + vaa.lengthkm >= nav.c.stoplength),
             )
         )
     )
 
     # Create the final query
-    query = select([nav_dm.c.comid]).select_from(nav_dm)
+    query = select(nav_dm.c.comid).select_from(nav_dm)
 
     return query.params(distance=distance, comid=comid, coastal_fcode=coastal_fcode)
 
@@ -124,14 +122,12 @@ def navigate_dd(
     LOGGER.debug(f"Creating navigation query for DD mode: {comid=}, {distance=}, {coastal_fcode=}")
     nav = (
         select(
-            [
-                FlowlineVAAModel.comid,
-                FlowlineVAAModel.dnhydroseq,
-                FlowlineVAAModel.dnminorhyd,
-                FlowlineVAAModel.fcode,
-                (FlowlineVAAModel.pathlength + FlowlineVAAModel.lengthkm - text(":distance")).label("stoplength"),  # noqa
-                FlowlineVAAModel.terminalflag,
-            ]
+            FlowlineVAAModel.comid,
+            FlowlineVAAModel.dnhydroseq,
+            FlowlineVAAModel.dnminorhyd,
+            FlowlineVAAModel.fcode,
+            (FlowlineVAAModel.pathlength + FlowlineVAAModel.lengthkm - text(":distance")).label("stoplength"),  # noqa
+            FlowlineVAAModel.terminalflag,
         )
         .where(FlowlineVAAModel.comid == text(":comid"))
         .cte("nav", recursive=True)
@@ -139,7 +135,7 @@ def navigate_dd(
 
     vaa = aliased(FlowlineVAAModel, name="vaa")
     nav_dd = nav.union(
-        select([vaa.comid, vaa.dnhydroseq, vaa.dnminorhyd, vaa.fcode, nav.c.stoplength, vaa.terminalflag]).where(
+        select(vaa.comid, vaa.dnhydroseq, vaa.dnminorhyd, vaa.fcode, nav.c.stoplength, vaa.terminalflag).where(
             and_(
                 (vaa.fcode != text(":coastal_fcode")),
                 (nav.c.terminalflag != 1),
@@ -149,7 +145,7 @@ def navigate_dd(
         )
     )
     # Create the final query
-    query = select([nav_dd.c.comid]).select_from(nav_dd)
+    query = select(nav_dd.c.comid).select_from(nav_dd)
 
     return query.params(distance=distance, comid=comid, coastal_fcode=coastal_fcode)
 
@@ -162,13 +158,11 @@ def navigate_um(
     LOGGER.debug(f"Creating navigation query for UM mode: {comid=}, {distance=}, {coastal_fcode=}")
     nav = (
         select(
-
-                FlowlineVAAModel.comid,
-                FlowlineVAAModel.levelpathid,
-                FlowlineVAAModel.uphydroseq,
-                FlowlineVAAModel.fcode,
-                (FlowlineVAAModel.pathlength + text(":distance")).label("stoplength"),  # noqa
-
+            FlowlineVAAModel.comid,
+            FlowlineVAAModel.levelpathid,
+            FlowlineVAAModel.uphydroseq,
+            FlowlineVAAModel.fcode,
+            (FlowlineVAAModel.pathlength + text(":distance")).label("stoplength"),  # noqa
         )
         .where(FlowlineVAAModel.comid == text(":comid"))
         .cte("nav", recursive=True)
@@ -200,13 +194,11 @@ def navigate_ut(
     LOGGER.debug(f"Creating navigation query for UT mode: {comid=}, {distance=}, {coastal_fcode=}")
     nav = (
         select(
-            [
-                FlowlineVAAModel.comid,
-                FlowlineVAAModel.hydroseq,
-                FlowlineVAAModel.startflag,
-                FlowlineVAAModel.fcode,
-                (FlowlineVAAModel.pathlength + text(":distance")).label("stoplength"),  # noqa
-            ]
+            FlowlineVAAModel.comid,
+            FlowlineVAAModel.hydroseq,
+            FlowlineVAAModel.startflag,
+            FlowlineVAAModel.fcode,
+            (FlowlineVAAModel.pathlength + text(":distance")).label("stoplength"),  # noqa
         )
         .where(FlowlineVAAModel.comid == text(":comid"))
         .cte("nav", recursive=True)
@@ -214,7 +206,7 @@ def navigate_ut(
 
     vaa = aliased(FlowlineVAAModel, name="x")
     nav_ut = nav.union(
-        select([vaa.comid, vaa.hydroseq, vaa.startflag, vaa.fcode, nav.c.stoplength]).where(
+        select(vaa.comid, vaa.hydroseq, vaa.startflag, vaa.fcode, nav.c.stoplength).where(
             and_(
                 (vaa.fcode != text(":coastal_fcode")),
                 (nav.c.startflag != 1),
@@ -224,7 +216,7 @@ def navigate_ut(
         )
     )
     # Create the final query
-    query = select([nav_ut.c.comid]).select_from(nav_ut)
+    query = select(nav_ut.c.comid).select_from(nav_ut)
 
     return query.params(distance=distance, comid=comid, coastal_fcode=coastal_fcode)
 
@@ -248,10 +240,10 @@ def trim_navigation(
             (FlowlineModel.nhdplus_comid == text(":comid"), geojson), else_=func.ST_AsGeoJSON(FlowlineModel.shape, 9, 0)
         )
 
-        query = select([FlowlineModel.nhdplus_comid.label("comid"), nav_trim.label("geojson")])
+        query = select(FlowlineModel.nhdplus_comid.label("comid"), nav_trim.label("geojson"))
     else:
         query = select(
-            [FlowlineModel.nhdplus_comid.label("comid"), func.ST_AsGeoJSON(FlowlineModel.shape, 9, 0).label("geojson")]
+            FlowlineModel.nhdplus_comid.label("comid"), func.ST_AsGeoJSON(FlowlineModel.shape, 9, 0).label("geojson")
         )
 
     return query.params(comid=comid)

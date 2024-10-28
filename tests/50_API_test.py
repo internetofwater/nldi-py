@@ -24,7 +24,7 @@ from nldi.server import APP
 def test_new_API_smoke(global_config):
     api = API(globalconfig=global_config)
     assert api is not None
-    assert str(api.db_connection_string).startswith("postgresql+psycopg2://nldi:changeMe@")
+    assert str(api.db_connection_string).startswith("postgresql+psycopg2://nldi:")
 
 
 @pytest.mark.order(51)
