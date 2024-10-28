@@ -193,7 +193,9 @@ def test_source_linked_data_basin(prod_global_config):
         assert test_response.status_code == 200
 
     # NOTE: the current production service does not propperly lower-case the source name.  must use all upper-case
-    prod_response = httpx.get("https://labs-beta.waterdata.usgs.gov/api/nldi/linked-data/WQP/USGS-05427930/basin?f=json")
+    prod_response = httpx.get(
+        "https://labs-beta.waterdata.usgs.gov/api/nldi/linked-data/WQP/USGS-05427930/basin?f=json"
+    )
     assert prod_response.status_code == 200
     # we should get a FeatureCollection with exactly one feature in it (the basin) and no properties.
     assert len(test_response.json["features"]) == 1
@@ -207,7 +209,7 @@ def test_source_linked_data_basin(prod_global_config):
 # region /api/nldi/linked-data/{src}/{id}/navigation
 @pytest.mark.order(81)
 @pytest.mark.unittest
-def test_source_linked_data_navigation(prod_global_config):
+def test_source_linked_data_um_navigation(prod_global_config):
     _api = API(globalconfig=prod_global_config)
     _app = app_factory(_api)
     with _app.test_client() as client:
@@ -221,15 +223,17 @@ def test_source_linked_data_navigation(prod_global_config):
     assert len(test_response.json) == len(prod_response.json())
 
 
-# @pytest.mark.order(81)
-# @pytest.mark.unittest
-# def test_lookup_feature_by_src_and_id(prod_global_config):
-#     _api = API(globalconfig=prod_global_config)
-#     _app = app_factory(_api)
-#     with _app.test_client() as client:
-#         # response = client.get("/api/nldi/linked-data/wqp/USGS-05427930")
-#         test_response = client.get("/api/nldi/linked-data/wqp/WIDNR_WQX-133338")
-#     assert test_response.status_code == 200
+@pytest.mark.order(81)
+@pytest.mark.unittest
+def test_source_linked_data_ut_navigation(prod_global_config):
+    _api = API(globalconfig=prod_global_config)
+    _app = app_factory(_api)
+    with _app.test_client() as client:
+        test_response = client.get("/api/nldi/linked-data/wqp/USGS-05427930/navigation/UT")
+    assert test_response.status_code == 200
 
-#     #
-#     prod_response = httpx.get("https://labs-beta.waterdata.usgs.gov/api/nldi/linked-data/wqp/WIDNR_WQX-133338?f=json")
+    prod_response = httpx.get(
+        "https://labs-beta.waterdata.usgs.gov/api/nldi/linked-data/wqp/USGS-05427930/navigation/UT?f=json"
+    )
+
+    assert len(test_response.json) == len(prod_response.json())
