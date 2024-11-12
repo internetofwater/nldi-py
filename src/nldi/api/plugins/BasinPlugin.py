@@ -4,7 +4,7 @@
 #
 # See the full copyright notice in LICENSE.md
 
-"""Plugin base class from which all plugins are built."""
+"""Plugin too search for basins."""
 
 import json
 from typing import Any, Dict, List, Tuple, Union

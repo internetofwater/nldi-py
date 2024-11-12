@@ -9,7 +9,7 @@ __version__ = "0.1.0"
 
 import logging
 
-from . import log
+# from . import log
 
 NAD83_SRID = 4269
 

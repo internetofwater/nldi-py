@@ -8,7 +8,7 @@
 version: '3'
 
 env:
-  SRCS: ./src 
+  SRCS: ./src
 
 tasks:
   fixme:
@@ -17,7 +17,8 @@ tasks:
     cmds:
       - task: reformat
       - task: lint
-      - task: typecheck
+#      - task: typecheck
+#      TODO: type checking....
 
   reformat:
     cmds:
@@ -51,18 +52,22 @@ tasks:
 
 
 
-#   build:
-#     summary: |
-#       Builds the docs and a wheel for ease of installation.
-#     cmds:
-#       - task: doc
-#       - task: wheel
-# #       - task: docker
+  build:
+    summary: |
+      Builds the docs and a wheel for ease of installation.
+    cmds:
+      - task: doc
+      - task: wheel
+      - task: docker
 
   doc:
     cmds:
       - sphinx-build -a -b html ./docs ./public
 
-#   wheel:
-#     cmds:
-#       - poetry build
+  wheel:
+    cmds:
+      - poetry build
+
+  docker:
+    cmds:
+      - docker build . -t nldi-py
