@@ -8,7 +8,7 @@
 version: '3'
 
 env:
-  SRCS: ./src ./tests
+  SRCS: ./src 
 
 tasks:
   fixme:

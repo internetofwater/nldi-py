@@ -4,10 +4,7 @@
 #
 # See the full copyright notice in LICENSE.md
 
-"""
-PyGeoAPI Plugin
-
-"""
+"""PyGeoAPI Plugin"""
 
 import json
 from typing import Any, Dict, List

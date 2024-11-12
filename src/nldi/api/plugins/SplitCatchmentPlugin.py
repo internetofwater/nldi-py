@@ -5,17 +5,15 @@
 # See the full copyright notice in LICENSE.md
 
 
-"""
-Split Catchment Plugin
-
-"""
+"""Split Catchment Plugin"""
 
 from typing import Any, Dict, List
 
-from geomet import wkt
 import httpx
+
 # import shapely
 import sqlalchemy
+from geomet import wkt
 from sqlalchemy.engine import URL as DB_URL
 
 from ... import LOGGER, util
@@ -58,8 +56,8 @@ class SplitCatchmentPlugin(PyGeoAPIPlugin):
         # point = shapely.wkt.loads(coords)
         request_payload = {
             "inputs": [
-                {"id": "lon", "type": "text/plain", "value": str(point['coordinates'][0])},
-                {"id": "lat", "type": "text/plain", "value": str(point['coordinates'][1])},
+                {"id": "lon", "type": "text/plain", "value": str(point["coordinates"][0])},
+                {"id": "lat", "type": "text/plain", "value": str(point["coordinates"][1])},
                 {"id": "upstream", "type": "text/plain", "value": "true"},
             ]
         }

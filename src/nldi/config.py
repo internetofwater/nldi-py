@@ -51,11 +51,14 @@ from . import LOGGER, util
 
 
 class Configuration(UserDict):
+    """Data class for holding global configuration."""
+
     # TODO:  This class refactors current behavior, which is to read config from a YAML file
     #         or open IO Stream and instantiate dictionary.  Is it useful to also be able to
     #         ingest JSON or other formats.  If so, perhaps class methods like ``.from_json()``
     #         ``from_yaml()`` or ``.from_dict()`` would be useful.  At some point, this should
     #         be refactored to use a schema for validation (i.e. Pydantic model).
+
     def __init__(self, cfg_src: Union[pathlib.Path, str, io.TextIOWrapper]):
         if cfg_src is None:
             raise ValueError("No configuration specified.")
@@ -89,4 +92,5 @@ class Configuration(UserDict):
 
     @property
     def config_source(self) -> str:
+        """Return configuration as property."""
         return self._config_src

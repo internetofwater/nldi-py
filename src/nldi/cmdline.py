@@ -18,8 +18,9 @@ import click
 from sqlalchemy.engine.url import URL as DB_URL
 
 from . import LOGGER, __version__
-from .config import Configuration
 from .api.plugins import CrawlerSourcePlugin
+from .config import Configuration
+
 # from .config import align_crawler_sources
 # from .openapi import generate_openapi_document
 
@@ -50,13 +51,13 @@ def align_sources(ctx, config_file):  #                                         
         click.echo("Unable to load configuration data.")
         return
     db_url = DB_URL.create(
-            "postgresql+psycopg2",  # Default SQL dialect/driver
-            username=db_info.get("user", "nldi"),
-            password=db_info.get("password", "changeMe"),
-            host=db_info.get("host", "localhost"),
-            port=db_info.get("port", 5432),
-            database=db_info.get("dbname", "nldi"),
-        )
+        "postgresql+psycopg2",  # Default SQL dialect/driver
+        username=db_info.get("user", "nldi"),
+        password=db_info.get("password", "changeMe"),
+        host=db_info.get("host", "localhost"),
+        port=db_info.get("port", 5432),
+        database=db_info.get("dbname", "nldi"),
+    )
     src_plugin = CrawlerSourcePlugin("AlignCrawlerSources", db_connect_url=db_url)
     sources = cfg.get("sources", [])
     LOGGER.info(f"Will align {len(sources)} sources: {[f['source_suffix'] for f in sources]}")

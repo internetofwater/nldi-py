@@ -77,11 +77,13 @@ def basin_from_comid(comid: int, simplified: bool = True) -> Any:
 
     vaa = aliased(FlowlineVAAModel, name="vaa")
     nav_basin = nav.union(
-        #select([vaa.comid, vaa.hydroseq, vaa.startflag]).where(
+        # select([vaa.comid, vaa.hydroseq, vaa.startflag]).where(
         select(vaa.comid, vaa.hydroseq, vaa.startflag).where(
             and_(
                 (nav.c.startflag != 1),
-                or_((vaa.dnhydroseq == nav.c.hydroseq), and_((vaa.dnminorhyd != 0), (vaa.dnminorhyd == nav.c.hydroseq))),
+                or_(
+                    (vaa.dnhydroseq == nav.c.hydroseq), and_((vaa.dnminorhyd != 0), (vaa.dnminorhyd == nav.c.hydroseq))
+                ),
             )
         )
     )
@@ -94,7 +96,7 @@ def basin_from_comid(comid: int, simplified: bool = True) -> Any:
         _geom = func.ST_AsGeoJSON(func.ST_Union(CatchmentModel.the_geom), 9, 0).label("geojson")
 
     # Create the final query
-    #query = select([_geom]).select_from(nav_basin).join(CatchmentModel, nav_basin.c.comid == CatchmentModel.featureid)
+    # query = select([_geom]).select_from(nav_basin).join(CatchmentModel, nav_basin.c.comid == CatchmentModel.featureid)
     query = select(_geom).select_from(nav_basin).join(CatchmentModel, nav_basin.c.comid == CatchmentModel.featureid)
 
     return query.params(comid=comid)

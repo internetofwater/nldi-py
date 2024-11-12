@@ -167,7 +167,7 @@ def stream_j2_template(template: Path, data: dict) -> str:
 
 
 def sort_sources(dict_: list) -> dict:
-    """help sort sources list by a dict key."""
+    """Help sort sources list by a dict key."""
     return sorted(dict_, key=lambda d: d["crawler_source_id"])
 
 
@@ -288,13 +288,12 @@ def render_j2_template(config, template, data):
 
     :returns: string of rendered template
     """
-
     try:
         templates_path = config["server"]["templates"]["path"]
-        env = Environment(loader=FileSystemLoader(templates_path))
+        env = Environment(loader=FileSystemLoader(templates_path), autoescape=True)
         LOGGER.debug("using custom templates: {}".format(templates_path))
     except (KeyError, TypeError):
-        env = Environment(loader=FileSystemLoader(TEMPLATES))
+        env = Environment(loader=FileSystemLoader(TEMPLATES), autoescape=True)
         LOGGER.debug("using default templates: {}".format(TEMPLATES))
 
     env.filters["to_json"] = to_json
@@ -382,8 +381,10 @@ def filter_dict_by_key_value(dict_, key, value):
 
 def json_serial(obj):
     """
-    helper function to convert to JSON non-default
-    types (source: https://stackoverflow.com/a/22238613)
+    Helper function to convert to JSON non-defaulttypes.
+
+    Adapted from https://stackoverflow.com/a/22238613
+
     :param obj: `object` to be evaluated
     :returns: JSON non-default type to `str`
     """

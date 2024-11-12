@@ -12,7 +12,6 @@ Tests "routing" to ensure that subcommands and switches are working as expected.
 import os
 
 import pytest
-
 from nldi.cmdline import cli as nldi_cmd
 
 

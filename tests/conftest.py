@@ -157,7 +157,6 @@ def global_config(nldi_db_container, config_yaml, env_update):
     #    _def["database"] = nldi_db_container
     _def["base_url"] = "http://localhost/nldi"
 
-
     return _def
 
 
@@ -219,17 +218,19 @@ def prod_env_update():
 
     return returnvalue
 
+
 @pytest.fixture(scope="session")
 def prod_db_container(prod_env_update) -> dict:
     """Not really a container, but the naming convention is useful to match local testing setup."""
     db_info = {
         "user": prod_env_update["NLDI_DB_USERNAME"],
         "password": prod_env_update["NLDI_DB_PASSWORD"],
-        "host":  prod_env_update["NLDI_DB_HOST"],
+        "host": prod_env_update["NLDI_DB_HOST"],
         "port": int(prod_env_update["NLDI_DB_PORT"]),
         "dbname": prod_env_update["NLDI_DB_NAME"],
     }
     return db_info
+
 
 @pytest.fixture
 def prod_db_connect_string(prod_db_container) -> str:
@@ -258,6 +259,5 @@ def prod_global_config(prod_db_container, config_yaml, prod_env_update):
     _def = load_yaml(config_yaml)
     #    _def["database"] = nldi_db_container
     _def["base_url"] = "http://localhost/nldi"
-
 
     return _def

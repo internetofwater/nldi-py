@@ -4,6 +4,7 @@
 #
 # See the full copyright notice in LICENSE.md
 
+"""Plugin to search and manipulate crawler sources."""
 
 from typing import Any, Dict, List
 

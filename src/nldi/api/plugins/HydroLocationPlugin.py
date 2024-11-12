@@ -9,10 +9,11 @@
 
 from typing import Any, Dict, List
 
-from geomet import wkt
 import httpx
-#import shapely
+
+# import shapely
 import sqlalchemy
+from geomet import wkt
 from sqlalchemy.engine import URL as DB_URL
 
 from ... import LOGGER, util
@@ -74,8 +75,8 @@ class HydroLocationPlugin(PyGeoAPIPlugin):
         # point = shapely.wkt.loads(coords)
         request_payload = {
             "inputs": [
-                {"id": "lon", "type": "text/plain", "value": str(point['coordinates'][0])},
-                {"id": "lat", "type": "text/plain", "value": str(point['coordinates'][1])},
+                {"id": "lon", "type": "text/plain", "value": str(point["coordinates"][0])},
+                {"id": "lat", "type": "text/plain", "value": str(point["coordinates"][1])},
                 {"id": "direction", "type": "text/plain", "value": "none"},
             ]
         }

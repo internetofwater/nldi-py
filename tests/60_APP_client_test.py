@@ -11,7 +11,6 @@ reasonable results.  Busines s logic for each endpoint is tested separately in t
 """
 
 import pytest
-
 from nldi.api import API
 from nldi.server import app_factory
 
@@ -235,6 +234,7 @@ def test_nav_UM_mode(global_config):
         assert response.status_code == 200
     assert len(response.json) >= 4  # 4 is minimum for our test database (3 sources plus 'flowlines')
     assert response.json[0]["source"] == "Flowlines"
+
 
 @pytest.mark.order(65)
 @pytest.mark.integration

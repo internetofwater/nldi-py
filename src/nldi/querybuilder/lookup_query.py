@@ -15,6 +15,7 @@ from .. import LOGGER
 
 
 def estimate_measure(feature_id: str, feature_source: str):
+    """Build a SQL query for estimating meaure on a feature/source."""
     query = (
         select(
             [
@@ -43,6 +44,7 @@ def estimate_measure(feature_id: str, feature_source: str):
 
 
 def distance_from_flowline(feature_id: str, feature_source: str):
+    """Build SQL query to find distance from a flowline."""
     x = (
         select([Flow.shape, Feature.location])
         .join(
@@ -67,6 +69,7 @@ def distance_from_flowline(feature_id: str, feature_source: str):
 
 
 def point_on_flowline(feature_id: str, feature_source: str):
+    """Build a SQL query to find point on flowline."""
     point = func.ST_LineInterpolatePoint(
         Flow.shape, (1 - ((Feature.measure - Flow.fmeasure) / (Flow.tmeasure - Flow.fmeasure)))
     )
@@ -93,6 +96,7 @@ def point_on_flowline(feature_id: str, feature_source: str):
 
 
 def closest_point_on_flowline(feature_id: str, feature_source: str):
+    """Build a SQL query to find point on a flowline."""
     x = (
         select([Flow.shape.label("shape"), Feature.location.label("location")])
         .join(

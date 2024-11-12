@@ -3,8 +3,9 @@
 # SPDX-License-Identifier: CC0
 #
 import os
-from nldi import util
+
 import pytest
+from nldi import util
 
 
 @pytest.mark.order(10)

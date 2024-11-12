@@ -13,7 +13,6 @@ endpoints, not those served by the database.
 from copy import deepcopy
 
 import pytest
-
 from nldi import __version__
 from nldi.api import API
 from nldi.api.plugins import *

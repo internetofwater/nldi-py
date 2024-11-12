@@ -36,4 +36,3 @@ exec gunicorn --workers ${WSGI_WORKERS} \
         --bind ${CONTAINER_HOST}:${CONTAINER_PORT} \
         nldi.server:APP
 
-echo "END /entrypoint.sh"

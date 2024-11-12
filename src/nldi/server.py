@@ -1,7 +1,12 @@
 #!/usr/bin/env python
 # coding: utf-8
 # SPDX-License-Identifier: CC0
+# SPDX-FileCopyrightText: 2024-present USGS
+# See the full copyright notice in LICENSE.md
 #
+
+
+"""Main entry point for launching the NLDI server."""
 
 import http
 import os
@@ -10,14 +15,14 @@ from typing import Any, Dict, List, Tuple
 
 import flask
 from flask_cors import CORS
-# from pygeoapi.util import render_j2_template  ##TODO: can we drop this dependency? Need to figure out templating
 
+# from pygeoapi.util import render_j2_template  ##TODO: can we drop this dependency? Need to figure out templating
 from . import LOGGER, __version__, log, util
 from .api.main import API
 from .config import Configuration
+from .querybuilder.lookup_query import estimate_measure
 from .querybuilder.navigate_query import navigation as build_nav_query
 from .querybuilder.navigate_query import trim_navigation as trim_nav_query
-from .querybuilder.lookup_query import estimate_measure
 
 NLDI_API = None  ## Global -- this will be assigned inside the app factory later.
 
@@ -59,6 +64,14 @@ def log_incoming_request() -> None:
 
 @ROOT.route("/")
 def home() -> flask.Response:
+    """
+    Root/home document for this web service.
+
+    Returns a JSON document showing available services.
+
+    :return: JSON
+    :rtype: flask.Response
+    """
     content = {
         "title": CONFIG["metadata"]["identification"]["title"],
         "description": CONFIG["metadata"]["identification"]["description"],
@@ -88,6 +101,7 @@ def home() -> flask.Response:
 
 @ROOT.route("/favicon.ico")
 def favicon():
+    """Send favicon file."""
     return flask.send_from_directory("./static/", "favicon.ico", mimetype="image/vnd.microsoft.icon")
 
 
@@ -150,6 +164,14 @@ def sources() -> flask.Response:
 ## THis route short-circuits the normal source lookup, and goes straight to the flowline plugin, which is specific to the 'comid' source.
 @ROOT.route("/linked-data/comid/<int:comid>")
 def get_flowline_by_comid(comid=None):
+    """
+    Find flowline(s) by attribute search on the COMID property.
+
+    :param comid: COMID of the feature to search, defaults to None
+    :type comid: str, optional
+    :return: Set of features matching the search.
+    :rtype: FeatureCollection
+    """
     global NLDI_API
     NLDI_API.require_plugin("FlowlinePlugin")
     try:
@@ -168,6 +190,12 @@ def get_flowline_by_comid(comid=None):
 # Much like the above, this route short-circuits the normal source lookup, a behavior specific to the 'comid' source.
 @ROOT.route("/linked-data/comid/position")
 def get_flowline_by_position():
+    """
+    Find flowline(s) by spatial search.
+
+    :return: flowline features matching the spatial intersection.
+    :rtype: FeatureCollection
+    """
     global NLDI_API
     NLDI_API.require_plugin("FlowlinePlugin")
     NLDI_API.require_plugin("CatchmentPlugin")
@@ -204,8 +232,14 @@ def get_flowline_by_position():
 
 @ROOT.route("/linked-data/hydrolocation")
 def hydrolocation():
+    """
+    Find hydrolocation for a given set of coordinates.
+
+    :return: Hydrolocation selected by spatial intersection with coordinates.
+    :rtype: FeatureCollection
+    """
     global NLDI_API
-    NLDI_API.require_plugin("CatchmentPlugin")  # < hydrolocation plugin requires catchment plugin internally.
+    NLDI_API.require_plugin("CatchmentPlugin")
     NLDI_API.require_plugin("HydroLocationPlugin")
 
     if (coords := flask.request.args.get("coords")) is None:
@@ -269,6 +303,16 @@ def get_source_features(source_name=None, identifier=None) -> List[Dict[str, Any
 
 @ROOT.route("/linked-data/<path:source_name>/<path:identifier>/basin")
 def get_basin(source_name=None, identifier=None):
+    """
+    Locate the basin matching the named source and feature.
+
+    :param source_name: source identifier, defaults to None
+    :type source_name: str, optional
+    :param identifier: feature identifier, defaults to None
+    :type identifier: str, optional
+    :return: Features matching the basins associated with the named feature/source.
+    :rtype: FeatureCollection
+    """
     global NLDI_API
     simplified = flask.request.args.get("simplified", "true").lower() == "true"
     split = flask.request.args.get("split", "false").lower() == "true"
@@ -289,6 +333,16 @@ def get_basin(source_name=None, identifier=None):
 
 @ROOT.route("/linked-data/<path:source_name>/<path:identifier>/navigation")  # << NOTE: no nav_mode here.
 def get_navigation_modes(source_name: str | None = None, identifier: str | None = None):
+    """
+    Identify the endpoints for each of the navigation modes possible from this source and feature.
+
+    :param source_name: source identifier, defaults to None
+    :type source_name: str | None, optional
+    :param identifier: feature identifier, defaults to None
+    :type identifier: str | None, optional
+    :return: List of navigation modes
+    :rtype: List[Dict[str, Any]]
+    """
     global NLDI_API
 
     source_name = source_name.lower()
@@ -311,6 +365,18 @@ def get_navigation_modes(source_name: str | None = None, identifier: str | None 
 
 @ROOT.route("/linked-data/<path:source_name>/<path:identifier>/navigation/<path:nav_mode>")
 def get_navigation_info(source_name: str | None = None, identifier: str | None = None, nav_mode: str | None = None):
+    """
+    Fetch navigation information for a named source and feature.
+
+    :param source_name: Source identifier, defaults to None
+    :type source_name: str | None, optional
+    :param identifier: feature identifier, defaults to None
+    :type identifier: str | None, optional
+    :param nav_mode: Navigation mode, defaults to None
+    :type nav_mode: str | None, optional
+    :return: set of navigation options for this feature/source
+    :rtype: dict
+    """
     source_name = source_name.lower()
 
     # verify that the source exists:
@@ -342,6 +408,18 @@ def get_navigation_info(source_name: str | None = None, identifier: str | None =
 
 @ROOT.route("/linked-data/<path:source_name>/<path:identifier>/navigation/<path:nav_mode>/flowlines")
 def get_flowline_navigation(source_name=None, identifier=None, nav_mode=None):
+    """
+    Navigation along flowlines.
+
+    :param source_name: source identifier, defaults to None
+    :type source_name: str, optional
+    :param identifier: unique feature identifier, defaults to None
+    :type identifier: str, optional
+    :param nav_mode: Navigation mode, defaults to None
+    :type nav_mode: str, optional
+    :return: Flowline features matching the nav walk.
+    :rtype: FeatureCollection
+    """
     global NLDI_API
     NLDI_API.require_plugin("FeaturePlugin")
     NLDI_API.require_plugin("FlowlinePlugin")
@@ -425,6 +503,22 @@ def get_flowline_navigation(source_name=None, identifier=None, nav_mode=None):
 
 @ROOT.route("/linked-data/<path:source_name>/<path:identifier>/navigation/<path:nav_mode>/<path:data_source>")
 def get_navigation(source_name=None, identifier=None, nav_mode=None, data_source=None):
+    """
+    Navigates the feature topology according to navigation mode.
+
+    Returns a GeoJSON feature collection representing the features included in the nav walk.
+
+    :param source_name: Identifier for data source, defaults to None
+    :type source_name: str, optional
+    :param identifier: feature unique identifier, defaults to None
+    :type identifier: str, optional
+    :param nav_mode: Navigation Mode, defaults to None
+    :type nav_mode: str, optional
+    :param data_source: secondary data source, defaults to None
+    :type data_source: str, optional
+    :return: Features included in the navigation walk.
+    :rtype: FeatureCollection
+    """
     global NLDI_API
     NLDI_API.require_plugin("FeaturePlugin")
     NLDI_API.require_plugin("FlowlinePlugin")

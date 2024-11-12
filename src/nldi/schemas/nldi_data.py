@@ -1,31 +1,10 @@
-# =================================================================
+#!/usr/bin/env python
+# coding: utf-8
+# SPDX-License-Identifier: CC0
+# SPDX-FileCopyrightText: 2024-present USGS
+# See the full copyright notice in LICENSE.md
 #
-# Author: Benjamin Webb <bwebb@lincolninst.edu>
-#
-# Copyright (c) 2023 Benjamin Webb
-#
-# Permission is hereby granted, free of charge, to any person
-# obtaining a copy of this software and associated documentation
-# files (the "Software"), to deal in the Software without
-# restriction, including without limitation the rights to use,
-# copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the
-# Software is furnished to do so, subject to the following
-# conditions:
-#
-# The above copyright notice and this permission notice shall be
-# included in all copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-# OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-# NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-# HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-# WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
-# OTHER DEALINGS IN THE SOFTWARE.
-#
-# =================================================================
+"""ORM mappings for tables in the nldi_data schema."""
 
 from geoalchemy2 import Geometry
 from sqlalchemy import Column, Float, Integer, MetaData, String, Text, text
@@ -38,6 +17,8 @@ BaseModel = declarative_base(metadata=metadata)
 
 
 class CrawlerSourceModel(BaseModel):
+    """ORM mapping to "crawler_source" table."""
+
     __tablename__ = "crawler_source"
 
     crawler_source_id = Column(Integer, primary_key=True)
@@ -54,6 +35,8 @@ class CrawlerSourceModel(BaseModel):
 
 
 class FeatureSourceModel(BaseModel):
+    """ORM mapping to "feature" table."""
+
     __tablename__ = "feature"
 
     crawler_source_id = Column(Integer)
@@ -67,8 +50,9 @@ class FeatureSourceModel(BaseModel):
 
 
 class MainstemLookupModel(BaseModel):
-    __tablename__ = "mainstem_lookup"
+    """ORM mapping to "mainstem_lookup" table."""
 
+    __tablename__ = "mainstem_lookup"
     nhdpv2_comid = Column(Integer, primary_key=True, nullable=True)
     mainstem_id = Column(Integer, nullable=True)
     uri = Column(Text, nullable=True)

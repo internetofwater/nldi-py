@@ -11,11 +11,10 @@ later tests are up, these become largely unnecessary, as later
 function presumes successful import, etc.
 """
 
+import nldi
 import pytest
 import sqlalchemy
 from sqlalchemy.engine import URL as DB_URL
-
-import nldi
 
 
 @pytest.mark.order(0)

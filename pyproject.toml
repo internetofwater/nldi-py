@@ -86,8 +86,10 @@ ignore = [
   "D211", # no blank line before section
   "D212", # no blank line after section
   "D400", # first line should end with a period
+  "D401",
   "D105", # missing docstring in magic method
   "D107", # missing docstring in __init__
+  "N999"
 ]
 
 [tool.ruff.lint.per-file-ignores]

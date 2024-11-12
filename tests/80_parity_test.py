@@ -27,7 +27,6 @@ import os
 import httpx
 import pytest
 import sqlalchemy
-
 from nldi import util
 from nldi.api import API
 from nldi.server import app_factory

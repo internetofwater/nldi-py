@@ -4,6 +4,7 @@
 #
 # See the full copyright notice in LICENSE.md
 
+"""Plugin base class from which all plugins are built."""
 
 import json
 from typing import Any, Dict, List, Tuple, Union
@@ -102,7 +103,6 @@ class BasinPlugin(APIPlugin):
         :rtype: FlowlinePlugin
         """
         if self.is_registered:
-
             self.parent.require_plugin("FlowlinePlugin")
             return self.parent.plugins["FlowlinePlugin"]
         else:
@@ -219,7 +219,7 @@ class BasinPlugin(APIPlugin):
                 start_comid = int(identifier)
                 is_point = False
             else:
-                #src = self.crawler_source_lookup.get_by_id(source_name)
+                # src = self.crawler_source_lookup.get_by_id(source_name)
                 feature = self.feature_lookup.get_by_id(identifier, source_name)
                 start_comid = int(feature["properties"]["comid"])
                 is_point = feature["geometry"]["type"] == "Point"

@@ -8,9 +8,7 @@
 import os
 
 import pytest
-
-from nldi import config#, openapi
-
+from nldi import config  # , openapi
 
 # @pytest.mark.order(20)
 # @pytest.mark.unittest

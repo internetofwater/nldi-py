@@ -39,6 +39,7 @@ NavModesDesc = {
 
 
 def navmode_description(nav_mode: NavigationModes) -> str:
+    """Convenience mapping from mode "code" to the mode's description."""
     return NavModesDesc[nav_mode]
 
 
@@ -78,11 +79,7 @@ def navigate_dm(
     distance: float | None,
     coastal_fcode: int,
 ) -> sqlalchemy.sql.selectable.Select:
-    """
-    Create a navigation query for the DM mode.
-
-    The DM mode is the Downstream navigation on the Main channel.
-    """
+    """Create a navigation query for the DM mode."""
     LOGGER.debug(f"Creating navigation query for DM mode: {comid=}, {distance=}, {coastal_fcode=}")
     nav = (
         select(
@@ -119,6 +116,7 @@ def navigate_dd(
     distance: float | None,
     coastal_fcode: int,
 ) -> sqlalchemy.sql.selectable.Select:
+    """Build nav query for DD mode."""
     LOGGER.debug(f"Creating navigation query for DD mode: {comid=}, {distance=}, {coastal_fcode=}")
     nav = (
         select(
@@ -155,6 +153,7 @@ def navigate_um(
     distance: float | None,
     coastal_fcode: int,
 ) -> sqlalchemy.sql.selectable.Select:
+    """Build nav query for UM mode."""
     LOGGER.debug(f"Creating navigation query for UM mode: {comid=}, {distance=}, {coastal_fcode=}")
     nav = (
         select(
@@ -191,6 +190,7 @@ def navigate_ut(
     distance: float | None,
     coastal_fcode: int,
 ) -> sqlalchemy.sql.selectable.Select:
+    """Build nav query for UT mode."""
     LOGGER.debug(f"Creating navigation query for UT mode: {comid=}, {distance=}, {coastal_fcode=}")
     nav = (
         select(
@@ -227,6 +227,20 @@ def trim_navigation(
     trim_tolerance: float,
     measure: float,
 ) -> sqlalchemy.sql.selectable.Select:
+    """
+    Build a query for trimming navigation from a named COMID source.
+
+    :param nav_mode: Navigation Mode
+    :type nav_mode: str
+    :param comid: COMID of feature
+    :type comid: int
+    :param trim_tolerance: Trim Tolerance
+    :type trim_tolerance: float
+    :param measure: Measure
+    :type measure: float
+    :return: the "select" statement
+    :rtype: sqlalchemy.sql.selectable.Select
+    """
     scaled_measure = 1 - ((measure - FlowlineModel.fmeasure) / (FlowlineModel.tmeasure - FlowlineModel.fmeasure))
 
     if nav_mode in [NavigationModes.DD, NavigationModes.DM]:

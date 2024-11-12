@@ -5,7 +5,7 @@
 #
 # See the full copyright notice in LICENSE.md
 
-""" Mainstem Plugin. """
+"""Mainstem Plugin."""
 
 from typing import Any, Dict
 
