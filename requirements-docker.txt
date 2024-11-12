@@ -1,4 +1,0 @@
-geoalchemy
-jsonschema
-pygeofilter[backend-sqlalchemy]
-pygeoif

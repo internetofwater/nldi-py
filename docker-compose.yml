@@ -29,7 +29,7 @@ services:
       - "8081:80"
     environment:
       NLDI_PATH: /api/nldi
-      NLDI_URL: http://localhost:8081/api/nldi
+      NLDI_URL: http://localhost:8001/api/nldi
       NLDI_DB_HOST: nldi-db
       NLDI_DB_PORT: 5432
       NLDI_DB_NAME: nldi
@@ -39,17 +39,7 @@ services:
     networks:
       - nldi
 
-  pgadmin:
-    container_name: pgadmin4_container
-    image: dpage/pgadmin4
-    restart: always
-    environment:
-      PGADMIN_DEFAULT_EMAIL: admin@admin.com
-      PGADMIN_DEFAULT_PASSWORD: root
-    networks:
-      - nldi
-    ports:
-      - "5050:80"
+ 
 
 networks:
   nldi:

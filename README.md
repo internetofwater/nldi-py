@@ -1,2 +1,4 @@
 # NLDI
-Python package for Network Linked Data Index
+
+Python package for Network Linked Data Index (NLDI) API.
+
