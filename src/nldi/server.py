@@ -132,6 +132,16 @@ def openapi_spec() -> Tuple[dict, int, str]:
         r.headers["Content-Type"] = "application/vnd.oai.openapi+json;version=3.0"  # noqa
         return r
 
+@ROOT.route("/about/health")
+def healthcheck() -> flask.Response:
+    global NLDI_API
+    healthy = True
+    try:
+        healthy = NLDI_API.sources.db_is_alive()
+    except Exception:
+        healthy = False
+    return flask.jsonify({"healthy": healthy})
+
 
 @ROOT.route("/linked-data")
 def sources() -> flask.Response:
