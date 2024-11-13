@@ -135,14 +135,32 @@ def openapi_spec() -> Tuple[dict, int, str]:
 
 @ROOT.route("/about/health")
 def healthcheck() -> flask.Response:
-    """Simple healthcheck endpoint."""
+    """
+    Simple healthcheck endpoint.
+
+    HTTP code 200 signifies "up" status.  Any other response code indicates "DOWN".
+    """
     global NLDI_API
     healthy = True
     try:
         healthy = NLDI_API.sources.db_is_alive()
     except Exception:
         healthy = False
-    return flask.jsonify({"healthy": healthy})
+    if healthy:
+        return flask.jsonify({"status": "UP"})
+    else:
+        return flask.Response(status=http.HTTPStatus.SERVICE_UNAVAILABLE)
+
+
+@ROOT.router("/about/info")
+def aboutinfo() -> flask.Response:
+    """Simple 'about' properties."""
+    return flask.jsonify(
+        {
+            "name": "nldi-py",
+            "version": __version__,
+        }
+    )
 
 
 @ROOT.route("/linked-data")
