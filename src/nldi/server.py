@@ -152,7 +152,7 @@ def healthcheck() -> flask.Response:
         return flask.Response(status=http.HTTPStatus.SERVICE_UNAVAILABLE)
 
 
-@ROOT.router("/about/info")
+@ROOT.route("/about/info")
 def aboutinfo() -> flask.Response:
     """Simple 'about' properties."""
     return flask.jsonify(
