@@ -8,3 +8,4 @@ export NLDI_SCHEMA_OWNER_PASSWORD=changeMe
 export NHDPLUS_SCHEMA_OWNER_USERNAME=nhdplus
 export NLDI_READ_ONLY_USERNAME=read_only_user
 export NLDI_READ_ONLY_PASSWORD=changeMe
+export springFrameworkLogLevel=DEBUG

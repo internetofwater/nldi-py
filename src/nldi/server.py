@@ -27,13 +27,14 @@ from .querybuilder.navigate_query import trim_navigation as trim_nav_query
 NLDI_API = None  ## Global -- this will be assigned inside the app factory later.
 
 # region Preamble
-log.initialize(LOGGER, level="DEBUG")
-##TODO: The log level  should be a configurable option, perhaps set with -V or --verbose switch.
 
-## Loading CONFIG here, after loggers and whatnot are set up.
 if "NLDI_CONFIG" not in os.environ:
     raise RuntimeError("NLDI_CONFIG environment variable not set")
 CONFIG = Configuration(os.environ.get("NLDI_CONFIG"))
+
+log.initialize(LOGGER, level=CONFIG["logging"]["level"])  # NOTE: unfortunately, we have chosen to
+# make the log level configurable in the config file, which means we can't set the level until the
+# log file is read.  So no logging during the config process.
 
 LOGGER.info(f"NLDI v{__version__} API Server >> Starting Up")
 log.versions(logger=LOGGER)
@@ -48,6 +49,10 @@ def log_incoming_request() -> None:
     """Implement simple middleware function to log requests."""
     LOGGER.debug(f"{flask.request.method} {flask.request.url}")
     # TODO: other pre-request activities can go here.
+
+    rp  = flask.request.path
+    if rp != '/' and rp.endswith('/'):
+        return flask.redirect(rp[:-1])
 
     ## Sets up a callback to update headers after the request is processed.
     @flask.after_this_request
@@ -378,10 +383,14 @@ def get_navigation_modes(source_name: str | None = None, identifier: str | None 
     source_name = source_name.lower()
 
     # verify that the source exists:
-    try:
-        _ = NLDI_API.sources.get_by_id(source_name)
-    except KeyError:
-        return flask.Response(status=http.HTTPStatus.NOT_FOUND, response="Source not found: {source_name}")
+    if source_name == "comid":
+        pass
+    else:
+        try:
+            _ = NLDI_API.sources.get_by_id(source_name)
+        except KeyError:
+            LOGGER.error(f"Failed lookup for {source_name=} / {identifier=}")
+            return flask.Response(status=http.HTTPStatus.NOT_FOUND, response=f"Source not found: {source_name}")
 
     nav_url = util.url_join(NLDI_API.base_url, "linked-data", source_name, identifier, "navigation")
     content = {
@@ -410,10 +419,13 @@ def get_navigation_info(source_name: str | None = None, identifier: str | None =
     source_name = source_name.lower()
 
     # verify that the source exists:
-    try:
-        _ = NLDI_API.sources.get_by_id(source_name)
-    except KeyError:
-        return flask.Response(status=http.HTTPStatus.NOT_FOUND, response="Source not found: {source_name}")
+    if source_name == "comid":
+        pass
+    else:
+        try:
+            _ = NLDI_API.sources.get_by_id(source_name)
+        except KeyError:
+            return flask.Response(status=http.HTTPStatus.NOT_FOUND, response=f"Source not found: {source_name}")
 
     nav_url = util.url_join(NLDI_API.base_url, "linked-data", source_name, identifier, "navigation")
 
@@ -623,7 +635,7 @@ def app_factory(api: API) -> flask.Flask:
 
     app.url_map.strict_slashes = False
     CORS(app)
-    app.register_blueprint(ROOT, url_prefix="/api/nldi")
+    app.register_blueprint(ROOT, url_prefix=CONFIG["server"]["prefix"])
 
     ## This is the app we'll be serving...
     return app

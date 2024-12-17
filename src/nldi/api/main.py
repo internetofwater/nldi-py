@@ -312,7 +312,11 @@ class API:
                     "description": "information",
                     "url": "https://www.usgs.gov/national-hydrography/national-hydrography-dataset",  # noqa
                 },
-                "name": "comid",
+                "name": "by_comid",
+            },
+            {
+                "description": "Lookups by source ID",
+                "name": "by_sourceid",
             },
         ]
 
@@ -381,96 +385,125 @@ class API:
         }
 
         ## A set of paths per source --
-        comid_source = {"source_suffix": "comid", "source_name": "NHDPlus COMID"}
-        all_sources = [comid_source, *self.config["sources"]]
+        # comid_source = {"source_suffix": "comid", "source_name": "NHDPlus COMID"}
+        # all_sources = [comid_source, *self.config["sources"]]
         source_names_enumerated = {source["source_suffix"]: source for source in self.config["sources"]}
-        LOGGER.info(f"Generating paths for {len(all_sources)} sources: {[k['source_suffix'] for k in all_sources]}")
+        # LOGGER.info(f"Generating paths for {len(all_sources)} sources: {[k['source_suffix'] for k in all_sources]}")
 
-        for src in all_sources:
-            src_id = src["source_suffix"].lower()
-            src_name = src["source_name"]
-            src_path = f"/linked-data/{src_id}"
-            src_title = f"get{src_id.title()}"
-            LOGGER.debug(f"Processing source {src_id}")
+        paths["/linked-data/comid/position"] = {
+            "get": {
+                "summary": "ComidByCoordinates",
+                "description": ("returns the feature closest to a provided set of coordinates"),
+                "tags": ["by_comid"],
+                "operationId": "ComidByCoordinates",
+                "parameters": [{"$ref": "#/components/parameters/coords"}],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Feature"}}},
+                    },
+                    **RESPONSES,
+                },
+            }
+        }
 
-            if src_id == "comid":
-                src_by_pos = util.url_join("/", src_path, "position")
-                paths[src_by_pos] = {
-                    "get": {
-                        "summary": f"{src_title}ByCoordinates",
-                        "description": ("returns the feature closest to a " "provided set of coordinates"),
-                        "tags": [src_id],
-                        "operationId": f"{src_title}ByCoordinates",
-                        "parameters": [{"$ref": "#/components/parameters/coords"}],
-                        "responses": {
-                            "200": {
-                                "description": "OK",
-                                "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Feature"}}},
+        paths["/linked-data/comid/{comid}"] = {
+            "get": {
+                "summary": f"ComidById",
+                "description": ("returns registered feature as WGS84 lat/lon GeoJSON if it exists"),
+                "tags": ["by_comid"],
+                "operationId": f"ComidById",
+                "parameters": [
+                    {"$ref": "#/components/parameters/comid"},
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FeatureCollection"  # noqa
+                                }
                             },
-                            **RESPONSES,
-                        },
-                    }
-                }
-
-                id_field = "{comid}"
-                parameters = [
-                    {
-                        "name": "comid",
-                        "in": "path",
-                        "description": "NHDPlus common identifier",
-                        "required": True,
-                        "schema": {"type": "integer", "example": 13294314},
-                    }
-                ]
-            else:
-                paths[src_path] = {
-                    "get": {
-                        "summary": src_title,
-                        "description": src_name,
-                        "tags": [src_id],
-                        "operationId": src_title,
-                        "responses": {
-                            "200": {
-                                "description": "OK",
-                                "content": {
-                                    "application/json": {
-                                        "schema": {
-                                            "$ref": "#/components/schemas/FeatureCollection"  # noqa
-                                        }
-                                    },
-                                    "application/ld+json": {
-                                        "schema": {
-                                            "$ref": "#/components/schemas/FeatureCollection"  # noqa
-                                        }
-                                    },
-                                },
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FeatureCollection"  # noqa
+                                }
                             },
-                            **RESPONSES,
+                            "application/vnd.geo+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FeatureCollection"  # noqa
+                                }
+                            },
                         },
-                    }
-                }
-            tags.append({"description": src_name, "name": src_id})
-            id_field = "{identifier}"
-            parameters = [{"$ref": "#/components/parameters/identifier"}]
+                    },
+                    **RESPONSES,
+                },
+            }
+        }
 
-            src_by_feature = util.url_join("/", src_path, id_field)
-            paths[src_by_feature] = {
+        paths["/linked-data/{sourceid}/{identifier}"] = {
+            "get": {
+                "summary": "SourceFeatureById",
+                "description": ("returns registered feature as WGS84 lat/lon " "GeoJSON if it exists"),
+                "tags": ["by_sourceid"],
+                "operationId": f"SourceFeatureById",
+                "parameters": [
+                    {"$ref": "#/components/parameters/identifier"},
+                    {"$ref": "#/components/parameters/sourceid"},
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FeatureCollection"  # noqa
+                                }
+                            },
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FeatureCollection"  # noqa
+                                }
+                            },
+                            "application/vnd.geo+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FeatureCollection"  # noqa
+                                }
+                            },
+                        },
+                    },
+                    **RESPONSES,
+                },
+            }
+        }
+
+        for src in ["comid", "{sourceid}"]:
+            base_path = f"/linked-data/{src}"
+            src_name = "Source" if src == "{sourceid}" else "comid"
+            id_field = "{comid}" if src == "comid" else "{identifier}"
+            params = [
+                {"$ref": "#/components/parameters/simplified"},
+                {"$ref": "#/components/parameters/splitCatchment"},
+                {"$ref": "#/components/parameters/identifier"}
+                if src == "{sourceid}"
+                else {"$ref": "#/components/parameters/comid"},
+            ]
+            if src == "{sourceid}":
+                params.append({"$ref": "#/components/parameters/sourceid"})
+
+            paths[f"{base_path}/{id_field}/basin"] = {
                 "get": {
-                    "summary": f"{src_title}ById",
-                    "description": ("returns registered feature as WGS84 lat/lon " "GeoJSON if it exists"),
-                    "tags": [src_id],
-                    "operationId": f"{src_title}ById",
-                    "parameters": parameters,
+                    "summary": f"{src_name}Basin",
+                    "description": ("returns the aggregated basin for the specified feature in WGS84 lat/lon GeoJSON"),
+                    "tags": ["by_comid" if src == "comid" else "by_sourceid"],
+                    "operationId": f"{src_name}Basin",
+                    "parameters": params,
                     "responses": {
                         "200": {
                             "description": "OK",
                             "content": {
                                 "application/json": {
-                                    "schema": {
-                                        "$ref": "#/components/schemas/FeatureCollection"  # noqa
-                                    }
-                                },
-                                "application/ld+json": {
                                     "schema": {
                                         "$ref": "#/components/schemas/FeatureCollection"  # noqa
                                     }
@@ -487,49 +520,17 @@ class API:
                 }
             }
 
-            src_by_basin = util.url_join("/", src_by_feature, "basin")
-            paths[src_by_basin] = {
+            paths[f"{base_path}/{id_field}/navigation"] = {
                 "get": {
-                    "summary": f"{src_title}Basin",
-                    "description": (
-                        "returns the aggregated basin for the " "specified feature in WGS84 lat/lon GeoJSON"
-                    ),
-                    "tags": [src_id],
-                    "operationId": f"{src_title}Basin",
-                    "parameters": [
-                        *parameters,
-                        {"$ref": "#/components/parameters/simplified"},
-                        {"$ref": "#/components/parameters/splitCatchment"},
-                    ],
-                    "responses": {
-                        "200": {
-                            "description": "OK",
-                            "content": {
-                                "application/json": {
-                                    "schema": {
-                                        "$ref": "#/components/schemas/FeatureCollection"  # noqa
-                                    }
-                                },
-                                "application/vnd.geo+json": {
-                                    "schema": {
-                                        "$ref": "#/components/schemas/FeatureCollection"  # noqa
-                                    }
-                                },
-                            },
-                        },
-                        **RESPONSES,
-                    },
-                }
-            }
-
-            src_by_nav = util.url_join("/", src_by_feature, "navigation")
-            paths[src_by_nav] = {
-                "get": {
-                    "summary": f"{src_title}NavigationOptions",
+                    "summary": f"{src_name}NavigationOptions",
                     "description": "returns valid navigation end points",
-                    "tags": [src_id],
-                    "operationId": f"{src_title}NavigationOptions",
-                    "parameters": parameters,
+                    "tags": ["by_comid" if src == "comid" else "by_sourceid"],
+                    "operationId": f"{src_name}NavigationOptions",
+                    "parameters": [
+                        {"$ref": "#/components/parameters/identifier"}
+                        if src == "{sourceid}"
+                        else {"$ref": "#/components/parameters/comid"},
+                    ],
                     "responses": {
                         "200": {
                             "description": "OK",
@@ -544,14 +545,18 @@ class API:
                 }
             }
 
-            src_by_nav_md = util.url_join("/", src_by_nav, "{navigationMode}")
-            paths[src_by_nav_md] = {
+            paths[f"{base_path}/{id_field}/navigation/{{navigationMode}}"] = {
                 "get": {
-                    "summary": f"{src_title}Navigation",
+                    "summary": f"{src_name}Navigation",
                     "description": "returns the navigation",
-                    "tags": [src_id],
-                    "operationId": f"{src_title}Navigation",
-                    "parameters": [*parameters, {"$ref": "#/components/parameters/navigationMode"}],
+                    "tags": ["by_comid" if src == "comid" else "by_sourceid"],
+                    "operationId": f"{src_name}Navigation",
+                    "parameters": [
+                        {"$ref": "#/components/parameters/identifier"}
+                        if src == "{sourceid}"
+                        else {"$ref": "#/components/parameters/comid"},
+                        {"$ref": "#/components/parameters/navigationMode"},
+                    ],
                     "responses": {
                         "200": {
                             "description": "OK",
@@ -568,19 +573,18 @@ class API:
                 }
             }
 
-            src_by_nav_ds = util.url_join("/", src_by_nav_md, "{dataSource}")
-            paths[src_by_nav_ds] = {
+            paths[f"{base_path}/{id_field}/navigation/{{navigationMode}}/{{dataSource}}"] = {
                 "get": {
-                    "summary": f"{src_title}NavigationDataSource",
+                    "summary": f"{src_name}NavigationDataSource",
                     "description": (
-                        "returns all features found along the "
-                        "specified navigation as points in WGS84 "
-                        "lat/lon GeoJSON"
+                        "returns all features found along the specified navigation as points in WGS84 lat/lon GeoJSON"
                     ),
-                    "tags": [src_id],
-                    "operationId": f"{src_title}NavigationDataSource",
+                    "tags": ["by_comid" if src == "comid" else "by_sourceid"],
+                    "operationId": f"{src_name}NavigationDataSource",
                     "parameters": [
-                        *parameters,
+                        {"$ref": "#/components/parameters/identifier"}
+                        if src == "{sourceid}"
+                        else {"$ref": "#/components/parameters/comid"},
                         {"$ref": "#/components/parameters/navigationMode"},
                         {
                             "name": "dataSource",
@@ -616,26 +620,27 @@ class API:
                 }
             }
 
-            extra = []
-            if src_id != "comid":
-                extra = [
-                    {"$ref": "#/components/parameters/trimStart"},
-                    {"$ref": "#/components/parameters/trimTolerance"},
-                ]
+            params = [
+                {"$ref": "#/components/parameters/identifier"}
+                if src == "{sourceid}"
+                else {"$ref": "#/components/parameters/comid"},
+                {"$ref": "#/components/parameters/navigationMode"},
+            ]
+            if src == "comid":
+                params.extend(
+                    [
+                        {"$ref": "#/components/parameters/trimStart"},
+                        {"$ref": "#/components/parameters/trimTolerance"},
+                    ]
+                )
 
-            src_by_nav_fl = util.url_join("/", src_by_nav_md, "flowlines")
-            paths[src_by_nav_fl] = {
+            paths[f"{base_path}/{id_field}/navigation/{{navigationMode}}/flowlines"] = {
                 "get": {
-                    "summary": f"{src_title}NavigationFlowlines",
+                    "summary": f"{src_name}NavigationFlowlines",
                     "description": ("returns the flowlines for the specified " "navigation in WGS84 lat/lon GeoJSON"),
-                    "tags": [src_id],
-                    "operationId": f"{src_title}NavigationFlowlines",
-                    "parameters": [
-                        *parameters,
-                        {"$ref": "#/components/parameters/navigationMode"},
-                        {"$ref": "#/components/parameters/distance"},
-                        *extra,
-                    ],
+                    "tags": ["by_comid" if src == "comid" else "by_sourceid"],
+                    "operationId": f"{src_name}NavigationFlowlines",
+                    "parameters": params,
                     "responses": {
                         "200": {
                             "description": "OK",

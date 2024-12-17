@@ -15,40 +15,6 @@ from typing import Union
 
 from . import LOGGER, util
 
-# def align_crawler_sources(cfg_file: Union[pathlib.Path, io.TextIOWrapper]) -> bool:
-#     """
-#     Align Crawler Source from the configuration file
-
-#     :param cfg_file: Configuration Path instance
-#     :type cfg_file: Union[pathlib.Path, io.TextIOWrapper]
-#     :return: Success/Failure of alignment
-#     :rtype: bool
-#     """
-#     LOGGER.debug("Aligning sources from config file.")
-#     config = util.load_yaml(cfg_file)
-#     if not config:
-#         LOGGER.error("Unable to load configuration file.")
-#         return False
-
-#     if not config.get("sources"):
-#         LOGGER.debug("No sources to align with, continuing")
-#         return True
-
-#     provider_def = {
-#         "database": deepcopy(config["server"]["data"]),
-#         "base_url": get_base_url(config),
-#     }
-
-#     LOGGER.debug("Aligning configuration with crawler source table")
-#     try:
-#         crawler_source = CrawlerSourceLookup(provider_def)
-#         crawler_source.align_sources(config["sources"])
-#     except ProviderQueryError:
-#         LOGGER.error("Provider Query Error -- Do you have permissions to update Crawler source table?")
-#         return False
-
-#     return True
-
 
 class Configuration(UserDict):
     """Data class for holding global configuration."""
@@ -71,6 +37,7 @@ class Configuration(UserDict):
             for k, v in dict(
                 # NLDI_PATH="/api/nldi",
                 NLDI_URL="http://localhost:8081/",
+                NLDI_PATH="/api/nldi",
                 NLDI_DB_HOST="172.17.0.2",  # This is the IP address for the Docker container
                 NLDI_DB_PORT="5432",
                 NLDI_DB_NAME="nldi",
@@ -82,7 +49,12 @@ class Configuration(UserDict):
                     ENV[k] = v
 
         self.data = util.load_yaml(cfg_src)
-        self.data["base_url"] = util.url_join(self.data["server"]["url"], "")
+
+        self.data["base_url"] = util.url_join(
+            self.data["server"].get("url", "http://localhost/"),
+            self.data["server"].get("prefix", ""),
+            "",
+        )
 
         if isinstance(cfg_src, io.TextIOWrapper):
             self._config_src = "<stream>"
