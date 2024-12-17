@@ -482,6 +482,25 @@ class API:
             base_path = f"/linked-data/{src}"
             src_name = "Source" if src == "{sourceid}" else "comid"
             id_field = "{comid}" if src == "comid" else "{identifier}"
+
+            paths[f"{base_path}"] = {
+                "get": {
+                    "description": "returns all features.",
+                    "tags": ["by_comid" if src == "comid" else "by_sourceid"],
+                    "operationId": f"{src_name}AllFeatures",
+                    "responses": {
+                        "200": {
+                            "description": "OK",
+                            "content": {
+                                "application/json": {
+                                    "schema": {"type": "object", "additionalProperties": {"type": "object"}}
+                                }
+                            },
+                        },
+                        **RESPONSES,
+                    },
+                }
+            }
             params = [
                 {"$ref": "#/components/parameters/simplified"},
                 {"$ref": "#/components/parameters/splitCatchment"},
