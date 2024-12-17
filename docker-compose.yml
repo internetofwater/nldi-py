@@ -29,13 +29,14 @@ services:
       - "8080:80"
     environment:
       NLDI_PATH: /api/nldi
-      NLDI_URL: http://localhost:80/api/nldi
+      NLDI_URL: http://localhost:80/
       NLDI_DB_HOST: nldi-db
       NLDI_DB_PORT: 5432
       NLDI_DB_NAME: nldi
       NLDI_DB_USERNAME: nldi
       NLDI_DB_PASSWORD: changeMe
       PYGEOAPI_URL: https://labs.waterdata.usgs.gov/api/nldi/pygeoapi/
+      springFrameworkLogLevel:
     networks:
       - nldi
 

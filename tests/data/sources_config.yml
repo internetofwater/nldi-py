@@ -1,5 +1,6 @@
 server:
   url: ${NLDI_URL}
+  prefix: ${NLDI_PATH}
   pretty_print: false
   data:
     host: ${NLDI_DB_HOST}
@@ -9,8 +10,7 @@ server:
     password: ${NLDI_DB_PASSWORD}
 
 logging:
-  level: ERROR
-  logfile: /tmp/nldi.log
+  level: DEBUG
 
 pygeoapi_url: https://labs.waterdata.usgs.gov/api/nldi/pygeoapi
 

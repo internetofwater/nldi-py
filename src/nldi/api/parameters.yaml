@@ -7,6 +7,23 @@ identifier:
   schema:
     type: string
 
+sourceid:
+  name: sourceid
+  in: path
+  description: Source identifier
+  required: true
+  schema:
+    type: string
+
+comid:
+  name: comid,
+  in: path,
+  description: NHDPlus common identifier
+  required: True,
+  schema:
+    type: integer
+    example: 13294314
+
 simplified:
   name: simplified
   in: query
