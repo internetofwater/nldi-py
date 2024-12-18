@@ -16,8 +16,8 @@ sourceid:
     type: string
 
 comid:
-  name: comid,
-  in: path,
+  name: comid
+  in: path
   description: NHDPlus common identifier
   required: True,
   schema:
