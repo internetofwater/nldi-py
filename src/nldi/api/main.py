@@ -237,9 +237,9 @@ class API:
         # This would require that we add methods here for each endpoint, which might be a good idea for other
         # reasons as well.  It would also give us consistent docstring format for the plugins.
 
-        OAS_SCHEMAS = util.load_yaml(pathlib.Path(__file__).parent / "schemas.yaml")  # noqa: N806
-        OAS_PARAMETERS = util.load_yaml(pathlib.Path(__file__).parent / "parameters.yaml")  # noqa: N806
-        OAS_RESPONSES = util.load_yaml(pathlib.Path(__file__).parent / "responses.yaml")  # noqa: N806
+        OAS_SCHEMAS = util.load_yaml(pathlib.Path(__file__).parent / "openapi" / "schemas.yaml")  # noqa: N806
+        OAS_PARAMETERS = util.load_yaml(pathlib.Path(__file__).parent / "openapi" / "parameters.yaml")  # noqa: N806
+        OAS_RESPONSES = util.load_yaml(pathlib.Path(__file__).parent / "openapi" / "responses.yaml")  # noqa: N806
 
         RESPONSES = {  # noqa: N806
             "400": {"$ref": "#/components/responses/400"},
