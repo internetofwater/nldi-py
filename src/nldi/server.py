@@ -486,14 +486,17 @@ def get_flowline_navigation(source_name=None, identifier=None, nav_mode=None):
 
     try:
         if source_name == "comid":
-            _id = NLDI_API.plugins["FlowlinePlugin"].get_by_id(identifier)
+            start_feature = NLDI_API.plugins["FlowlinePlugin"].get_by_id(identifier)
+            LOGGER.info("Found starting comid feature: %s", start_feature['properties'])
+            _id = start_feature['properties']['identifier']
             start_comid = int(_id)
         else:
             feature = NLDI_API.plugins["FeaturePlugin"].get_by_id(
                 identifier, source_name
             )  # <<< ATTENTION: ``feature`` is instantiated here.
             start_comid = int(feature["properties"]["comid"])
-    except (KeyError, ValueError):
+    except (KeyError, ValueError) as e:
+        LOGGER.error("Error getting COMID: %s", e)
         return flask.Response(
             status=http.HTTPStatus.INTERNAL_SERVER_ERROR,
             response=f"Error getting COMID for {identifier=}, {source_name=}",
