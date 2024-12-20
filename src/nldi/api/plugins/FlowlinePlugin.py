@@ -152,7 +152,7 @@ class FlowlinePlugin(APIPlugin):
 
         navigation = util.url_join(self.relative_url, feature.nhdplus_comid, "navigation")
 
-        return {
+        _response = {
             "type": "Feature",
             "properties": {
                 "identifier": str(feature.permanent_identifier),
@@ -164,3 +164,4 @@ class FlowlinePlugin(APIPlugin):
             },
             "geometry": json.loads(geojson),
         }
+        return _response
