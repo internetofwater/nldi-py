@@ -29,7 +29,7 @@ services:
       - "8080:80"
     environment:
       NLDI_PATH: /api/nldi
-      NLDI_URL: http://localhost:80/
+      NLDI_URL: http://localhost:8080/
       NLDI_DB_HOST: nldi-db
       NLDI_DB_PORT: 5432
       NLDI_DB_NAME: nldi
