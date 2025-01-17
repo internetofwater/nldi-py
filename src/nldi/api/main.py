@@ -504,12 +504,10 @@ class API:
             params = [
                 {"$ref": "#/components/parameters/simplified"},
                 {"$ref": "#/components/parameters/splitCatchment"},
-                {"$ref": "#/components/parameters/identifier"}
-                if src == "{sourceid}"
+                {"$ref": "#/components/parameters/identifier"},
+                {"$ref": "#/components/parameters/sourceid"} if src == "{sourceid}"
                 else {"$ref": "#/components/parameters/comid"},
             ]
-            if src == "{sourceid}":
-                params.append({"$ref": "#/components/parameters/sourceid"})
 
             paths[f"{base_path}/{id_field}/basin"] = {
                 "get": {
@@ -546,8 +544,8 @@ class API:
                     "tags": ["by_comid" if src == "comid" else "by_sourceid"],
                     "operationId": f"{src_name}NavigationOptions",
                     "parameters": [
-                        {"$ref": "#/components/parameters/identifier"}
-                        if src == "{sourceid}"
+                        {"$ref": "#/components/parameters/identifier"},
+                        {"$ref": "#/components/parameters/sourceid"} if src == "{sourceid}"
                         else {"$ref": "#/components/parameters/comid"},
                     ],
                     "responses": {
@@ -571,8 +569,8 @@ class API:
                     "tags": ["by_comid" if src == "comid" else "by_sourceid"],
                     "operationId": f"{src_name}Navigation",
                     "parameters": [
-                        {"$ref": "#/components/parameters/identifier"}
-                        if src == "{sourceid}"
+                        {"$ref": "#/components/parameters/identifier"},
+                        {"$ref": "#/components/parameters/sourceid"} if src == "{sourceid}"
                         else {"$ref": "#/components/parameters/comid"},
                         {"$ref": "#/components/parameters/navigationMode"},
                     ],
@@ -601,8 +599,8 @@ class API:
                     "tags": ["by_comid" if src == "comid" else "by_sourceid"],
                     "operationId": f"{src_name}NavigationDataSource",
                     "parameters": [
-                        {"$ref": "#/components/parameters/identifier"}
-                        if src == "{sourceid}"
+                        {"$ref": "#/components/parameters/identifier"},
+                        {"$ref": "#/components/parameters/sourceid"} if src == "{sourceid}"
                         else {"$ref": "#/components/parameters/comid"},
                         {"$ref": "#/components/parameters/navigationMode"},
                         {
@@ -640,10 +638,11 @@ class API:
             }
 
             params = [
-                {"$ref": "#/components/parameters/identifier"}
-                if src == "{sourceid}"
+                {"$ref": "#/components/parameters/identifier"},
+                {"$ref": "#/components/parameters/sourceid"} if src == "{sourceid}"
                 else {"$ref": "#/components/parameters/comid"},
                 {"$ref": "#/components/parameters/navigationMode"},
+                {"$ref": "#/components/parameters/distance"},
             ]
             if src == "comid":
                 params.extend(
