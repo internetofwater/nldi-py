@@ -449,8 +449,8 @@ class API:
                 "tags": ["by_sourceid"],
                 "operationId": f"SourceFeatureById",
                 "parameters": [
-                    {"$ref": "#/components/parameters/identifier"},
                     {"$ref": "#/components/parameters/sourceid"},
+                    {"$ref": "#/components/parameters/identifier"},
                 ],
                 "responses": {
                     "200": {
@@ -498,15 +498,24 @@ class API:
                             },
                         },
                         **RESPONSES,
-                    },
+                    }
                 }
             }
+
+            if src == "{sourceid}":
+                paths[f"{base_path}"]["get"]["parameters"] = [
+                    {"$ref": "#/components/parameters/sourceid"},
+                ]
+
             params = [
+                *([
+                    {"$ref": "#/components/parameters/sourceid"},
+                    {"$ref": "#/components/parameters/identifier"}]
+                    if src == "{sourceid}"
+                    else [{"$ref": "#/components/parameters/comid"}]
+                ),
                 {"$ref": "#/components/parameters/simplified"},
-                {"$ref": "#/components/parameters/splitCatchment"},
-                {"$ref": "#/components/parameters/identifier"},
-                {"$ref": "#/components/parameters/sourceid"} if src == "{sourceid}"
-                else {"$ref": "#/components/parameters/comid"},
+                {"$ref": "#/components/parameters/splitCatchment"}
             ]
 
             paths[f"{base_path}/{id_field}/basin"] = {
@@ -544,9 +553,12 @@ class API:
                     "tags": ["by_comid" if src == "comid" else "by_sourceid"],
                     "operationId": f"{src_name}NavigationOptions",
                     "parameters": [
-                        {"$ref": "#/components/parameters/identifier"},
-                        {"$ref": "#/components/parameters/sourceid"} if src == "{sourceid}"
-                        else {"$ref": "#/components/parameters/comid"},
+                        *([
+                            {"$ref": "#/components/parameters/sourceid"},
+                            {"$ref": "#/components/parameters/identifier"}]
+                            if src == "{sourceid}"
+                            else [{"$ref": "#/components/parameters/comid"}]
+                        )
                     ],
                     "responses": {
                         "200": {
@@ -569,9 +581,12 @@ class API:
                     "tags": ["by_comid" if src == "comid" else "by_sourceid"],
                     "operationId": f"{src_name}Navigation",
                     "parameters": [
-                        {"$ref": "#/components/parameters/identifier"},
-                        {"$ref": "#/components/parameters/sourceid"} if src == "{sourceid}"
-                        else {"$ref": "#/components/parameters/comid"},
+                       *([
+                            {"$ref": "#/components/parameters/sourceid"},
+                            {"$ref": "#/components/parameters/identifier"}]
+                            if src == "{sourceid}"
+                            else [{"$ref": "#/components/parameters/comid"}]
+                        ),
                         {"$ref": "#/components/parameters/navigationMode"},
                     ],
                     "responses": {
@@ -599,9 +614,12 @@ class API:
                     "tags": ["by_comid" if src == "comid" else "by_sourceid"],
                     "operationId": f"{src_name}NavigationDataSource",
                     "parameters": [
-                        {"$ref": "#/components/parameters/identifier"},
-                        {"$ref": "#/components/parameters/sourceid"} if src == "{sourceid}"
-                        else {"$ref": "#/components/parameters/comid"},
+                        *([
+                            {"$ref": "#/components/parameters/sourceid"},
+                            {"$ref": "#/components/parameters/identifier"}]
+                            if src == "{sourceid}"
+                            else [{"$ref": "#/components/parameters/comid"}]
+                        ),
                         {"$ref": "#/components/parameters/navigationMode"},
                         {
                             "name": "dataSource",
@@ -638,9 +656,12 @@ class API:
             }
 
             params = [
-                {"$ref": "#/components/parameters/identifier"},
-                {"$ref": "#/components/parameters/sourceid"} if src == "{sourceid}"
-                else {"$ref": "#/components/parameters/comid"},
+                *([
+                    {"$ref": "#/components/parameters/sourceid"},
+                    {"$ref": "#/components/parameters/identifier"}]
+                    if src == "{sourceid}"
+                    else [{"$ref": "#/components/parameters/comid"}]
+                ),
                 {"$ref": "#/components/parameters/navigationMode"},
                 {"$ref": "#/components/parameters/distance"},
             ]
