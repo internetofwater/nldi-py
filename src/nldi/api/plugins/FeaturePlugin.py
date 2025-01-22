@@ -181,15 +181,11 @@ class FeaturePlugin(APIPlugin):
                 _return.append(self._sqlalchemy_to_feature(row, geojson, srcinfo))
         return _return
 
-    def _sqlalchemy_to_feature(self, feature, geojson, srcinfo) -> Dict[str, Any]:
-        try:
-            mainstem = feature.mainstem_lookup.uri
-        except AttributeError:
-            LOGGER.warning(f"Mainstem_lookup not found for {feature.identifier}")
-            mainstem = ""
+    def _sqlalchemy_to_feature(self, feature, geojson, srcinfo, mainstem="") -> Dict[str, Any]:
+        
         navigation = util.url_join(self.relative_url(srcinfo["source_suffix"]), feature.identifier, "navigation")
 
-        return {
+        _response = {
             "type": "Feature",
             "properties": {
                 "identifier": str(feature.identifier),
@@ -202,7 +198,13 @@ class FeaturePlugin(APIPlugin):
                 "reachcode": feature.reachcode,
                 "measure": feature.measure,
                 "navigation": navigation,
-                # "mainstem": mainstem, #<< mainstem is not returned from current production API.
             },
             "geometry": json.loads(geojson),
         }
+
+        try:
+            _response["properties"]["mainstem"] = feature.mainstem_lookup.uri
+        except AttributeError:
+            LOGGER.warning(f"Mainstem_lookup not found for {feature.identifier}")
+
+        return _response

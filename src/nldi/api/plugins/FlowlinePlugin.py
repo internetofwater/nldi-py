@@ -144,12 +144,6 @@ class FlowlinePlugin(APIPlugin):
         """
         (feature, geojson) = item
 
-        try:
-            mainstem = item.mainstem_lookup.uri
-        except AttributeError:
-            LOGGER.info(f"Mainstem not found for {feature.nhdplus_comid}")
-            mainstem = ""
-
         navigation = util.url_join(self.relative_url, feature.nhdplus_comid, "navigation")
 
         _response = {
@@ -159,9 +153,14 @@ class FlowlinePlugin(APIPlugin):
                 "source": "comid",
                 "sourceName": "NHDPlus comid",
                 "comid": str(feature.nhdplus_comid),
-                # "mainstem": mainstem,  ##< mainstem is not in current production reponse from labs.waterdata.usgs.gov
                 "navigation": navigation,
             },
             "geometry": json.loads(geojson),
         }
+
+        try:
+            _response["properties"]["mainstem"] = item.mainstem_lookup.uri
+        except AttributeError:
+            LOGGER.info(f"Mainstem not found for {feature.nhdplus_comid}")
+
         return _response
