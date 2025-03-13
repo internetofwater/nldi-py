@@ -111,7 +111,7 @@ class FeatureService(SQLAlchemyAsyncRepositoryService[FeatureSourceModel]):
         )
         hits = await self.repository._execute(stmt)
         r = hits.fetchall()
-        return [f[0].as_feature() for f in r]
+        return [f[0].as_feature(excl_props=["reachcode"]) for f in r]
 
 
 async def feature_svc(db_session: AsyncSession) -> AsyncGenerator[FeatureSourceModel, None]:

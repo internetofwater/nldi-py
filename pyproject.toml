@@ -31,11 +31,14 @@ packages = [{ include = "nldi", from = "src" }]
 python = "^3.11"
 litestar = { extras = ["jinja", "redis"], version = "^2.13.0" }
 advanced-alchemy = { extras = ["uuid"], version = "^0.30.2" }
-psycopg = "^3.2.3"
 geoalchemy2 = { extras = ["shapely"], version = "^0.16.0" }
 uvicorn = "^0.34.0"
 geomet = "^1.1.0"
 pygeofilter = {extras = ["backend-sqlalchemy"], version = "^0.3.1"}
+dotenv = "^0.9.9"
+psycopg-binary = "^3.2.6"
+pyyaml = "^6.0.2"
+psycopg = "^3.2.6"
 
 
 [tool.poetry.group.dev.dependencies]

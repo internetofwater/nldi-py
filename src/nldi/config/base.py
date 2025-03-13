@@ -32,7 +32,7 @@ class ServerConfig:
 
     def ping(self, subservice:str|None = None)-> bool:
         if subservice == "pygeoapi":
-            r = httpx.get(util.url_join(self.pygeoapi_url , "processes&f=json"), timeout=5)
+            r = httpx.get(util.url_join(self.pygeoapi_url , "processes&f=json"), timeout=5, verify=False)
             return r.status_code == 200
         return True
 

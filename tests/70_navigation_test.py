@@ -251,12 +251,13 @@ def test_api_get_navigated_flowlines_trimmed_system(client_testdb, nav_mode) -> 
     identifier = "USGS-05427930"
 
     r = httpx.get(
-        f"{AUTH_PREFIX}/linked-data/{source_name}/{identifier}/navigation/{nav_mode}/flowlines?f=json&distance=10&trimStart=true"
+        f"{AUTH_PREFIX}/linked-data/{source_name}/{identifier}/navigation/{nav_mode}/flowlines?f=json&distance=10&trimStart=true",
+        verify=False,
     )
     expected = r.json()
 
     r = client_testdb.get(
-        f"{API_PREFIX}/linked-data/{source_name}/{identifier}/navigation/{nav_mode}/flowlines?f=json&distance=10&trimStart=true"
+        f"{API_PREFIX}/linked-data/{source_name}/{identifier}/navigation/{nav_mode}/flowlines?f=json&distance=10&trimStart=true",
     )
     actual = r.json()
 
@@ -283,7 +284,8 @@ def test_api_get_navigated_features_trimmed_system(client_testdb, nav_mode) -> N
     identifier = "USGS-05427930"
 
     r = httpx.get(
-        f"{AUTH_PREFIX}/linked-data/{source_name}/{identifier}/navigation/{nav_mode}/nwissite?f=json&distance=10"
+        f"{AUTH_PREFIX}/linked-data/{source_name}/{identifier}/navigation/{nav_mode}/nwissite?f=json&distance=10",
+        verify=False,
     )
     expected = r.json()
 

@@ -51,13 +51,13 @@ def test_server_config_form(client_localhost) -> None:
 
 @pytest.mark.order(21)
 @pytest.mark.unittest
-def test_server_healthcheck_form(client_localhost) -> None:
+def test_server_healthcheck_form(client_containerized) -> None:
     """
     Health endpoint returns a list of status objects (one for each dependent subsystem).
 
     We don't care about the actual status (at this point) -- just that we get the right object/structure.
     """
-    r = client_localhost.get(f"{API_PREFIX}/about/health")
+    r = client_containerized.get(f"{API_PREFIX}/about/health")
     assert r.status_code == 200
     actual = r.json()
     assert isinstance(actual, dict)
@@ -68,8 +68,8 @@ def test_server_healthcheck_form(client_localhost) -> None:
 
 @pytest.mark.order(21)
 @pytest.mark.unittest
-def test_server_health_db(client_localhost) -> None:
-    r = client_localhost.get(f"{API_PREFIX}/about/health/db")
+def test_server_health_db(client_containerized) -> None:
+    r = client_containerized.get(f"{API_PREFIX}/about/health/db")
     assert r.status_code == 200
     actual = r.json()
     assert isinstance(actual, dict)
@@ -110,9 +110,9 @@ def test_server_db_config_testdb(client_testdb) -> None:
     r = client_testdb.get(f"{API_PREFIX}/about/config")
     assert r.status_code == 200
     actual = r.json()
-    assert actual["db"].get("host") == "nldi-db-development.dev-nwis.usgs.gov"  # < Magic value
+    assert actual["db"].get("host").startswith("active-nldi-db")  # < Magic value
 
     r = client_testdb.get(f"{API_PREFIX}/about/health/db")
     assert r.status_code == 200
     actual = r.json()
-    assert actual["status"] == "online" #< will only pass if the db really is online.
+    assert actual["status"] == "online"  # < will only pass if the db really is online.
