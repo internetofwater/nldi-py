@@ -18,8 +18,10 @@ from typing import IO, Any, Union
 import yaml
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
-from . import LOGGER, __version__
+from . import __version__
 
+THISDIR = Path(__file__).parent.resolve()
+TEMPLATES = THISDIR / "templates"
 
 def url_join(*parts: str) -> str:
     """
@@ -37,3 +39,46 @@ def url_join(*parts: str) -> str:
     :returns: str of resulting URL
     """
     return "/".join([str(p).strip().strip("/") for p in parts]).rstrip("/")
+
+
+def to_json(dict_: dict, pretty: bool = False) -> str:
+    # NOTE: mostly deprecated....   prefer to use flask.jsonify for return responses.  This func
+    # is still used in the jinja template renderer.
+    """
+    Serialize dict to json
+
+    :param dict_: `dict` of JSON representation
+    :param pretty: `bool` of whether to prettify JSON (default is `False`)
+
+    :returns: JSON string representation
+    """
+    if pretty:
+        indent = 4
+    else:
+        indent = None
+
+    return json.dumps(dict_, indent=indent)
+
+def stream_j2_template(template: Path, data: dict) -> str:
+    """
+    Stream Jinja2 template
+
+    :param template: template (relative path)
+    :param data: dict of data
+
+    :returns: string of rendered template
+    """
+    template_paths = [TEMPLATES, "."]
+    env = Environment(
+        loader=FileSystemLoader(template_paths), extensions=["jinja2.ext.i18n"], autoescape=select_autoescape()
+    )
+
+    env.filters["to_json"] = to_json
+    env.globals.update(to_json=to_json)
+
+    template = env.get_template(template)
+
+    rv = template.stream(data=data)
+    rv.enable_buffering(16)
+
+    return rv

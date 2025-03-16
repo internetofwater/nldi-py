@@ -6,6 +6,7 @@
 #
 """ """
 
+import http
 import logging
 from copy import deepcopy
 from typing import Any, Literal, TypeVar
@@ -16,7 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from .. import __version__, util
 from ..config import MasterConfig, status
-from ..domain.linked_data.services import CrawlerSourceService
+from ..domain.linked_data import services
 
 ROOT = flask.Blueprint("nldi", __name__)
 
@@ -111,10 +112,53 @@ def healthcheck():
 
 @ROOT.route("/linked-data")
 async def list_sources():
-    # return {"hello": "world"}
     db = flask.current_app.NLDI_CONFIG.db
     async with AsyncSession(bind=db.async_engine) as db_session:
-        async with CrawlerSourceService.new(session=db_session) as sources_svc:
+        async with services.CrawlerSourceService.new(session=db_session) as sources_svc:
             src_list = await sources_svc.list()
             _r = list(src_list)
     return [f._as_dict for f in _r]
+
+
+@ROOT.route("/linked-data/comid/<int:comid>")
+async def get_flowline_by_comid(comid: int | None = None):
+    db = flask.current_app.NLDI_CONFIG.db
+    base_url = flask.current_app.NLDI_CONFIG.server.base_url
+
+    async with AsyncSession(bind=db.async_engine) as db_session:
+        async with services.FlowlineService.new(session=db_session) as flowline_svc:
+            try:
+                flowline_feature = await flowline_svc.get_feature(
+                    comid,
+                    xtra_props={"navigation": util.url_join(base_url, "comid", comid, "navigation")},
+                )
+            except NotFoundError:
+                raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail=f"COMID {comid} not found.")
+        _r = flask.Response(
+            headers={"Content-Type": "application/json"},
+            status=http.HTTPStatus.OK,
+            response=util.stream_j2_template("FeatureCollection.j2", [msgspec.structs.asdict(flowline_feature)]),
+        )
+    return _r
+
+
+@ROOT.route("/linked-data/<path:source_name>/<path:identifier>")
+async def get_feature_by_identifier(source_name: str, identifier: str):
+    db = flask.current_app.NLDI_CONFIG.db
+    base_url = flask.current_app.NLDI_CONFIG.server.base_url
+
+    async with AsyncSession(bind=db.async_engine) as db_session:
+        async with services.FeatureService.new(session=db_session) as feature_svc:
+            feature = await feature_svc.feature_lookup(source_name, identifier)
+            if not feature:
+                raise HTTPException(status_code=HTTP_404_NOT_FOUND)
+            nav_url = util.url_join(
+                flask.current_app.NLDI_CONFIG.server.base_url, "linked-data", source_name, identifier, "navigation"
+            )
+            _geojson = feature.as_feature(excl_props=["crawler_source_id"], xtra_props={"navigation": nav_url})
+            _r = flask.Response(
+                headers={"Content-Type": "application/json"},
+                status=http.HTTPStatus.OK,
+                response=util.stream_j2_template("FeatureCollection.j2", [msgspec.structs.asdict(_geojson)]),
+            )
+    return _r
