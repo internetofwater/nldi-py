@@ -21,13 +21,14 @@ ENV \
 # Install operating system dependencies
 RUN \
   apk update && \
-  apk add --no-cache curl build-base libpq-dev
+  apk add --no-cache curl build-base libpq-dev libgeos-dev
+
 
 ADD . /nldi
 WORKDIR /nldi
 
-RUN pip install --no-cache-dir .  && rm -rf /root/.cache/pip
-RUN pip install --no-cache-dir pyyaml
+RUN pip install --prefer-binary --trusted-host pypi.org --trusted-host files.pythonhosted.org --no-cache-dir .  && rm -rf /root/.cache/pip
+# RUN pip install --no-cache-dir pyyaml
 
 # This will be the final image:
 FROM python:3.12-alpine AS nldi

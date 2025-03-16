@@ -27,5 +27,4 @@ exec gunicorn --workers ${WSGI_WORKERS} \
         --timeout ${WSGI_WORKER_TIMEOUT} \
         --name=${CONTAINER_NAME} \
         --bind ${CONTAINER_HOST}:${CONTAINER_PORT} \
-        nldi.server:APP
-
+        nldi.litestar_asgi:app
