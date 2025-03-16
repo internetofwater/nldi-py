@@ -33,6 +33,9 @@ class CrawlerSourceModel(NLDIBaseModel):
     ingest_type: Mapped[str] = mapped_column(String(5), nullable=True)
     feature_type: Mapped[str] = mapped_column(String(100), nullable=True)
 
+    @property
+    def _as_dict(self):
+        return {col.name: getattr(self, col.name) for col in self.__table__.columns}
 
 class FeatureSourceModel(NLDIBaseModel, GeoJSONMixin):
     __tablename__ = "feature"

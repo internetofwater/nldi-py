@@ -13,9 +13,10 @@ import litestar
 from litestar.contrib.sqlalchemy.plugins import AsyncSessionConfig, SQLAlchemyAsyncConfig, SQLAlchemyPlugin
 from litestar.logging import LoggingConfig
 
-from . import LOGGER, __version__
+from . import __version__
 from .config import MasterConfig, get_config
-from .server import openapi, routers
+from .server import litestar_routers as routers
+from .server import openapi
 
 logging_config = LoggingConfig(
     root={"level": "DEBUG", "handlers": ["queue_listener"]},
@@ -24,7 +25,7 @@ logging_config = LoggingConfig(
 )
 
 
-def nldi_app_factory() -> litestar.Litestar:
+def litestar_app_factory() -> litestar.Litestar:
     """
     Creates a Litestar ASGI app.
 
@@ -49,4 +50,4 @@ def nldi_app_factory() -> litestar.Litestar:
     )
 
 
-app = nldi_app_factory()
+app = litestar_app_factory()

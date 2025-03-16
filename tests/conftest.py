@@ -30,7 +30,7 @@ def runner():
 
 @pytest.fixture(scope="session")
 def yaml_config_file() -> pathlib.Path:
-    """    Sample configuration file for tests.    """
+    """Sample configuration file for tests."""
     # TODO: should this be hard-coded to specific location?  Is there a better place for it?
     here = pathlib.Path(__file__).parent.resolve()
     _f = here / "data" / "nldi_server_config.yml"
@@ -150,13 +150,6 @@ async def dbsession_testdb(engine_testdb) -> AsyncGenerator[AsyncSession, None]:
         await session.close()
 
 
-
-
-
-
-
-
-
 @pytest.fixture()
 async def engine_containerized(containerized_db_env_info) -> AsyncGenerator[AsyncEngine, None]:
     """A sqlalchemy engine, configured for the containerized db."""
@@ -185,7 +178,6 @@ async def dbsession_containerized(engine_containerized) -> AsyncGenerator[AsyncS
         await session.close()
 
 
-
 @pytest.fixture()
 def client_localhost(monkeypatch, yaml_config_file, localhost_env_info) -> TestClient:
     """
@@ -198,7 +190,7 @@ def client_localhost(monkeypatch, yaml_config_file, localhost_env_info) -> TestC
     for k, v in localhost_env_info.items():
         monkeypatch.setenv(k, v)
     monkeypatch.setenv("NLDI_CONFIG", yaml_config_file)
-    _app = litestar_asgi.nldi_app_factory()
+    _app = litestar_asgi.litestar_app_factory()
     with TestClient(app=_app) as client:
         yield client
 
@@ -214,7 +206,7 @@ def client_containerized(monkeypatch, yaml_config_file, containerized_db_env_inf
     for k, v in containerized_db_env_info.items():
         monkeypatch.setenv(k, v)
     monkeypatch.setenv("NLDI_CONFIG", yaml_config_file)
-    _app = litestar_asgi.nldi_app_factory()
+    _app = litestar_asgi.litestar_app_factory()
     with TestClient(app=_app) as client:
         yield client
 
@@ -232,6 +224,6 @@ def client_testdb(monkeypatch, yaml_config_file, testdb_env_info) -> TestClient:
     for k, v in testdb_env_info.items():
         monkeypatch.setenv(k, v)
     monkeypatch.setenv("NLDI_CONFIG", yaml_config_file)
-    _app = litestar_asgi.nldi_app_factory()
+    _app = litestar_asgi.litestar_app_factory()
     with TestClient(app=_app) as client:
         yield client

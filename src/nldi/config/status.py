@@ -24,3 +24,5 @@ class SystemHealth(msgspec.Struct):
     server: ServiceHealth
     db: ServiceHealth
     pygeoapi: ServiceHealth
+
+dumps = msgspec.json.Encoder().encode

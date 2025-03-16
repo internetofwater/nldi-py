@@ -13,7 +13,7 @@ from typing import Any, Self
 import httpx
 import sqlalchemy as sa
 from sqlalchemy.engine import URL as DB_URL
-from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
+from sqlalchemy.ext.asyncio import AsyncEngine, async_sessionmaker, create_async_engine
 
 from .. import LOGGER, util
 from . import default, status
@@ -30,13 +30,13 @@ class ServerConfig:
     def base_url(self) -> str:
         return util.url_join(self.url, self.prefix)
 
-    def ping(self, subservice:str|None = None)-> bool:
+    def ping(self, subservice: str | None = None) -> bool:
         if subservice == "pygeoapi":
-            r = httpx.get(util.url_join(self.pygeoapi_url , "processes&f=json"), timeout=5, verify=False)
+            r = httpx.get(util.url_join(self.pygeoapi_url, "processes&f=json"), timeout=5, verify=False)
             return r.status_code == 200
         return True
 
-    def healthstatus(self, subservice: str|None = None) -> status.ServiceHealth:
+    def healthstatus(self, subservice: str | None = None) -> status.ServiceHealth:
         if subservice == "pygeoapi":
             return status.ServiceHealth(
                 name="pygeoapi",
@@ -44,10 +44,10 @@ class ServerConfig:
                 status="online" if self.ping("pygeoapi") else "offline",
             )
         return status.ServiceHealth(
-                name="server",
-                cfg=str(self.base_url),
-                status="online",
-            )
+            name="server",
+            cfg=str(self.base_url),
+            status="online",
+        )
 
 
 @dataclass
@@ -100,6 +100,18 @@ class DatabaseConfig:
             cfg=str(self.URL),
             status="online" if self.ping() else "offline",
         )
+
+    @cached_property
+    def async_engine(self):
+        engine = create_async_engine(self.URL)
+        return engine
+
+    # async def async_session(self):
+    #     session = async_sessionmaker(bind=self.async_engine, expire_on_commit=False)()
+    #     try:
+    #         yield session
+    #     finally:
+    #         await session.close()
 
 
 @dataclass

@@ -55,7 +55,7 @@ class AboutController(litestar.Controller):
         _sanitized_config.db.password = "***"  # noqa: S105
         return _sanitized_config
 
-    @litestar.get("/info", include_in_schema=False, media_type=litestar.MediaType.JSON)
+    @litestar.get(path=["/", "/info"], include_in_schema=False, media_type=litestar.MediaType.JSON)
     async def app_info(self, request: litestar.Request) -> dict[str, Any]:
         _ = request
         return {
