@@ -215,7 +215,7 @@ class LinkedDataController(litestar.Controller):
 
         This will return a HTTP 404 (Not Found) status if the source name is not found in the database.
         """
-        if not sources_svc.suffix_exists(source_name):
+        if not await sources_svc.suffix_exists(source_name):
             raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail=f"No such source: {source_name}")
 
         nav_url = util.url_join(base_url, "linked-data", source_name, identifier, "navigation")

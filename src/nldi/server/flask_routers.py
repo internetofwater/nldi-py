@@ -162,3 +162,22 @@ async def get_feature_by_identifier(source_name: str, identifier: str):
                 response=util.stream_j2_template("FeatureCollection.j2", [msgspec.structs.asdict(_geojson)]),
             )
     return _r
+
+@ROOT.route("/linked-data/<path:source_name>/<path:identifier>/navigation")
+def get_navigation_modes(source_name:str, identifier: str):
+    db = flask.current_app.NLDI_CONFIG.db
+    base_url = flask.current_app.NLDI_CONFIG.server.base_url
+    async with AsyncSession(bind=db.async_engine) as db_session:
+        async with services.CrawlerSourceService.new(session=db_session) as sources_svc:
+            src_exists = await sources_svc.suffix_exists(source_name)
+            if not src_exists:
+                raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail=f"No such source: {source_name}")
+
+    nav_url = util.url_join(base_url, "linked-data", source_name, identifier, "navigation")
+    content = {
+        "upstreamMain": util.url_join(nav_url, "UM"),
+        "upstreamTributaries": util.url_join(nav_url, "UT"),
+        "downstreamMain": util.url_join(nav_url, "DM"),
+        "downstreamDiversions": util.url_join(nav_url, "DD"),
+    }
+    return content
