@@ -254,3 +254,37 @@ async def get_flowline_navigation(
                 response=util.stream_j2_template("FeatureCollection.j2", [msgspec.to_builtins(f) for f in features]),
             )
     return _r
+
+
+
+@ROOT.route("/linked-data/<path:source_name>/<path:identifier>/navigation/<path:nav_mode>/<path:data_source>")
+async def get_feature_navigation(
+    source_name: str,
+    identifier: str,
+    nav_mode: str,
+    data_source: str,
+) -> struct_geojson.FeatureCollection:
+    try:
+        _d = flask.request.args["distance"]
+        distance = float(_d)
+    except KeyError as e:
+        return flask.Response(status=http.HTTPStatus.BAD_REQUEST, response="No distance provided")
+    except (TypeError, ValueError) as e:
+        return flask.Response(status=http.HTTPStatus.BAD_REQUEST, response="Invalid distance provided")
+
+    db = flask.current_app.NLDI_CONFIG.db
+    async with AsyncSession(bind=db.async_engine) as db_session:
+        async with services.NavigationService.new(session=db_session) as navigation_svc:
+            try:
+                features = await navigation_svc.walk_features(source_name, identifier, nav_mode, data_source, distance)
+            except NotFoundError as e:
+                raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail=str(e))
+            except ValueError as e:
+                raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail=str(e))
+            _r = flask.Response(
+                headers={"Content-Type": "application/json"},
+                status=http.HTTPStatus.OK,
+                response=util.stream_j2_template("FeatureCollection.j2", [msgspec.to_builtins(f) for f in features]),
+            )
+    return _r
+
