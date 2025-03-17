@@ -7,16 +7,19 @@
 """ """
 
 import http
+import json
 import logging
 from copy import deepcopy
 from typing import Any, Literal, TypeVar
 
 import flask
 import msgspec
+from advanced_alchemy.exceptions import NotFoundError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from .. import __version__, util
 from ..config import MasterConfig, status
+from ..db.schemas import struct_geojson
 from ..domain.linked_data import services
 
 ROOT = flask.Blueprint("nldi", __name__)
@@ -159,7 +162,7 @@ async def get_feature_by_identifier(source_name: str, identifier: str):
             _r = flask.Response(
                 headers={"Content-Type": "application/json"},
                 status=http.HTTPStatus.OK,
-                response=util.stream_j2_template("FeatureCollection.j2", [msgspec.structs.asdict(_geojson)]),
+                response=util.stream_j2_template("FeatureCollection.j2", [msgspec.to_builtins(_geojson)]),
             )
     return _r
 
@@ -220,10 +223,23 @@ async def get_flowline_navigation(
     source_name: str,
     identifier: str,
     nav_mode: str,
-    distance: float,
-    trimStart: bool = False,
-) -> struct_geojson.FeatureCollection:
-
+):
+    try:
+        _d = flask.request.args["distance"]
+        distance = float(_d)
+    except KeyError as e:
+        return flask.Response(status=http.HTTPStatus.BAD_REQUEST, response="No distance provided")
+    except (TypeError, ValueError) as e:
+        return flask.Response(status=http.HTTPStatus.BAD_REQUEST, response="Invalid distance provided")
+    trim_start = False
+    try:
+        _t = flask.request.args["trimStart"]
+        trim_start = _t.lower() == "true"
+    except KeyError as e:
+        trim_start = False
+    except (TypeError, ValueError) as e:
+        return flask.Response(status=http.HTTPStatus.BAD_REQUEST, response="Invalid trimStart provided")
+    db = flask.current_app.NLDI_CONFIG.db
     async with AsyncSession(bind=db.async_engine) as db_session:
         async with services.NavigationService.new(session=db_session) as navigation_svc:
             try:
@@ -235,6 +251,6 @@ async def get_flowline_navigation(
             _r = flask.Response(
                 headers={"Content-Type": "application/json"},
                 status=http.HTTPStatus.OK,
-                response=util.stream_j2_template("FeatureCollection.j2", [msgspec.structs.asdict(f.as_feature()) for f in features]),
+                response=util.stream_j2_template("FeatureCollection.j2", [msgspec.to_builtins(f) for f in features]),
             )
     return _r

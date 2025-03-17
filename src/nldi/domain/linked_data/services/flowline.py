@@ -13,6 +13,7 @@ but then applies its own logic/handling.  I think of the services
 object as being an implementation of a unit-of-work pattern.
 """
 
+import json
 import logging
 from collections.abc import AsyncGenerator
 
@@ -52,12 +53,15 @@ class FlowlineService(SQLAlchemyAsyncRepositoryService[FlowlineModel]):
         _result.id = _feature.nhdplus_comid
         return _result
 
-    async def features_from_nav_query(self, nav_query: Select) -> list[FlowlineModel]:
+    async def features_from_nav_query(self, nav_query: Select) -> list[struct_geojson.Feature]:
         subq = nav_query.subquery()
         stmt = sqlalchemy.select(FlowlineModel).join(subq, FlowlineModel.nhdplus_comid == subq.c.comid)
         hits = await self.repository._execute(stmt)
         r = hits.fetchall()
-        return [f[0].as_feature(excl_props=["objectid", "permanent_identifier", "fmeasure", "tmeasure", "reachcode"]) for f in r]
+        return [
+            f[0].as_feature(excl_props=["objectid", "permanent_identifier", "fmeasure", "tmeasure", "reachcode"])
+            for f in r
+        ]
 
     async def trimed_features_from_nav_query(self, nav_query: Select, trim_query: Select) -> list:
         nav_subq = nav_query.subquery()
@@ -71,7 +75,7 @@ class FlowlineService(SQLAlchemyAsyncRepositoryService[FlowlineModel]):
         hits = await self.repository._execute(stmt)
         for f, g in hits.fetchall():
             _tmp = f.as_feature(excl_props=["objectid", "permanent_identifier", "fmeasure", "tmeasure", "reachcode"])
-            _tmp.geometry = g  # Overwrite geom with trimmed geom
+            _tmp.geometry = json.loads(g)  # Overwrite geom with trimmed geom
             r.append(_tmp)
         return r
 
