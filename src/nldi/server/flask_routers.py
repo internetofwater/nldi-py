@@ -213,3 +213,28 @@ async def get_navigation_info(source_name: str, identifier: str, nav_mode: str) 
                     }
                 )
     return content
+
+
+@ROOT.route("/linked-data/<path:source_name>/<path:identifier>/navigation/<path:nav_mode>/flowlines")
+async def get_flowline_navigation(
+    source_name: str,
+    identifier: str,
+    nav_mode: str,
+    distance: float,
+    trimStart: bool = False,
+) -> struct_geojson.FeatureCollection:
+
+    async with AsyncSession(bind=db.async_engine) as db_session:
+        async with services.NavigationService.new(session=db_session) as navigation_svc:
+            try:
+                features = await navigation_svc.walk_flowlines(source_name, identifier, nav_mode, distance, True)
+            except NotFoundError as e:
+                raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail=str(e))
+            except ValueError as e:
+                raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail=str(e))
+            _r = flask.Response(
+                headers={"Content-Type": "application/json"},
+                status=http.HTTPStatus.OK,
+                response=util.stream_j2_template("FeatureCollection.j2", [msgspec.structs.asdict(f.as_feature()) for f in features]),
+            )
+    return _r
