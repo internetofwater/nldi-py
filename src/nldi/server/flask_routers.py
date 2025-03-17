@@ -163,8 +163,9 @@ async def get_feature_by_identifier(source_name: str, identifier: str):
             )
     return _r
 
+
 @ROOT.route("/linked-data/<path:source_name>/<path:identifier>/navigation")
-def get_navigation_modes(source_name:str, identifier: str):
+async def get_navigation_modes(source_name: str, identifier: str):
     db = flask.current_app.NLDI_CONFIG.db
     base_url = flask.current_app.NLDI_CONFIG.server.base_url
     async with AsyncSession(bind=db.async_engine) as db_session:
@@ -180,4 +181,35 @@ def get_navigation_modes(source_name:str, identifier: str):
         "downstreamMain": util.url_join(nav_url, "DM"),
         "downstreamDiversions": util.url_join(nav_url, "DD"),
     }
+    return content
+
+
+@ROOT.route("/linked-data/<path:source_name>/<path:identifier>/navigation/<path:nav_mode>")
+async def get_navigation_info(source_name: str, identifier: str, nav_mode: str) -> list[dict[str, str]]:
+    db = flask.current_app.NLDI_CONFIG.db
+    base_url = flask.current_app.NLDI_CONFIG.server.base_url
+    nav_url = util.url_join(base_url, "linked-data", source_name, identifier, "navigation")
+
+    async with AsyncSession(bind=db.async_engine) as db_session:
+        async with services.CrawlerSourceService.new(session=db_session) as sources_svc:
+            src_exists = await sources_svc.suffix_exists(source_name)
+            if not src_exists:
+                raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail=f"No such source: {source_name}")
+
+            content = [
+                {
+                    "source": "Flowlines",
+                    "sourceName": "NHDPlus flowlines",
+                    "features": util.url_join(nav_url, nav_mode, "flowlines"),
+                }
+            ]
+            for source in await sources_svc.list():
+                src_id = source.source_suffix
+                content.append(
+                    {
+                        "source": src_id,
+                        "sourceName": source.source_name,
+                        "features": util.url_join(nav_url, nav_mode, src_id.lower()),
+                    }
+                )
     return content
