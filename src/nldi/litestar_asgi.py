@@ -25,6 +25,15 @@ logging_config = LoggingConfig(
 )
 
 
+def append_headers_to_response(response: litestar.Response) -> litestar.Response:
+    response.headers.update(
+        {
+            "X-Powered-By": f"nldi {__version__} and LiteStar",
+        }
+    )
+    return response
+
+
 def litestar_app_factory() -> litestar.Litestar:
     """
     Creates a Litestar ASGI app.
@@ -47,6 +56,7 @@ def litestar_app_factory() -> litestar.Litestar:
         logging_config=logging_config,
         plugins=[SQLAlchemyPlugin(config=sqa_config)],
         path=_cfg.server.prefix,
+        after_request=append_headers_to_response,
     )
 
 
