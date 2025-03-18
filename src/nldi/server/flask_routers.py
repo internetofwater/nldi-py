@@ -16,6 +16,7 @@ import flask
 import msgspec
 from advanced_alchemy.exceptions import NotFoundError
 from sqlalchemy.ext.asyncio import AsyncSession
+from werkzeug.exceptions import UnprocessableEntity, BadRequest, NotImplemented, NotFound
 
 from .. import __version__, util
 from ..config import MasterConfig, status
@@ -136,7 +137,7 @@ async def get_flowline_by_comid(comid: int | None = None):
                     xtra_props={"navigation": util.url_join(base_url, "comid", comid, "navigation")},
                 )
             except NotFoundError:
-                raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail=f"COMID {comid} not found.")
+                raise BadRequest(description=f"COMID {comid} not found.")
         _r = flask.Response(
             headers={"Content-Type": "application/json"},
             status=http.HTTPStatus.OK,
@@ -144,7 +145,38 @@ async def get_flowline_by_comid(comid: int | None = None):
         )
     return _r
 
+@ROOT.route("/linked-data/comid/position")
+async def flowline_by_position():
+    """Find flowline by spatial search."""
 
+    if (coords := flask.request.args.get("coords")) is None:
+        LOGGER.error("No coordinates provided")
+        return flask.Response(status=http.HTTPStatus.BAD_REQUEST, response="No coordinates provided")
+
+    # Step 1: Get the COMID of the catchment polygon holding the point.
+    async with AsyncSession(bind=db.async_engine) as db_session:
+        async with services.CatchmentService.new(session=db_session) as catchment_svc:
+            try:
+                catchment = await catchment_svc.get_by_wkt_point(coords)
+                comid = int(catchment.featureid)
+            except ValueError as e:
+                raise UnprocessableEntity(description=str(e))
+            except NotFoundError as e:
+                raise NotFound(description=str(e))
+    # Step2: use that catchment's COMID to lookup flowline
+    async with services.FlowlineService.new(session=db_session) as flowline_svc:
+        flowline_feature = await flowline_svc.get_feature(
+            comid,
+            xtra_props={"navigation": util.url_join(base_url, "comid", comid, "navigation")},
+        )
+    _r = flask.Response(
+        headers={"Content-Type": "application/json"},
+        status=http.HTTPStatus.OK,
+        response=util.stream_j2_template("FeatureCollection.j2", [msgspec.structs.asdict(flowline_feature)]),
+    )
+    return _r
+
+# region Routes Per-Source
 @ROOT.route("/linked-data/<path:source_name>/<path:identifier>")
 async def get_feature_by_identifier(source_name: str, identifier: str):
     db = flask.current_app.NLDI_CONFIG.db
@@ -154,7 +186,7 @@ async def get_feature_by_identifier(source_name: str, identifier: str):
         async with services.FeatureService.new(session=db_session) as feature_svc:
             feature = await feature_svc.feature_lookup(source_name, identifier)
             if not feature:
-                raise HTTPException(status_code=HTTP_404_NOT_FOUND)
+                raise NotFound(description=f"Not Found: {source_name}/{identifier}")
             nav_url = util.url_join(
                 flask.current_app.NLDI_CONFIG.server.base_url, "linked-data", source_name, identifier, "navigation"
             )
@@ -166,6 +198,12 @@ async def get_feature_by_identifier(source_name: str, identifier: str):
             )
     return _r
 
+@ROOT.route("/linked-data/<path:source_name>/<path:identifier>/basin")
+async def get_basin( source_name:str, identifier:str) -> dict[str, Any]:
+    raise NotImplemented(
+        description="BASIN not yet implemented",
+    )
+
 
 @ROOT.route("/linked-data/<path:source_name>/<path:identifier>/navigation")
 async def get_navigation_modes(source_name: str, identifier: str):
@@ -175,7 +213,7 @@ async def get_navigation_modes(source_name: str, identifier: str):
         async with services.CrawlerSourceService.new(session=db_session) as sources_svc:
             src_exists = await sources_svc.suffix_exists(source_name)
             if not src_exists:
-                raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail=f"No such source: {source_name}")
+                raise NotFound(description==f"No such source: {source_name}")
 
     nav_url = util.url_join(base_url, "linked-data", source_name, identifier, "navigation")
     content = {
@@ -197,7 +235,7 @@ async def get_navigation_info(source_name: str, identifier: str, nav_mode: str) 
         async with services.CrawlerSourceService.new(session=db_session) as sources_svc:
             src_exists = await sources_svc.suffix_exists(source_name)
             if not src_exists:
-                raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail=f"No such source: {source_name}")
+                raise NotFound(description=f"No such source: {source_name}")
 
             content = [
                 {
@@ -245,9 +283,9 @@ async def get_flowline_navigation(
             try:
                 features = await navigation_svc.walk_flowlines(source_name, identifier, nav_mode, distance, True)
             except NotFoundError as e:
-                raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail=str(e))
+                raise NotFound(description=str(e))
             except ValueError as e:
-                raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail=str(e))
+                raise BadRequest(description=str(e))
             _r = flask.Response(
                 headers={"Content-Type": "application/json"},
                 status=http.HTTPStatus.OK,
@@ -278,9 +316,9 @@ async def get_feature_navigation(
             try:
                 features = await navigation_svc.walk_features(source_name, identifier, nav_mode, data_source, distance)
             except NotFoundError as e:
-                raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail=str(e))
+                raise NotFound(description=str(e))
             except ValueError as e:
-                raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail=str(e))
+                raise BadRequest(description=str(e))
             _r = flask.Response(
                 headers={"Content-Type": "application/json"},
                 status=http.HTTPStatus.OK,
