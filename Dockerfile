@@ -18,7 +18,7 @@ ENV \
   LANG=${LANG} \
   PIP_NO_CACHE_DIR=1
 
-COPY ./DOICert.crt /usr/local/share/ca-certificates/DOICert.crt
+COPY ./docker/DOICert.crt /usr/local/share/ca-certificates/DOICert.crt
 RUN chmod 644 /usr/local/share/ca-certificates/*.crt && update-ca-certificates
 RUN \
   apk update && \
