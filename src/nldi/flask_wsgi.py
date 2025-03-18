@@ -10,7 +10,7 @@ import flask
 from flask_cors import CORS
 
 from .config import get_config
-from .server.flask_routers import ROOT
+from .server.flask_routers import LINKED_DATA, ROOT
 
 
 def flask_nldi_app_factory() -> flask.Flask:
@@ -22,6 +22,7 @@ def flask_nldi_app_factory() -> flask.Flask:
     app.url_map.strict_slashes = False
     CORS(app)
     app.register_blueprint(ROOT, url_prefix=_cfg.server.prefix)
+    app.register_blueprint(LINKED_DATA, url_prefix=f"{_cfg.server.prefix}/linked-data")
     app.NLDI_CONFIG = _cfg
     return app
 

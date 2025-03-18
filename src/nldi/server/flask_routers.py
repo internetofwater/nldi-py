@@ -16,7 +16,7 @@ import flask
 import msgspec
 from advanced_alchemy.exceptions import NotFoundError
 from sqlalchemy.ext.asyncio import AsyncSession
-from werkzeug.exceptions import UnprocessableEntity, BadRequest, NotImplemented, NotFound
+from werkzeug.exceptions import BadRequest, NotFound, NotImplemented, UnprocessableEntity
 
 from .. import __version__, util
 from ..config import MasterConfig, status
@@ -24,13 +24,12 @@ from ..db.schemas import struct_geojson
 from ..domain.linked_data import services
 
 ROOT = flask.Blueprint("nldi", __name__)
+LINKED_DATA = flask.Blueprint("linked-data", __name__)
 
 
 @ROOT.before_request
-def log_incoming_request() -> None:
-    """Implement simple middleware function to log requests."""
+def root_incoming_request() -> None:
     logging.debug(f"{flask.request.method} {flask.request.url}")
-    # TODO: other pre-request activities can go here.
 
     rp = flask.request.path
     if rp != "/" and rp.endswith("/"):
@@ -40,12 +39,7 @@ def log_incoming_request() -> None:
     @flask.after_this_request
     def update_headers(r: flask.Response) -> flask.Response:
         """Implement simple middlware function to update response headers."""
-        r.headers.update(
-            {
-                "X-Powered-By": f"nldi {__version__} and FLASK",
-            }
-            # TODO: add headers to this dict that you want in every response.
-        )
+        r.headers.update({"X-Powered-By": f"nldi {__version__} and FLASK"})
         return r
 
 
@@ -114,7 +108,50 @@ def healthcheck():
 # region  Linked-Data
 
 
-@ROOT.route("/linked-data")
+class HTML_JSON_Exception(Exception):
+    pass
+
+
+@LINKED_DATA.errorhandler(HTML_JSON_Exception)
+def html_to_json_redirect(e) -> flask.Response:
+    logging.debug("Redirection HTML")
+    return flask.Response(
+        response=f"""
+                <html>
+                An HTML representation is not available for this resource.
+                <br/>
+                If you would like to see the data as JSON, <a href="{e}">click here</a>.
+                </html>
+        """
+    )
+
+
+@LINKED_DATA.before_request
+def parse_incoming_request() -> None:
+    rp = flask.request.path
+    if rp != "/" and rp.endswith("/"):
+        return flask.redirect(rp[:-1])
+
+    if flask.request.args.get("f") == "json":
+        logging.debug(f"JSON specifically requested")
+        return
+    if flask.request.args.get("f") == "html":
+        _q = dict(flask.request.args)
+        _q['f'] = 'json'
+        _qstring="&".join([f"{k}={v}" for k, v in _q.items()])
+        logging.debug(f"REDIRECT from HTML")
+        new_url = f"{rp}?{_qstring}"
+        raise HTML_JSON_Exception(new_url)
+
+    ## Sets up a callback to update headers after the request is processed.
+    @flask.after_this_request
+    def update_headers(r: flask.Response) -> flask.Response:
+        """Implement simple middlware function to update response headers."""
+        r.headers.update({"X-Powered-By": f"nldi {__version__} and FLASK"})
+        return r
+
+
+@LINKED_DATA.route("/")
 async def list_sources():
     db = flask.current_app.NLDI_CONFIG.db
     async with AsyncSession(bind=db.async_engine) as db_session:
@@ -124,7 +161,7 @@ async def list_sources():
     return [f._as_dict for f in _r]
 
 
-@ROOT.route("/linked-data/comid/<int:comid>")
+@LINKED_DATA.route("/comid/<int:comid>")
 async def get_flowline_by_comid(comid: int | None = None):
     db = flask.current_app.NLDI_CONFIG.db
     base_url = flask.current_app.NLDI_CONFIG.server.base_url
@@ -145,10 +182,10 @@ async def get_flowline_by_comid(comid: int | None = None):
         )
     return _r
 
-@ROOT.route("/linked-data/comid/position")
+
+@LINKED_DATA.route("/comid/position")
 async def flowline_by_position():
     """Find flowline by spatial search."""
-
     if (coords := flask.request.args.get("coords")) is None:
         LOGGER.error("No coordinates provided")
         return flask.Response(status=http.HTTPStatus.BAD_REQUEST, response="No coordinates provided")
@@ -176,8 +213,9 @@ async def flowline_by_position():
     )
     return _r
 
+
 # region Routes Per-Source
-@ROOT.route("/linked-data/<path:source_name>/<path:identifier>")
+@LINKED_DATA.route("/<path:source_name>/<path:identifier>")
 async def get_feature_by_identifier(source_name: str, identifier: str):
     db = flask.current_app.NLDI_CONFIG.db
     base_url = flask.current_app.NLDI_CONFIG.server.base_url
@@ -198,14 +236,15 @@ async def get_feature_by_identifier(source_name: str, identifier: str):
             )
     return _r
 
-@ROOT.route("/linked-data/<path:source_name>/<path:identifier>/basin")
-async def get_basin( source_name:str, identifier:str) -> dict[str, Any]:
+
+@LINKED_DATA.route("/<path:source_name>/<path:identifier>/basin")
+async def get_basin(source_name: str, identifier: str) -> dict[str, Any]:
     raise NotImplemented(
         description="BASIN not yet implemented",
     )
 
 
-@ROOT.route("/linked-data/<path:source_name>/<path:identifier>/navigation")
+@LINKED_DATA.route("/<path:source_name>/<path:identifier>/navigation")
 async def get_navigation_modes(source_name: str, identifier: str):
     db = flask.current_app.NLDI_CONFIG.db
     base_url = flask.current_app.NLDI_CONFIG.server.base_url
@@ -213,7 +252,7 @@ async def get_navigation_modes(source_name: str, identifier: str):
         async with services.CrawlerSourceService.new(session=db_session) as sources_svc:
             src_exists = await sources_svc.suffix_exists(source_name)
             if not src_exists:
-                raise NotFound(description==f"No such source: {source_name}")
+                raise NotFound(description == f"No such source: {source_name}")
 
     nav_url = util.url_join(base_url, "linked-data", source_name, identifier, "navigation")
     content = {
@@ -225,7 +264,7 @@ async def get_navigation_modes(source_name: str, identifier: str):
     return content
 
 
-@ROOT.route("/linked-data/<path:source_name>/<path:identifier>/navigation/<path:nav_mode>")
+@LINKED_DATA.route("/<path:source_name>/<path:identifier>/navigation/<path:nav_mode>")
 async def get_navigation_info(source_name: str, identifier: str, nav_mode: str) -> list[dict[str, str]]:
     db = flask.current_app.NLDI_CONFIG.db
     base_url = flask.current_app.NLDI_CONFIG.server.base_url
@@ -256,7 +295,7 @@ async def get_navigation_info(source_name: str, identifier: str, nav_mode: str) 
     return content
 
 
-@ROOT.route("/linked-data/<path:source_name>/<path:identifier>/navigation/<path:nav_mode>/flowlines")
+@LINKED_DATA.route("/<path:source_name>/<path:identifier>/navigation/<path:nav_mode>/flowlines")
 async def get_flowline_navigation(
     source_name: str,
     identifier: str,
@@ -294,8 +333,7 @@ async def get_flowline_navigation(
     return _r
 
 
-
-@ROOT.route("/linked-data/<path:source_name>/<path:identifier>/navigation/<path:nav_mode>/<path:data_source>")
+@LINKED_DATA.route("/<path:source_name>/<path:identifier>/navigation/<path:nav_mode>/<path:data_source>")
 async def get_feature_navigation(
     source_name: str,
     identifier: str,
@@ -325,4 +363,3 @@ async def get_feature_navigation(
                 response=util.stream_j2_template("FeatureCollection.j2", [msgspec.to_builtins(f) for f in features]),
             )
     return _r
-
