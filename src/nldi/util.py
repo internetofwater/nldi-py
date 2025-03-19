@@ -82,3 +82,114 @@ def stream_j2_template(template: Path, data: dict) -> str:
     rv.enable_buffering(16)
 
     return rv
+
+
+def render_j2_template(template, data):
+    global TEMPLATES
+    env = Environment(loader=FileSystemLoader(TEMPLATES), autoescape=True)
+
+    env.filters["to_json"] = to_json
+    env.globals.update(to_json=to_json)
+
+    env.filters["get_path_basename"] = get_path_basename
+    env.globals.update(get_path_basename=get_path_basename)
+
+    env.filters["get_breadcrumbs"] = get_breadcrumbs
+    env.globals.update(get_breadcrumbs=get_breadcrumbs)
+
+    env.filters["filter_dict_by_key_value"] = filter_dict_by_key_value
+    env.globals.update(filter_dict_by_key_value=filter_dict_by_key_value)
+
+    template = env.get_template(template)
+    return template.render(data=data, version=__version__)
+
+
+def to_json(dict_, pretty=False):
+    """
+    Serialize dict to json
+
+    :param dict_: `dict` of JSON representation
+    :param pretty: `bool` of whether to prettify JSON (default is `False`)
+
+    :returns: JSON string representation
+    """
+    if pretty:
+        indent = 4
+    else:
+        indent = None
+
+    return json.dumps(dict_, default=json_serial, indent=indent)
+
+
+def get_path_basename(urlpath):
+    """
+    Helper function to derive file basename
+
+    :param urlpath: URL path
+    :returns: string of basename of URL path
+    """
+    return os.path.basename(urlpath)
+
+
+def get_breadcrumbs(urlpath):
+    """
+    helper function to make breadcrumbs from a URL path
+
+    :param urlpath: URL path
+    :returns: `list` of `dict` objects of labels and links
+    """
+    links = []
+
+    tokens = urlpath.split("/")
+
+    s = ""
+    for t in tokens:
+        if s:
+            s += "/" + t
+        else:
+            s = t
+        links.append(
+            {
+                "href": s,
+                "title": t,
+            }
+        )
+
+    return links
+
+
+def filter_dict_by_key_value(dict_, key, value):
+    """
+    helper function to filter a dict by a dict key
+
+    :param dict_: ``dict``
+    :param key: dict key
+    :param value: dict key value
+
+    :returns: filtered ``dict``
+    """
+    return {k: v for (k, v) in dict_.items() if v[key] == value}
+
+
+def json_serial(obj):
+    """
+    Helper function to convert to JSON non-defaulttypes.
+
+    Adapted from https://stackoverflow.com/a/22238613
+
+    :param obj: `object` to be evaluated
+    :returns: JSON non-default type to `str`
+    """
+    if isinstance(obj, (datetime, date, time)):
+        return obj.isoformat()
+    elif isinstance(obj, bytes):
+        try:
+            return obj.decode("utf-8")
+        except UnicodeDecodeError:
+            return base64.b64encode(obj)
+    elif isinstance(obj, Decimal):
+        return float(obj)
+
+    msg = "{} type {} not serializable".format(obj, type(obj))
+    LOGGER.error(msg)
+    raise TypeError(msg)

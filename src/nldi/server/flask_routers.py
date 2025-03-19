@@ -104,6 +104,21 @@ def healthcheck():
         "pygeoapi": msgspec.structs.asdict(_cfg.server.healthstatus("pygeoapi")),
     }
 
+@ROOT.route("/openapi")
+def openapi_spec():
+    from .openapi import generate_openapi_json
+    if requested_format := flask.request.args.get("f", "html") == "html":
+        template = "swagger.html"
+        data = {"openapi-document-path": "openapi"} ## NOTE: intentionally using relative path here
+        content = util.render_j2_template(template, data)
+        return flask.Response(
+            headers={"Content-Type": "text/html"},
+            status=http.HTTPStatus.OK,
+            response = content,
+        )
+    r = flask.jsonify( generate_openapi_json())
+    r.headers["Content-Type"] = "application/vnd.oai.openapi+json;version=3.0"  # noqa
+    return r
 
 # region  Linked-Data
 
@@ -135,7 +150,10 @@ def parse_incoming_request() -> None:
     if flask.request.args.get("f") == "json":
         logging.debug(f"JSON specifically requested")
         return
-    if flask.request.args.get("f") == "html":
+    # NOTE: This is a special request for the interface:  If the requesting client accepts HTML, we
+    # are assuming that it is a web browser or other general-purpose client. We want them to specifically
+    # ask for JSON with the `f=json` query param.
+    if flask.request.args.get("f") == "html" or flask.request.accept_mimetypes.accept_html:
         _q = dict(flask.request.args)
         _q['f'] = 'json'
         _qstring="&".join([f"{k}={v}" for k, v in _q.items()])

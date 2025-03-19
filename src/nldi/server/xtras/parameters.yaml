@@ -1,0 +1,158 @@
+---
+identifier:
+  name: identifier
+  in: path
+  description: Feature identifier
+  required: true
+  schema:
+    type: string
+
+sourceid:
+  name: sourceid
+  in: path
+  description: Source identifier
+  required: true
+  schema:
+    type: string
+
+comid:
+  name: comid
+  in: path
+  description: NHDPlus common identifier
+  required: True,
+  schema:
+    type: integer
+    example: 13294314
+
+simplified:
+  name: simplified
+  in: query
+  required: false
+  schema:
+    type: boolean
+    default: true
+
+splitCatchment:
+  name: splitCatchment
+  in: query
+  required: false
+  schema:
+    type: boolean
+    default: false
+
+navigationMode:
+  name: navigationMode
+  in: path
+  description: Upstream Main (UM), Upstream Tributaties (UT), Downstream
+    Main (DM), and Downstream Diversion (DD)
+  required: true
+  schema:
+    pattern: DD|DM|UT|UM
+    type: string
+    example: UM
+    enum:
+      - UM
+      - UT
+      - DM
+      - DD
+
+navigationModePP:
+  name: navigationMode
+  in: path
+  description: Upstream Main (UM), Upstream Tributaties (UT), Downstream
+    Main (DM), Downstream Diversion (DD), and Point to Point (PP)
+  required: true
+  schema:
+    pattern: DD|DM|PP|UT|UM
+    type: string
+    example: UM
+    enum:
+      - UM
+      - UT
+      - DM
+      - DD
+      - PP
+
+stopComid:
+  name: stopComid
+  in: query
+  description: NHDPlus comid to stop at when navigationMode is PP
+  required: false
+  schema:
+    type: integer
+
+distance:
+  name: distance
+  in: query
+  description:
+    Distance in kilometers. Note that this is a very expensive query and
+    should not be executed in parallel
+  required: true
+  schema:
+    minimum: 0
+    exclusiveMinimum: true
+    maximum: 10000
+    exclusiveMaximum: true
+    type: number
+    example: 10
+
+trimStart:
+  name: trimStart
+  in: query
+  required: false
+  schema:
+    type: boolean
+
+trimTolerance:
+  name: trimTolerance
+  in: query
+  required: false
+  schema:
+    type: number
+    example: 0.1
+
+legacy:
+  name: legacy
+  in: query
+  required: false
+  schema:
+    type: boolean
+
+coords:
+  name: coords
+  in: query
+  description: coordinates in the form 'POINT(longitude latitude)'
+  required: true
+  schema:
+    pattern: POINT ?\(-?[0-9]+((.)[0-9]+)?\s-?[0-9]+((.)[0-9]+)?\)
+    type: string
+    example: POINT(-89.509 43.087)
+
+characteristicType:
+  name: characteristicType
+  in: path
+  required: true
+  schema:
+    pattern: local|div|tot
+    type: string
+    example: local
+    enum:
+      - local
+      - div
+      - tot
+  example: local
+
+characteristicId:
+  name: characteristicId
+  in: query
+  required: false
+  schema:
+    type: string
+    example:
+      - TOT_BFI
+      - TOT_PET
+      - TOT_CONTACT
+  example:
+    - TOT_BFI
+    - TOT_PET
+    - TOT_CONTACT
