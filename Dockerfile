@@ -22,7 +22,7 @@ COPY ./docker/DOICert.crt /usr/local/share/ca-certificates/DOICert.crt
 RUN chmod 644 /usr/local/share/ca-certificates/*.crt && update-ca-certificates
 RUN \
   apk update && \
-  apk add --no-cache curl build-base libpq-dev geos-dev gdal-dev proj-dev proj-util
+  apk add --no-cache --no-install-recommends curl build-base libpq-dev geos-dev gdal-dev proj-dev proj-util
 
 
 ADD . /nldi
