@@ -23,7 +23,6 @@ WSGI_WORKER_CLASS=${WSGI_WORKER_CLASS:=gevent}
 cd ${NLDI_HOME}
 echo "name=${CONTAINER_NAME} ; bind=${CONTAINER_HOST}:${CONTAINER_PORT}"
 exec gunicorn --workers ${WSGI_WORKERS} \
-        --worker-class=${WSGI_WORKER_CLASS} \
         --timeout ${WSGI_WORKER_TIMEOUT} \
         --name=${CONTAINER_NAME} \
         --bind ${CONTAINER_HOST}:${CONTAINER_PORT} \

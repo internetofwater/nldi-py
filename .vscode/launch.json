@@ -34,6 +34,21 @@
                 "--interface",
                 "wsgi"
             ]
+        },
+        {
+            "name": "GUNICORN",
+            "type": "debugpy",
+            "justMyCode": false,
+            "envFile": "${workspaceFolder}/tests/data/secret.env",
+            "request": "launch",
+            "program": "${workspaceFolder}/.venv/bin/gunicorn",
+            "args": [
+                "--bind",
+                "0.0.0.0:8001",
+                "--workers",
+                "4",
+                "nldi.flask_wsgi:APP",
+            ]
         }
     ]
 }
