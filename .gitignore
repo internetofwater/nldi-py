@@ -166,4 +166,4 @@ cython_debug/
 secret.env
 dist/
 scratch.ipynb
-scratch.json
+

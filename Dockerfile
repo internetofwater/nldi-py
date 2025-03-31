@@ -18,16 +18,19 @@ ENV \
   LANG=${LANG} \
   PIP_NO_CACHE_DIR=1
 
-# Install operating system dependencies
+COPY ./docker/DOICert.crt /usr/local/share/ca-certificates/DOICert.crt
+RUN chmod 644 /usr/local/share/ca-certificates/*.crt && update-ca-certificates
 RUN \
   apk update && \
-  apk add --no-cache curl build-base libpq-dev
+  apk add --no-cache --no-install-recommends curl build-base libpq-dev geos-dev gdal-dev proj-dev proj-util
+
 
 ADD . /nldi
 WORKDIR /nldi
 
-RUN pip install --no-cache-dir .  && rm -rf /root/.cache/pip
-RUN pip install --no-cache-dir pyyaml
+#RUN pip install --prefer-binary --trusted-host pypi.org --trusted-host files.pythonhosted.org --no-cache-dir .  && rm -rf /root/.cache/pip
+RUN pip install --prefer-binary --no-cache-dir .  && rm -rf /root/.cache/pip
+
 
 # This will be the final image:
 FROM python:3.12-alpine AS nldi
@@ -36,6 +39,6 @@ WORKDIR /nldi
 COPY --from=build /usr/local/lib/python3.12/site-packages/ /usr/local/lib/python3.12/site-packages/
 COPY --from=build /usr/local/bin/gunicorn /usr/local/bin/
 COPY --from=build /usr/lib/libpq.so.5 /usr/lib/
-RUN mv /nldi/tests/data/sources_config.yml /nldi/local.source.yml
+RUN mv /nldi/tests/data/nldi_server_config.yml /nldi/local.source.yml
 
 ENTRYPOINT ["/nldi/start_nldi_server.sh"]
