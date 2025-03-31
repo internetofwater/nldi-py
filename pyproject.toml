@@ -1,10 +1,10 @@
 [tool.poetry]
 name = "nldi-py"
-version = "0.1.0"
+version = "1.0.0"
 description = "The Hydro Network Linked Data Index (NLDI) puts a restful application programming interface (API) in front of the National Hydrolography dataset (NHD). Now, instead of needing to be a GIS professional, any web developer can build tools against the core data in the NHD in a scalable, workable way."
 authors = ["Internet of Water"]
 maintainers = ["Benjamin Webb <bwebb@lincolninst.edu>"]
-license = "CC0"                                                                                                                                                                                                                                                                                                           # See  https://spdx.org/licenses/
+license = "CC0" # See  https://spdx.org/licenses/
 readme = "README.md"
 
 homepage = "https://github.com/internetofwater/nldi-py"
@@ -30,7 +30,7 @@ packages = [{ include = "nldi", from = "src" }]
 [tool.poetry.dependencies]
 python = "^3.11"
 litestar = { extras = ["jinja", "redis"], version = "^2.13.0" }
-advanced-alchemy = { extras = ["uuid"], version = "^0.30.2" }
+advanced-alchemy = { extras = ["uuid"], version = "^1.0.0" }
 geoalchemy2 = { extras = ["shapely"], version = "^0.16.0" }
 uvicorn = "^0.34.0"
 geomet = "^1.1.0"
