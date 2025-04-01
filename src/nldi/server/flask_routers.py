@@ -338,7 +338,7 @@ async def get_flowline_navigation(
     async with AsyncSession(bind=db.async_engine) as db_session:
         async with services.NavigationService.new(session=db_session) as navigation_svc:
             try:
-                features = await navigation_svc.walk_flowlines(source_name, identifier, nav_mode, distance, True)
+                features = await navigation_svc.walk_flowlines(source_name, identifier, nav_mode, distance, trim_start)
             except NotFoundError as e:
                 raise NotFound(description=str(e))
             except ValueError as e:
