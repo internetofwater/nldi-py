@@ -17,14 +17,11 @@ metadata:
   identification:
     title: Network Linked Data Index API - Python
     description: |
-      The NLDI is a search service that takes a watershed
-      outlet identifier as a starting point, a navigation
-      mode to perform, and the type of data desired in
-      response to the request. It can provide geospatial
-      representations of the navigation or linked data sources
-      found along the navigation. It also has the ability to
-      return catchment the watershed outlet is contained in
-      or the total upstream basin.
+      The NLDI is a search service that takes a watershed outlet identifier as a starting point,
+      a navigation mode to perform, and the type of data desired in response to the request. It
+      can provide geospatial representations of the navigation or linked data sources found along
+      the navigation. It also has the ability to return catchment the watershed outlet is
+      contained in or the total upstream basin.
     keywords:
       - python
       - nldi

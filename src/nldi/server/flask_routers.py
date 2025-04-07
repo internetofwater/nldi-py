@@ -104,25 +104,32 @@ def healthcheck():
         "pygeoapi": msgspec.structs.asdict(_cfg.server.healthstatus("pygeoapi")),
     }
 
-@ROOT.route("/openapi")
-def openapi_spec():
+
+@ROOT.route("/docs/openapi.json")
+def openapi_json():
     from .openapi import generate_openapi_json
-    if requested_format := flask.request.args.get("f", "html") == "html":
-        template = "swagger.html"
-        data = {"openapi-document-path": "openapi"} ## NOTE: intentionally using relative path here
-        content = util.render_j2_template(template, data)
-        return flask.Response(
-            headers={"Content-Type": "text/html"},
-            status=http.HTTPStatus.OK,
-            response = content,
-        )
     r = flask.jsonify( generate_openapi_json())
     r.headers["Content-Type"] = "application/vnd.oai.openapi+json;version=3.0"  # noqa
     return r
 
+@ROOT.route("/docs")
+def openapi_ui():
+    template = "swagger.html"
+    data = {"openapi-document-path": "docs/openapi.json"} ## NOTE: intentionally using relative path here
+    content = util.render_j2_template(template, data)
+    return flask.Response(
+        headers={"Content-Type": "text/html"},
+        status=http.HTTPStatus.OK,
+        response = content,
+    )
+
+
+@ROOT.route("/openapi")
+def openapi_redirect():
+    return flask.redirect("docs")
+
+
 # region  Linked-Data
-
-
 class HTML_JSON_Exception(Exception):
     pass
 
