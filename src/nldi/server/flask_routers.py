@@ -35,12 +35,12 @@ def root_incoming_request() -> None:
     if rp != "/" and rp.endswith("/"):
         return flask.redirect(rp[:-1])
 
-    ## Sets up a callback to update headers after the request is processed.
-    @flask.after_this_request
-    def update_headers(r: flask.Response) -> flask.Response:
-        """Implement simple middlware function to update response headers."""
-        r.headers.update({"X-Powered-By": f"nldi {__version__} and FLASK"})
-        return r
+## Sets up a callback to update headers after the request is processed.
+@ROOT.after_request
+def update_headers(r: flask.Response) -> flask.Response:
+    """Implement simple middlware function to update response headers."""
+    r.headers.update({"X-Powered-By": f"nldi {__version__} and FLASK"})
+    return r
 
 
 @ROOT.route("/")
@@ -169,11 +169,11 @@ def parse_incoming_request() -> None:
         raise HTML_JSON_Exception(new_url)
 
     ## Sets up a callback to update headers after the request is processed.
-    @flask.after_this_request
-    def update_headers(r: flask.Response) -> flask.Response:
-        """Implement simple middlware function to update response headers."""
-        r.headers.update({"X-Powered-By": f"nldi {__version__} and FLASK"})
-        return r
+@LINKED_DATA.after_request
+def ld_update_headers(r: flask.Response) -> flask.Response:
+    """Implement simple middlware function to update response headers."""
+    r.headers.update({"X-Powered-By": f"nldi {__version__} and FLASK"})
+    return r
 
 
 @LINKED_DATA.route("/")
