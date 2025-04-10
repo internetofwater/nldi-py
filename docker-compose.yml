@@ -1,5 +1,4 @@
 ---
-version: '3.3'
 
 services:
   nldi-db:
@@ -41,7 +40,7 @@ services:
       - nldi
 
 
-   
+
 
 
 
