@@ -29,7 +29,7 @@ packages = [{ include = "nldi", from = "src" }]
 
 [tool.poetry.dependencies]
 python = "^3.11"
-litestar = { extras = ["jinja", "redis"], version = "^2.13.0" }
+litestar = { extras = ["jinja"], version = "^2.13.0" }
 advanced-alchemy = { extras = ["uuid"], version = "^1.0.0" }
 geoalchemy2 = { extras = ["shapely"], version = "^0.16.0" }
 uvicorn = "^0.34.0"
