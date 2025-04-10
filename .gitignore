@@ -167,3 +167,4 @@ secret.env
 dist/
 scratch.ipynb
 
+.Dockerfile.swp
