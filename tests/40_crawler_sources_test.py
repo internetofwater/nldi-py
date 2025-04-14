@@ -51,7 +51,8 @@ async def test_source_repo_get_by_id(dbsession_containerized) -> None:
 async def test_source_repo_lookup_by_suffix(dbsession_containerized) -> None:
     src_repo = repos.CrawlerSourceRepository(session=dbsession_containerized)
 
-    feature = await src_repo.get_one_or_none(CrawlerSourceModel.source_suffix == "wqp")
+    feature = await src_repo.get_one_or_none(CrawlerSourceModel.source_suffix == "WQP")
+    # NOTE:  The REPO needs to match exactly (including case); the service which uses this repo will conduct a case-insensitive search.
     assert feature.source_suffix.lower() == "wqp"
     assert feature.crawler_source_id == 1  # < known value for this source.
 
@@ -82,15 +83,15 @@ async def test_source_service_search_by_suffix(dbsession_containerized) -> None:
     src_svc = services.CrawlerSourceService(session=dbsession_containerized)
 
     feature = await src_svc.get_by_suffix("wqp")
-    assert feature.source_suffix == "wqp"
+    assert feature.source_suffix.lower() == "wqp"
 
     ## Case insensitive:
     feature = await src_svc.get_by_suffix("WQP")
-    assert feature.source_suffix == "wqp"
+    assert feature.source_suffix.lower() == "wqp"
 
     ## weird case:
     feature = await src_svc.get_by_suffix("wQp")
-    assert feature.source_suffix == "wqp"
+    assert feature.source_suffix.lower() == "wqp"
 
 
 @pytest.mark.order(42)

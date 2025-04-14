@@ -52,7 +52,7 @@ async def test_feature_repo_get(dbsession_containerized) -> None:
     feature_repo = repos.FeatureRepository(session=dbsession_containerized)
 
     identifier = "USGS-05427930"  # < this ID and source must be in the containerized DB.
-    source_name = "wqp"
+    source_name = "WQP"  # NOTE: repo is case-sensitive; the service isn't
 
     ## "old" lookup method, without association proxies on FeatureSourceModel
     sources_svc = services.CrawlerSourceService(session=dbsession_containerized)
@@ -86,7 +86,7 @@ async def test_feature_repo_get_notfound(dbsession_containerized) -> None:
 
     # Invalid source name is tested elsewhere. 40_crawler_sources_test.py
     _src = await sources_svc.get_by_suffix(source_name)
-    assert _src.source_suffix == source_name
+    assert _src.source_suffix.lower() == source_name
 
     _feature = await feature_repo.get_one_or_none(
         FeatureSourceModel.identifier == identifier,
@@ -102,7 +102,7 @@ async def test_feature_repo_get_all(dbsession_containerized) -> None:
     feature_repo = repos.FeatureRepository(session=dbsession_containerized)
     sources_svc = services.CrawlerSourceService(session=dbsession_containerized)
 
-    source_name = "wqp"
+    source_name = "WQP"
 
     # Invalid source name is tested elsewhere. 40_crawler_sources_test.py
     _src = await sources_svc.get_by_suffix(source_name)
