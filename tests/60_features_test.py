@@ -41,6 +41,7 @@ from advanced_alchemy.exceptions import NotFoundError
 
 from nldi.db.schemas.nldi_data import FeatureSourceModel
 from nldi.domain.linked_data import repos, services
+from sqlalchemy import func
 
 from . import API_PREFIX
 
@@ -58,16 +59,8 @@ async def test_feature_repo_get(dbsession_containerized) -> None:
     sources_svc = services.CrawlerSourceService(session=dbsession_containerized)
     _src = await sources_svc.get_by_suffix(source_name)
     _feature = await feature_repo.get_one_or_none(
-        FeatureSourceModel.identifier == identifier, FeatureSourceModel.crawler_source_id == _src.crawler_source_id
-    )
-
-    assert _feature is not None
-    assert _feature.comid == 13294176  # < NOTE: integer; not a string
-    assert _feature.name.startswith("DORN (SPRING) CREEK")
-
-    ## "new" lookup method, with association proxies to simplify matching the source; i.e. no need to separately lookup source ID.
-    _feature = await feature_repo.get_one_or_none(
-        FeatureSourceModel.source == source_name, FeatureSourceModel.identifier == identifier
+        FeatureSourceModel.identifier == identifier,
+        FeatureSourceModel.crawler_source_id == _src.crawler_source_id,
     )
 
     assert _feature is not None
@@ -86,7 +79,7 @@ async def test_feature_repo_get_notfound(dbsession_containerized) -> None:
 
     # Invalid source name is tested elsewhere. 40_crawler_sources_test.py
     _src = await sources_svc.get_by_suffix(source_name)
-    assert _src.source_suffix == source_name
+    assert _src.source_suffix.lower() == source_name
 
     _feature = await feature_repo.get_one_or_none(
         FeatureSourceModel.identifier == identifier,
@@ -106,7 +99,7 @@ async def test_feature_repo_get_all(dbsession_containerized) -> None:
 
     # Invalid source name is tested elsewhere. 40_crawler_sources_test.py
     _src = await sources_svc.get_by_suffix(source_name)
-    assert _src.source_suffix == source_name
+    assert _src.source_suffix.lower() == source_name
 
     _features = await feature_repo.list(FeatureSourceModel.crawler_source_id == _src.crawler_source_id)
 

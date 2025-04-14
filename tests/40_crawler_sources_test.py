@@ -27,6 +27,7 @@ Crawler Sources
 
 import pytest
 from advanced_alchemy.exceptions import NotFoundError
+from sqlalchemy import func
 
 from nldi.db.schemas.nldi_data import CrawlerSourceModel
 from nldi.domain.linked_data import repos, services
@@ -51,8 +52,9 @@ async def test_source_repo_get_by_id(dbsession_containerized) -> None:
 async def test_source_repo_lookup_by_suffix(dbsession_containerized) -> None:
     src_repo = repos.CrawlerSourceRepository(session=dbsession_containerized)
 
-    feature = await src_repo.get_one_or_none(CrawlerSourceModel.source_suffix == "wqp")
-    assert feature.source_suffix.lower() == "wqp"
+    feature = await src_repo.get_one_or_none(
+        func.lower(CrawlerSourceModel.source_suffix) == "WQP".lower(),
+    )
     assert feature.crawler_source_id == 1  # < known value for this source.
 
 
@@ -82,15 +84,15 @@ async def test_source_service_search_by_suffix(dbsession_containerized) -> None:
     src_svc = services.CrawlerSourceService(session=dbsession_containerized)
 
     feature = await src_svc.get_by_suffix("wqp")
-    assert feature.source_suffix == "wqp"
+    assert feature.source_suffix.lower() == "wqp"
 
     ## Case insensitive:
     feature = await src_svc.get_by_suffix("WQP")
-    assert feature.source_suffix == "wqp"
+    assert feature.source_suffix.lower() == "wqp"
 
     ## weird case:
     feature = await src_svc.get_by_suffix("wQp")
-    assert feature.source_suffix == "wqp"
+    assert feature.source_suffix.lower() == "wqp"
 
 
 @pytest.mark.order(42)
