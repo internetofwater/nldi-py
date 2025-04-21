@@ -16,7 +16,7 @@ import flask
 import msgspec
 from advanced_alchemy.exceptions import NotFoundError
 from sqlalchemy.ext.asyncio import AsyncSession
-from werkzeug.exceptions import BadRequest, NotFound, NotImplemented, UnprocessableEntity
+from werkzeug.exceptions import BadRequest, NotFound, NotImplemented, ServiceUnavailable, UnprocessableEntity
 
 from .. import __version__, util
 from ..config import MasterConfig, status
@@ -34,6 +34,7 @@ def root_incoming_request() -> None:
     rp = flask.request.path
     if rp != "/" and rp.endswith("/"):
         return flask.redirect(rp[:-1])
+
 
 ## Sets up a callback to update headers after the request is processed.
 @ROOT.after_request
@@ -108,19 +109,21 @@ def healthcheck():
 @ROOT.route("/docs/openapi.json")
 def openapi_json():
     from .openapi import generate_openapi_json
-    r = flask.jsonify( generate_openapi_json())
+
+    r = flask.jsonify(generate_openapi_json())
     r.headers["Content-Type"] = "application/vnd.oai.openapi+json;version=3.0"  # noqa
     return r
+
 
 @ROOT.route("/docs")
 def openapi_ui():
     template = "swagger.html"
-    data = {"openapi-document-path": "docs/openapi.json"} ## NOTE: intentionally using relative path here
+    data = {"openapi-document-path": "docs/openapi.json"}  ## NOTE: intentionally using relative path here
     content = util.render_j2_template(template, data)
     return flask.Response(
         headers={"Content-Type": "text/html"},
         status=http.HTTPStatus.OK,
-        response = content,
+        response=content,
     )
 
 
@@ -162,13 +165,15 @@ def parse_incoming_request() -> None:
     # ask for JSON with the `f=json` query param.
     if flask.request.args.get("f") == "html" or flask.request.accept_mimetypes.accept_html:
         _q = dict(flask.request.args)
-        _q['f'] = 'json'
-        _qstring="&".join([f"{k}={v}" for k, v in _q.items()])
+        _q["f"] = "json"
+        _qstring = "&".join([f"{k}={v}" for k, v in _q.items()])
         logging.debug(f"REDIRECT from HTML")
         new_url = f"{rp}?{_qstring}"
         raise HTML_JSON_Exception(new_url)
 
     ## Sets up a callback to update headers after the request is processed.
+
+
 @LINKED_DATA.after_request
 def ld_update_headers(r: flask.Response) -> flask.Response:
     """Implement simple middlware function to update response headers."""
@@ -184,6 +189,29 @@ async def list_sources():
             src_list = await sources_svc.list()
             _r = list(src_list)
     return [f._as_dict for f in _r]
+
+
+@LINKED_DATA.route("/hydrolocation")
+async def get_hydrolocation():
+    if (coords := flask.request.args.get("coords")) is None:
+        return flask.Response(status=http.HTTPStatus.BAD_REQUEST, response="No coordinates provided")
+    db = flask.current_app.NLDI_CONFIG.db
+    base_url = flask.current_app.NLDI_CONFIG.server.base_url
+
+    async with AsyncSession(bind=db.async_engine) as db_session:
+        async with services.PyGeoAPIService.new(session=db_session) as pygeoapi_svc:
+            try:
+                features = await pygeoapi_svc.hydrolocation_by_coords(coords, base_url=base_url)
+            except RuntimeError as e:
+                raise ServiceUnavailable(description=str(e))
+            except KeyError as e:
+                raise NotFound(description=str(e))
+    _r = flask.Response(
+        headers={"Content-Type": "application/json"},
+        status=http.HTTPStatus.OK,
+        response=util.stream_j2_template("FeatureCollection.j2", [msgspec.structs.asdict(f) for f in features]),
+    )
+    return _r
 
 
 @LINKED_DATA.route("/comid/<int:comid>")

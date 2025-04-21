@@ -160,11 +160,11 @@ async def test_svc_dm_from_comid_trimmed(dbsession_containerized) -> None:
 # region Litestar Endpoints
 @pytest.mark.order(75)
 @pytest.mark.integration
-def test_api_get_nav_modes_by_id(client_containerized) -> None:
+def test_api_get_nav_modes_by_id(ls_client_containerized) -> None:
     source_name = "wqp"
     identifier = "USGS-05427930"
 
-    r = client_containerized.get(f"{API_PREFIX}/linked-data/{source_name}/{identifier}/navigation?f=json")
+    r = ls_client_containerized.get(f"{API_PREFIX}/linked-data/{source_name}/{identifier}/navigation?f=json")
     assert r.status_code == 200
     assert r.headers["content-type"].startswith("application/json")
     actual = r.json()
@@ -176,11 +176,11 @@ def test_api_get_nav_modes_by_id(client_containerized) -> None:
 @pytest.mark.order(75)
 @pytest.mark.parametrize("nav_mode", NAV_MODES)
 @pytest.mark.integration
-def test_api_get_each_nav_mode_by_id(client_containerized, nav_mode) -> None:
+def test_api_get_each_nav_mode_by_id(ls_client_containerized, nav_mode) -> None:
     source_name = "wqp"
     identifier = "USGS-05427930"
 
-    r = client_containerized.get(f"{API_PREFIX}/linked-data/{source_name}/{identifier}/navigation/{nav_mode}?f=json")
+    r = ls_client_containerized.get(f"{API_PREFIX}/linked-data/{source_name}/{identifier}/navigation/{nav_mode}?f=json")
     assert r.status_code == 200
     assert r.headers["content-type"].startswith("application/json")
     actual = r.json()
@@ -193,12 +193,12 @@ def test_api_get_each_nav_mode_by_id(client_containerized, nav_mode) -> None:
 
 @pytest.mark.order(75)
 @pytest.mark.integration
-def test_api_get_navigated_flowlines(client_containerized) -> None:
+def test_api_get_navigated_flowlines(ls_client_containerized) -> None:
     source_name = "wqp"
     identifier = "USGS-05427930"
 
     # https://nhgf.dev-wma.chs.usgs.gov/api/nldi/linked-data/wqp/USGS-05427930/navigation/UT/flowlines?f=json&distance=10
-    r = client_containerized.get(
+    r = ls_client_containerized.get(
         f"{API_PREFIX}/linked-data/{source_name}/{identifier}/navigation/UT/flowlines?f=json&distance=10"
     )
     assert r.status_code == 200
@@ -211,12 +211,12 @@ def test_api_get_navigated_flowlines(client_containerized) -> None:
 
 @pytest.mark.order(75)
 @pytest.mark.integration
-def test_api_get_navigated_flowlines_trimmed(client_containerized) -> None:
+def test_api_get_navigated_flowlines_trimmed(ls_client_containerized) -> None:
     source_name = "wqp"
     identifier = "USGS-05427930"
 
     # https://nhgf.dev-wma.chs.usgs.gov/api/nldi/linked-data/wqp/USGS-05427930/navigation/UT/flowlines?f=json&distance=10&trimStart=true
-    r = client_containerized.get(
+    r = ls_client_containerized.get(
         f"{API_PREFIX}/linked-data/{source_name}/{identifier}/navigation/UT/flowlines?f=json&distance=10&trimStart=true"
     )
     assert r.status_code == 200
@@ -229,14 +229,14 @@ def test_api_get_navigated_flowlines_trimmed(client_containerized) -> None:
 
 @pytest.mark.order(75)
 @pytest.mark.integration
-def test_api_get_each_nav_mode_by_id_othersource(client_containerized) -> None:
+def test_api_get_each_nav_mode_by_id_othersource(ls_client_containerized) -> None:
     source_name = "wqp"
     identifier = "USGS-05427930"
     second_source = "nwissite"
 
     nav_mode = "UT"
 
-    r = client_containerized.get(
+    r = ls_client_containerized.get(
         f"{API_PREFIX}/linked-data/{source_name}/{identifier}/navigation/{nav_mode}/{second_source}?f=json&distance=10.0"
     )
     assert r.status_code == 200
@@ -246,7 +246,7 @@ def test_api_get_each_nav_mode_by_id_othersource(client_containerized) -> None:
 @pytest.mark.order(78)
 @pytest.mark.system
 @pytest.mark.parametrize("nav_mode", NAV_MODES)
-def test_api_get_navigated_flowlines_trimmed_system(client_testdb, nav_mode) -> None:
+def test_api_get_navigated_flowlines_trimmed_system(ls_client_testdb, nav_mode) -> None:
     source_name = "wqp"
     identifier = "USGS-05427930"
 
@@ -256,7 +256,7 @@ def test_api_get_navigated_flowlines_trimmed_system(client_testdb, nav_mode) -> 
     )
     expected = r.json()
 
-    r = client_testdb.get(
+    r = ls_client_testdb.get(
         f"{API_PREFIX}/linked-data/{source_name}/{identifier}/navigation/{nav_mode}/flowlines?f=json&distance=10&trimStart=true",
     )
     actual = r.json()
@@ -270,16 +270,15 @@ def test_api_get_navigated_flowlines_trimmed_system(client_testdb, nav_mode) -> 
         assert c in actual_comids
 
     # same properties?
-    assert len(expected['features'][0]['properties']) == len(actual['features'][0]['properties'])
-    for k in expected['features'][0]['properties']:
-        assert k in actual['features'][0]['properties']
-
+    assert len(expected["features"][0]["properties"]) == len(actual["features"][0]["properties"])
+    for k in expected["features"][0]["properties"]:
+        assert k in actual["features"][0]["properties"]
 
 
 @pytest.mark.order(78)
 @pytest.mark.system
 @pytest.mark.parametrize("nav_mode", NAV_MODES)
-def test_api_get_navigated_features_trimmed_system(client_testdb, nav_mode) -> None:
+def test_api_get_navigated_features_trimmed_system(ls_client_testdb, nav_mode) -> None:
     source_name = "wqp"
     identifier = "USGS-05427930"
 
@@ -289,11 +288,10 @@ def test_api_get_navigated_features_trimmed_system(client_testdb, nav_mode) -> N
     )
     expected = r.json()
 
-    r = client_testdb.get(
+    r = ls_client_testdb.get(
         f"{API_PREFIX}/linked-data/{source_name}/{identifier}/navigation/{nav_mode}/nwissite?f=json&distance=10"
     )
     actual = r.json()
 
     assert actual["type"] == expected["type"]
     assert len(actual["features"]) == len(expected["features"])
-

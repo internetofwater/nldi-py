@@ -6,6 +6,7 @@
 
 
 import json
+import logging
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from typing import Any, AsyncIterator, Dict, List, Self
@@ -25,7 +26,7 @@ from . import CatchmentService, FlowlineService, NavigationService
 class PyGeoAPIService:
     """Provides a mechanism for proxying requests to a PyGeoAPI instance running elsewhere."""
 
-    DEFAULT_PYGEOAPI_URL = "https://labs-beta.waterdata.usgs.gov/api/nldi/pygeoapi"
+    DEFAULT_PYGEOAPI_URL = "https://api.water.usgs.gov/nldi/pygeoapi"
     HTTP_TIMEOUT = 20  # seconds
     DEFAULT_PROPS = {
         "identifier": "",
@@ -58,7 +59,8 @@ class PyGeoAPIService:
     @classmethod
     def _post_to_external_service(cls, url: str, data: dict = {}, timeout: int = 0) -> dict:
         _to = timeout if timeout > 0 else cls.HTTP_TIMEOUT
-        # LOGGER.debug(f"{__class__.__name__} Sending POST (timeout={_to}) to: {url}")
+        logging.info(f"{__class__.__name__} Sending POST (timeout={_to}) to: {url}")
+        logging.info(f"Paylod is {data}")
         try:
             with httpx.Client(verify=False) as client:
                 r = client.post(url, data=json.dumps(data), timeout=_to).raise_for_status()
@@ -79,7 +81,7 @@ class PyGeoAPIService:
         """Return the url for the split catchment service endpoint."""
         return util.url_join(self._service_url, "processes", "nldi-splitcatchment", "execution")
 
-    async def hydrolocation_by_coords(self, coords: str, base_url: str = "/") -> struct_geojson.FeatureCollection:
+    async def hydrolocation_by_coords(self, coords: str, base_url: str = "/") -> list[struct_geojson.Feature]:
         """Get a hydrolocation by coordinates."""
         point_shp = shapely.from_wkt(coords)
         request_payload = {
@@ -123,8 +125,7 @@ class PyGeoAPIService:
         if not computed_measure:
             raise KeyError(f"No measure found for: {coords}.")
 
-        _return_feature_collection = struct_geojson.FeatureCollection(
-            features=[
+        _return_features = [
                 struct_geojson.Feature(
                     geometry={"type": "Point", "coordinates": [lon, lat]},
                     properties={
@@ -144,9 +145,9 @@ class PyGeoAPIService:
                     geometry=point_shp.__geo_interface__,
                     properties=self.DEFAULT_PROPS,
                 ),
-            ],
-        )
-        return _return_feature_collection
+            ]
+
+        return _return_features
 
     async def splitcatchment_at_coords(self, coords: str) -> dict:
         point_shp = shapely.from_wkt(coords)

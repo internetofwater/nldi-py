@@ -77,13 +77,13 @@ async def test_pygeoapi_service_hydrolocation(dbsession_containerized):
         ],
     }
     # NOTE: actual is a msgspec struct at this point. Comparing to a dict of similar structure
-    assert str(actual.features[0].properties["measure"]) == expected["features"][0]["properties"]["measure"]
-    assert str(actual.features[0].properties["reachcode"]) == expected["features"][0]["properties"]["reachcode"]
-    assert str(actual.features[0].properties["comid"]) == expected["features"][0]["properties"]["comid"]
-    assert actual.features[0].geometry["coordinates"][0] == pytest.approx(
+    assert str(actual[0].properties["measure"]) == expected["features"][0]["properties"]["measure"]
+    assert str(actual[0].properties["reachcode"]) == expected["features"][0]["properties"]["reachcode"]
+    assert str(actual[0].properties["comid"]) == expected["features"][0]["properties"]["comid"]
+    assert actual[0].geometry["coordinates"][0] == pytest.approx(
         expected["features"][0]["geometry"]["coordinates"][0], abs=1e-6
     )
-    assert actual.features[0].geometry["coordinates"][1] == pytest.approx(
+    assert actual[0].geometry["coordinates"][1] == pytest.approx(
         expected["features"][0]["geometry"]["coordinates"][1], abs=1e-6
     )
 
@@ -95,6 +95,7 @@ async def test_pygeoapi_service_splitcatchment(dbsession_containerized):
     actual = await svc.splitcatchment_at_coords("POINT(-89.22401470690966 42.82769689708948)")
     assert actual["type"] == "Feature"
     assert actual["geometry"]["type"].endswith("Polygon")  ## could be Polygon or MultiPolygon
+    ## TODO:  Verify the computed values are correct.
 
 
 # region LiteStar Endpoints
@@ -102,21 +103,33 @@ async def test_pygeoapi_service_splitcatchment(dbsession_containerized):
 
 @pytest.mark.order(85)
 @pytest.mark.unittest
-def test_api_get_root(client_localhost) -> None:
-    r = client_localhost.get(f"{API_PREFIX}?f=json")
+def test_api_get_root(ls_client_localhost) -> None:
+    r = ls_client_localhost.get(f"{API_PREFIX}?f=json")
     assert r.status_code == 200
     assert r.headers["content-type"].startswith("application/json")
 
 
 @pytest.mark.order(89)
 @pytest.mark.integration
-def test_api_get_hydrolocation(client_containerized) -> None:
-    # NOTE: At this point, we are merely testing that the endpoint(s) exists.  Should return a HTTP 501 (NOT_IMPLEMENTED) for now.
+def test_api_get_hydrolocation(ls_client_containerized) -> None:
 
-    r = client_containerized.get(
+    r = ls_client_containerized.get(
         f"{API_PREFIX}/linked-data/hydrolocation?f=json&coords=POINT(-89.22401470690966 42.82769689708948)"
     )
     assert r.status_code == 200
     actual = r.json()
-    assert actual['type'] == "FeatureCollection"
-    assert len(actual['features']) == 2
+    assert actual["type"] == "FeatureCollection"
+    assert len(actual["features"]) == 2
+
+
+@pytest.mark.order(89)
+@pytest.mark.integration
+def test_api_get_hydrolocation_flask(f_client_containerized) -> None:
+
+    r = f_client_containerized.get(
+        f"{API_PREFIX}/linked-data/hydrolocation?f=json&coords=POINT(-89.22401470690966 42.82769689708948)"
+    )
+    assert r.status_code == 200
+    actual = r.json
+    assert actual["type"] == "FeatureCollection"
+    assert len(actual["features"]) == 2

@@ -11,7 +11,7 @@ server:
 logging:
   level: DEBUG
 
-pygeoapi_url: https://labs.waterdata.usgs.gov/api/nldi/pygeoapi
+pygeoapi_url: https://api.water.usgs.gov/nldi/pygeoapi
 
 metadata:
   identification:

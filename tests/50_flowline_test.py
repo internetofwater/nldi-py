@@ -108,9 +108,9 @@ async def test_catchment_svc_by_coords_mangled(dbsession_containerized) -> None:
 # region: litestar endpoints
 @pytest.mark.order(55)
 @pytest.mark.unittest
-def test_flowline_get_by_comid(client_containerized) -> None:
+def test_flowline_get_by_comid(ls_client_containerized) -> None:
     comid = "13293396"  # << This COMID is known to be in the test database
-    r = client_containerized.get(f"{API_PREFIX}/linked-data/comid/{comid}?f=json")
+    r = ls_client_containerized.get(f"{API_PREFIX}/linked-data/comid/{comid}?f=json")
     assert r.status_code == 200
     assert r.headers["content-type"].startswith("application/json")
 
@@ -123,17 +123,17 @@ def test_flowline_get_by_comid(client_containerized) -> None:
 
 @pytest.mark.order(55)
 @pytest.mark.unittest
-def test_flowline_get_by_comid_notfound(client_containerized) -> None:
+def test_flowline_get_by_comid_notfound(ls_client_containerized) -> None:
     comid = "00000000"  # << bogus comid
-    r = client_containerized.get(f"{API_PREFIX}/linked-data/comid/{comid}?f=json")
+    r = ls_client_containerized.get(f"{API_PREFIX}/linked-data/comid/{comid}?f=json")
     assert r.status_code == 404
 
 
 @pytest.mark.order(55)
 @pytest.mark.unittest
-def test_flowline_get_by_comid_bad_id(client_containerized) -> None:
+def test_flowline_get_by_comid_bad_id(ls_client_containerized) -> None:
     comid = "x13293396"  # << incorrect type
-    r = client_containerized.get(f"{API_PREFIX}/linked-data/comid/{comid}?f=json")
+    r = ls_client_containerized.get(f"{API_PREFIX}/linked-data/comid/{comid}?f=json")
     # NOTE: The router/parser will recognize this comid as an invalid type and return NOTFOUND before our handler is called.
     assert r.status_code == 404
     # I really wish we could set BAD_REQUEST or UNPROCESSABLE_ENTITY instead... but this is fine.
@@ -141,9 +141,9 @@ def test_flowline_get_by_comid_bad_id(client_containerized) -> None:
 
 @pytest.mark.order(55)
 @pytest.mark.unittest
-def test_flowline_get_by_coords(client_containerized) -> None:
+def test_flowline_get_by_coords(ls_client_containerized) -> None:
     coords = "POINT(-89.22401470690966 42.82769689708948)"
-    r = client_containerized.get(f"{API_PREFIX}/linked-data/comid/position?f=json&coords={coords}")
+    r = ls_client_containerized.get(f"{API_PREFIX}/linked-data/comid/position?f=json&coords={coords}")
     r.status_code == 200
     actual = r.json()
     assert actual["features"][0]["id"] == 13297332
@@ -151,7 +151,7 @@ def test_flowline_get_by_coords(client_containerized) -> None:
 
 @pytest.mark.order(55)
 @pytest.mark.unittest
-def test_flowline_get_by_coords_bad_geom(client_containerized) -> None:
+def test_flowline_get_by_coords_bad_geom(ls_client_containerized) -> None:
     coords = "PT(-89.22401470690966 42.82769689708948)"
-    r = client_containerized.get(f"{API_PREFIX}/linked-data/comid/position?f=json&coords={coords}")
+    r = ls_client_containerized.get(f"{API_PREFIX}/linked-data/comid/position?f=json&coords={coords}")
     r.status_code == 422
