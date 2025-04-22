@@ -13,3 +13,4 @@ from .feature import FeatureService, feature_svc
 from .flowline import FlowlineService, flowline_svc
 from .navigation import NavigationService, navigation_svc
 from .pygeoapi import PyGeoAPIService, pygeoapi_svc
+from .basin import BasinService

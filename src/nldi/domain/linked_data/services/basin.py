@@ -6,7 +6,9 @@
 #
 """ """
 
-from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
+from collections.abc import AsyncGenerator
+
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from . import CatchmentService, FeatureService, FlowlineService
 from .pygeoapi import PyGeoAPIService
@@ -50,7 +52,7 @@ class BasinService:
 
         This method will return a list of features that represent the basin upstream
         from the given feature.  The feature is first identified by its source and
-        identifier.  The upstream surface area is calculated, which may require that
+        unique id.  The upstream surface area is calculated, which may require that
         the catchment be split if the feature is a point.
 
         The return of this method is a list of GeoJSON features, suitable for creating
@@ -88,3 +90,9 @@ class BasinService:
         else:
             features = [self.catchment_svc._get_basin_from_comid(start_comid, simplified)]
         return features
+
+
+async def basin_svc(db_session: AsyncSession) :
+    """Provider function as part of the dependency-injection mechanism."""
+    async with BasinService.new(session=db_session) as service:
+        yield service

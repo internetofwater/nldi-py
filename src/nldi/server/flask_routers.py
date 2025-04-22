@@ -292,6 +292,26 @@ async def get_feature_by_identifier(source_name: str, identifier: str):
 
 @LINKED_DATA.route("/<path:source_name>/<path:identifier>/basin")
 async def get_basin(source_name: str, identifier: str) -> dict[str, Any]:
+    db = flask.current_app.NLDI_CONFIG.db
+    base_url = flask.current_app.NLDI_CONFIG.server.base_url
+    try:
+        _ = flask.request.params.get("simplified", "True").lower() == "true"
+        simplified = _
+
+        _ = flask.request.params.get("splitCatchment", "False").lower() == "true"
+        split = _
+    except Exception as e:
+        logging.debug(str(e))
+
+    async with AsyncSession(bind=db.async_engine) as db_session:
+        async with services.BasinService.new(session=db_session) as basin_svc:
+            _ = basin_svc.get_by_id(
+                identifier,
+                source_name,
+                simplified,
+                split,
+            )
+
     raise NotImplemented(
         description="BASIN not yet implemented",
     )
