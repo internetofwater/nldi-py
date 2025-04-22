@@ -8,7 +8,7 @@
 Random other endpoints.
 
 - [ ] Endpoint(s)
-    - [ ] GET f"{API_PREFIX}/"
+    - [X] GET f"{API_PREFIX}/"
     - [x] GET f"{API_PREFIX}/linked-data/hydrolocation?{coords}"
       - requires pygeoapi
     - [ ] GET f"{API_PREFIX}/linked-data/{source_name}/{identifier}/basin"
@@ -98,7 +98,7 @@ async def test_pygeoapi_service_splitcatchment(dbsession_containerized):
     ## TODO:  Verify the computed values are correct.
 
 
-# region LiteStar Endpoints
+# region Endpoints
 
 
 @pytest.mark.order(85)
