@@ -21,7 +21,8 @@ Random other endpoints.
 import psycopg
 import pytest
 
-from nldi.domain.linked_data.services import pygeoapi
+from nldi.db.schemas import struct_geojson
+from nldi.domain.linked_data.services import basin, catchment, pygeoapi
 
 from . import API_PREFIX
 
@@ -98,6 +99,26 @@ async def test_pygeoapi_service_splitcatchment(dbsession_containerized):
     ## TODO:  Verify the computed values are correct.
 
 
+@pytest.mark.order(83)
+@pytest.mark.integration
+async def test_catchment_by_comid(dbsession_containerized):
+    svc = catchment.CatchmentService(session=dbsession_containerized)
+    actual = await svc.get_drainage_basin_by_comid(13297166, simplified=False)
+    assert actual is not None
+
+
+@pytest.mark.order(83)
+@pytest.mark.integration
+async def test_basin_get_from_id(dbsession_containerized):
+    svc = basin.BasinService(session=dbsession_containerized, pygeoapi_url="https://api.water.usgs.gov/nldi/pygeoapi")
+    assert svc is not None
+    features = await svc.get_by_id(identifier="USGS-05427930", source_name="wqp", simplified=False, split=False)
+    assert isinstance(features, list)
+    assert len(features) == 1
+    f = features[0]
+    assert isinstance(f, struct_geojson.Feature)
+
+
 # region Endpoints
 
 
@@ -112,7 +133,6 @@ def test_api_get_root(ls_client_localhost) -> None:
 @pytest.mark.order(89)
 @pytest.mark.integration
 def test_api_get_hydrolocation(ls_client_containerized) -> None:
-
     r = ls_client_containerized.get(
         f"{API_PREFIX}/linked-data/hydrolocation?f=json&coords=POINT(-89.22401470690966 42.82769689708948)"
     )
@@ -125,7 +145,6 @@ def test_api_get_hydrolocation(ls_client_containerized) -> None:
 @pytest.mark.order(89)
 @pytest.mark.integration
 def test_api_get_hydrolocation_flask(f_client_containerized) -> None:
-
     r = f_client_containerized.get(
         f"{API_PREFIX}/linked-data/hydrolocation?f=json&coords=POINT(-89.22401470690966 42.82769689708948)"
     )

@@ -17,14 +17,16 @@ from .pygeoapi import PyGeoAPIService
 class BasinService:
     SPLIT_CATCHMENT_THRESHOLD = 200
 
-    def __init__(self, session: AsyncSession, pygeoapi_url: str = DEFAULT_PYGEOAPI_URL):
+    def __init__(self, session: AsyncSession, pygeoapi_url: str):
         self._service_url = pygeoapi_url
         self._session = session
         self.flowline_svc = FlowlineService(session=self._session)
         self.catchment_svc = CatchmentService(session=self._session)
         self.feature_svc = FeatureService(session=self._session)
+        self.pygeoapi_svc = PyGeoAPIService(session=self._session, pygeoapi_url=pygeoapi_url)
 
-    def _get_start_comid(self, identifier: str, source_name: str) -> tuple[int, bool]:
+
+    async def _get_start_comid(self, identifier: str, source_name: str) -> tuple[int, bool]:
         try:
             if source_name.lower() == "comid":
                 _ = self.flowline_svc.get(identifier)  # just making sure it exists.
@@ -32,15 +34,16 @@ class BasinService:
                 is_point = False
                 feature = None  # sentinal; indicates not a feature lookup.
             else:
-                feature = self.feature_svc.feature_lookup(source_name, identifier).as_feature()
-                start_comid = int(feature["properties"]["comid"])
-                is_point = feature["geometry"]["type"] == "Point"
+                hit = await self.feature_svc.feature_lookup(source_name, identifier)
+                feature = hit.as_feature()
+                start_comid = int(feature.properties["comid"])
+                is_point = feature.geometry["type"] == "Point"
         except KeyError:
             msg = f"The feature {identifier} does not exist for '{source_name}'."  # noqa
             raise KeyError(msg)
         return (start_comid, is_point, feature)
 
-    def get_by_id(
+    async def get_by_id(
         self,
         identifier: str,
         source_name: str | None = None,
@@ -60,7 +63,7 @@ class BasinService:
         feature.
         """
         source_name = source_name.lower() if source_name else "comid"
-        (start_comid, is_point, feature) = self._get_start_comid(identifier, source_name)
+        (start_comid, is_point, feature) = await self._get_start_comid(identifier, source_name)
 
         if is_point and split:
             # Plan A: the point is on a FlowLine
@@ -88,7 +91,8 @@ class BasinService:
             wkt_geom = f"POINT({lon} {lat})"
             features = [self.pygeoapi_svc.splitcatchment_at_coords(wkt_geom)]
         else:
-            features = [self.catchment_svc._get_basin_from_comid(start_comid, simplified)]
+            feature = await self.catchment_svc.get_drainage_basin_by_comid(start_comid, simplified)
+            features = [feature]
         return features
 
 

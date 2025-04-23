@@ -72,19 +72,19 @@ class CatchmentService(SQLAlchemyAsyncRepositoryService[CatchmentModel]):
         :rtype: struct_geojson.Feature
         """
         nav = (
-            sqlalchemy.select([FlowlineVAAModel.comid, FlowlineVAAModel.hydroseq, FlowlineVAAModel.startflag])
+            sqlalchemy.select(FlowlineVAAModel.comid, FlowlineVAAModel.hydroseq, FlowlineVAAModel.startflag)
             .where(FlowlineVAAModel.comid == sqlalchemy.text(":comid"))
             .cte("nav", recursive=True)
         )
 
-        vaa = sqlalchemy.aliased(FlowlineVAAModel, name="vaa")
+        #vaa = sqlalchemy.alias(FlowlineVAAModel, name="vaa")
         nav_basin = nav.union(
-            sqlalchemy.select([vaa.comid, vaa.hydroseq, vaa.startflag]).where(
+            sqlalchemy.select(FlowlineVAAModel.comid, FlowlineVAAModel.hydroseq, FlowlineVAAModel.startflag).where(
                 sqlalchemy.and_(
                     (nav.c.startflag != 1),
                     sqlalchemy.or_(
-                        (vaa.dnhydroseq == nav.c.hydroseq),
-                        sqlalchemy.and_((vaa.dnminorhyd != 0), (vaa.dnminorhyd == nav.c.hydroseq)),
+                        (FlowlineVAAModel.dnhydroseq == nav.c.hydroseq),
+                        sqlalchemy.and_((FlowlineVAAModel.dnminorhyd != 0), (FlowlineVAAModel.dnminorhyd == nav.c.hydroseq)),
                     ),
                 )
             )
@@ -101,14 +101,14 @@ class CatchmentService(SQLAlchemyAsyncRepositoryService[CatchmentModel]):
 
         # Create the final query
         query = (
-            sqlalchemy.select([_geom])
+            sqlalchemy.select(_geom)
             .select_from(nav_basin)
             .join(CatchmentModel, nav_basin.c.comid == CatchmentModel.featureid)
         )
 
         stmt = query.params(comid=comid)
         logging.debug(stmt.compile())
-        hits = await self.repository.execute(stmt)
+        hits = await self.repository._execute(stmt)
         result = hits.fetchone()
         if result is None:
             raise KeyError(f"No such item: {comid}")

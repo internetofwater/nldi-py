@@ -294,28 +294,18 @@ async def get_feature_by_identifier(source_name: str, identifier: str):
 async def get_basin(source_name: str, identifier: str) -> dict[str, Any]:
     db = flask.current_app.NLDI_CONFIG.db
     base_url = flask.current_app.NLDI_CONFIG.server.base_url
-    try:
-        _ = flask.request.params.get("simplified", "True").lower() == "true"
-        simplified = _
-
-        _ = flask.request.params.get("splitCatchment", "False").lower() == "true"
-        split = _
-    except Exception as e:
-        logging.debug(str(e))
+    simplified = flask.request.params.get("simplified", "True").lower() == "true"
+    split = flask.request.params.get("splitCatchment", "False").lower() == "true"
 
     async with AsyncSession(bind=db.async_engine) as db_session:
         async with services.BasinService.new(session=db_session) as basin_svc:
-            _ = basin_svc.get_by_id(
-                identifier,
-                source_name,
-                simplified,
-                split,
+            featurelist = basin_svc.get_by_id(identifier, source_name, simplified, split)
+            _r = flask.Response(
+                headers={"Content-Type": "application/json"},
+                status=http.HTTPStatus.OK,
+                response=util.stream_j2_template("FeatureCollection.j2", featurelist),
             )
-
-    raise NotImplemented(
-        description="BASIN not yet implemented",
-    )
-
+    return _r
 
 @LINKED_DATA.route("/<path:source_name>/<path:identifier>/navigation")
 async def get_navigation_modes(source_name: str, identifier: str):
