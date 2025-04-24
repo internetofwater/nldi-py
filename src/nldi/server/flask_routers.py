@@ -214,10 +214,14 @@ async def get_hydrolocation():
     return _r
 
 
-@LINKED_DATA.route("/comid/<int:comid>")
+@LINKED_DATA.route("/comid/<path:comid>")
 async def get_flowline_by_comid(comid: int | None = None):
     db = flask.current_app.NLDI_CONFIG.db
     base_url = flask.current_app.NLDI_CONFIG.server.base_url
+    try:
+        _comid = int(comid)
+    except Exception as e:
+        raise BadRequest(f"Could not make {comid} an integer") from None
 
     async with AsyncSession(bind=db.async_engine) as db_session:
         async with services.FlowlineService.new(session=db_session) as flowline_svc:
@@ -227,7 +231,7 @@ async def get_flowline_by_comid(comid: int | None = None):
                     xtra_props={"navigation": util.url_join(base_url, "comid", comid, "navigation")},
                 )
             except NotFoundError:
-                raise BadRequest(description=f"COMID {comid} not found.")
+                raise NotFound(description=f"COMID {comid} not found.")
         _r = flask.Response(
             headers={"Content-Type": "application/json"},
             status=http.HTTPStatus.OK,
@@ -293,20 +297,20 @@ async def get_feature_by_identifier(source_name: str, identifier: str):
 
 
 @LINKED_DATA.route("/<path:source_name>/<path:identifier>/basin")
-async def get_basin(source_name: str, identifier: str) -> dict[str, Any]:
+async def get_basin_by_id(source_name: str, identifier: str) -> dict[str, Any]:
     db = flask.current_app.NLDI_CONFIG.db
     base_url = flask.current_app.NLDI_CONFIG.server.base_url
-    simplified = flask.request.params.get("simplified", "True").lower() == "true"
-    split = flask.request.params.get("splitCatchment", "False").lower() == "true"
+    simplified = flask.request.args.get("simplified", "True").lower() == "true"
+    split = flask.request.args.get("splitCatchment", "False").lower() == "true"
 
     async with AsyncSession(bind=db.async_engine) as db_session:
-        async with services.BasinService.new(session=db_session) as basin_svc:
-            featurelist = basin_svc.get_by_id(identifier, source_name, simplified, split)
-            _r = flask.Response(
-                headers={"Content-Type": "application/json"},
-                status=http.HTTPStatus.OK,
-                response=util.stream_j2_template("FeatureCollection.j2", featurelist),
-            )
+        basin_svc = services.BasinService(session=db_session, pygeoapi_url=flask.current_app.NLDI_CONFIG.server.pygeoapi_url)
+        featurelist = await basin_svc.get_by_id(identifier, source_name, simplified, split)
+        _r = flask.Response(
+            headers={"Content-Type": "application/json"},
+            status=http.HTTPStatus.OK,
+            response=util.stream_j2_template("FeatureCollection.j2", featurelist),
+        )
     return _r
 
 

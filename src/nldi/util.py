@@ -10,6 +10,8 @@ import json
 import os
 import pathlib
 import re
+from datetime import date, datetime, time
+from decimal import Decimal
 from functools import singledispatch
 from io import TextIOWrapper
 from pathlib import Path
@@ -22,6 +24,7 @@ from . import __version__
 
 THISDIR = Path(__file__).parent.resolve()
 TEMPLATES = THISDIR / "templates"
+
 
 def url_join(*parts: str) -> str:
     """
@@ -58,6 +61,7 @@ def to_json(dict_: dict, pretty: bool = False) -> str:
         indent = None
 
     return json.dumps(dict_, indent=indent)
+
 
 def stream_j2_template(template: Path, data: dict) -> str:
     """
@@ -133,7 +137,7 @@ def get_path_basename(urlpath):
 
 def get_breadcrumbs(urlpath):
     """
-    helper function to make breadcrumbs from a URL path
+    Helper function to make breadcrumbs from a URL path
 
     :param urlpath: URL path
     :returns: `list` of `dict` objects of labels and links
@@ -160,7 +164,7 @@ def get_breadcrumbs(urlpath):
 
 def filter_dict_by_key_value(dict_, key, value):
     """
-    helper function to filter a dict by a dict key
+    Helper function to filter a dict by a dict key
 
     :param dict_: ``dict``
     :param key: dict key
@@ -191,5 +195,4 @@ def json_serial(obj):
         return float(obj)
 
     msg = "{} type {} not serializable".format(obj, type(obj))
-    LOGGER.error(msg)
     raise TypeError(msg)

@@ -105,16 +105,16 @@ async def test_catchment_svc_by_coords_mangled(dbsession_containerized) -> None:
         catchment = await catch_svc.get_by_wkt_point("PT(-89.22401470690966 42.82769689708948)")
 
 
-# region: litestar endpoints
+# region: flask endpoints
 @pytest.mark.order(55)
 @pytest.mark.unittest
-def test_flowline_get_by_comid(ls_client_containerized) -> None:
+def test_flowline_get_by_comid(f_client_testdb) -> None:
     comid = "13293396"  # << This COMID is known to be in the test database
-    r = ls_client_containerized.get(f"{API_PREFIX}/linked-data/comid/{comid}?f=json")
+    r = f_client_testdb.get(f"{API_PREFIX}/linked-data/comid/{comid}?f=json")
     assert r.status_code == 200
     assert r.headers["content-type"].startswith("application/json")
 
-    actual = r.json()  # Should return a feature collection as JSON
+    actual = r.json  # Should return a feature collection as JSON
     assert actual["type"] == "FeatureCollection"
     features = actual["features"]
     assert isinstance(features, list)
@@ -123,35 +123,34 @@ def test_flowline_get_by_comid(ls_client_containerized) -> None:
 
 @pytest.mark.order(55)
 @pytest.mark.unittest
-def test_flowline_get_by_comid_notfound(ls_client_containerized) -> None:
+def test_flowline_get_by_comid_notfound(f_client_testdb) -> None:
     comid = "00000000"  # << bogus comid
-    r = ls_client_containerized.get(f"{API_PREFIX}/linked-data/comid/{comid}?f=json")
+    r = f_client_testdb.get(f"{API_PREFIX}/linked-data/comid/{comid}?f=json")
     assert r.status_code == 404
 
 
 @pytest.mark.order(55)
 @pytest.mark.unittest
-def test_flowline_get_by_comid_bad_id(ls_client_containerized) -> None:
+def test_flowline_get_by_comid_bad_id(f_client_testdb) -> None:
     comid = "x13293396"  # << incorrect type
-    r = ls_client_containerized.get(f"{API_PREFIX}/linked-data/comid/{comid}?f=json")
+    r = f_client_testdb.get(f"{API_PREFIX}/linked-data/comid/{comid}?f=json")
     # NOTE: The router/parser will recognize this comid as an invalid type and return NOTFOUND before our handler is called.
-    assert r.status_code == 404
-    # I really wish we could set BAD_REQUEST or UNPROCESSABLE_ENTITY instead... but this is fine.
+    assert r.status_code == 400
 
 
 @pytest.mark.order(55)
 @pytest.mark.unittest
-def test_flowline_get_by_coords(ls_client_containerized) -> None:
+def test_flowline_get_by_coords(f_client_testdb) -> None:
     coords = "POINT(-89.22401470690966 42.82769689708948)"
-    r = ls_client_containerized.get(f"{API_PREFIX}/linked-data/comid/position?f=json&coords={coords}")
+    r = f_client_testdb.get(f"{API_PREFIX}/linked-data/comid/position?f=json&coords={coords}")
     r.status_code == 200
-    actual = r.json()
+    actual = r.json
     assert actual["features"][0]["id"] == 13297332
 
 
 @pytest.mark.order(55)
 @pytest.mark.unittest
-def test_flowline_get_by_coords_bad_geom(ls_client_containerized) -> None:
+def test_flowline_get_by_coords_bad_geom(f_client_testdb) -> None:
     coords = "PT(-89.22401470690966 42.82769689708948)"
-    r = ls_client_containerized.get(f"{API_PREFIX}/linked-data/comid/position?f=json&coords={coords}")
+    r = f_client_testdb.get(f"{API_PREFIX}/linked-data/comid/position?f=json&coords={coords}")
     r.status_code == 422

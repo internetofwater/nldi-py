@@ -178,55 +178,55 @@ async def dbsession_containerized(engine_containerized) -> AsyncGenerator[AsyncS
         await session.close()
 
 
-@pytest.fixture()
-def ls_client_localhost(monkeypatch, yaml_config_file, localhost_env_info) -> TestClient:
-    """
-    Client for submitting to endpoints, using ``localhost`` configuration.
+# @pytest.fixture()
+# def ls_client_localhost(monkeypatch, yaml_config_file, localhost_env_info) -> TestClient:
+#     """
+#     Client for submitting to endpoints, using ``localhost`` configuration.
 
-    Intended for unit-testing, where no database queries are actually made. This config
-    merely exists to offer a fully populated API config, without actually connecting
-    to anything.
-    """
-    for k, v in localhost_env_info.items():
-        monkeypatch.setenv(k, v)
-    monkeypatch.setenv("NLDI_CONFIG", yaml_config_file)
-    _app = litestar_asgi.litestar_app_factory()
-    with TestClient(app=_app) as client:
-        yield client
-
-
-@pytest.fixture()
-def ls_client_containerized(monkeypatch, yaml_config_file, containerized_db_env_info) -> TestClient:
-    """
-    A LiteStar-connected client, configured to use the containerized testing database.
-
-    The containerized database is intended for integration testing: testing at the API endpoint
-    level and all business logic that it invokes.
-    """
-    for k, v in containerized_db_env_info.items():
-        monkeypatch.setenv(k, v)
-    monkeypatch.setenv("NLDI_CONFIG", yaml_config_file)
-    _app = litestar_asgi.litestar_app_factory()
-    with TestClient(app=_app) as client:
-        yield client
+#     Intended for unit-testing, where no database queries are actually made. This config
+#     merely exists to offer a fully populated API config, without actually connecting
+#     to anything.
+#     """
+#     for k, v in localhost_env_info.items():
+#         monkeypatch.setenv(k, v)
+#     monkeypatch.setenv("NLDI_CONFIG", yaml_config_file)
+#     _app = litestar_asgi.litestar_app_factory()
+#     with TestClient(app=_app) as client:
+#         yield client
 
 
-@pytest.fixture()
-def ls_client_testdb(monkeypatch, yaml_config_file, testdb_env_info) -> TestClient:
-    """
-    A LiteStar-connected client, configured to use the cloud-hosted testing database.
+# @pytest.fixture()
+# def ls_client_containerized(monkeypatch, yaml_config_file, containerized_db_env_info) -> TestClient:
+#     """
+#     A LiteStar-connected client, configured to use the containerized testing database.
 
-    This database conection is intended for system/end-to-end testing and performance
-    testing. The main difference between this and the containerized database connection
-    is the volume of data in the database, and that it requires a network connection
-    to the AWS-hosted database (rather than a containerized extract of that database).
-    """
-    for k, v in testdb_env_info.items():
-        monkeypatch.setenv(k, v)
-    monkeypatch.setenv("NLDI_CONFIG", yaml_config_file)
-    _app = litestar_asgi.litestar_app_factory()
-    with TestClient(app=_app) as client:
-        yield client
+#     The containerized database is intended for integration testing: testing at the API endpoint
+#     level and all business logic that it invokes.
+#     """
+#     for k, v in containerized_db_env_info.items():
+#         monkeypatch.setenv(k, v)
+#     monkeypatch.setenv("NLDI_CONFIG", yaml_config_file)
+#     _app = litestar_asgi.litestar_app_factory()
+#     with TestClient(app=_app) as client:
+#         yield client
+
+
+# @pytest.fixture()
+# def ls_client_testdb(monkeypatch, yaml_config_file, testdb_env_info) -> TestClient:
+#     """
+#     A LiteStar-connected client, configured to use the cloud-hosted testing database.
+
+#     This database conection is intended for system/end-to-end testing and performance
+#     testing. The main difference between this and the containerized database connection
+#     is the volume of data in the database, and that it requires a network connection
+#     to the AWS-hosted database (rather than a containerized extract of that database).
+#     """
+#     for k, v in testdb_env_info.items():
+#         monkeypatch.setenv(k, v)
+#     monkeypatch.setenv("NLDI_CONFIG", yaml_config_file)
+#     _app = litestar_asgi.litestar_app_factory()
+#     with TestClient(app=_app) as client:
+#         yield client
 
 
 @pytest.fixture()
