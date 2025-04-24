@@ -239,6 +239,8 @@ async def get_flowline_by_comid(comid: int | None = None):
 @LINKED_DATA.route("/comid/position")
 async def flowline_by_position():
     """Find flowline by spatial search."""
+    db = flask.current_app.NLDI_CONFIG.db
+    base_url = flask.current_app.NLDI_CONFIG.server.base_url
     if (coords := flask.request.args.get("coords")) is None:
         LOGGER.error("No coordinates provided")
         return flask.Response(status=http.HTTPStatus.BAD_REQUEST, response="No coordinates provided")
@@ -306,6 +308,7 @@ async def get_basin(source_name: str, identifier: str) -> dict[str, Any]:
                 response=util.stream_j2_template("FeatureCollection.j2", featurelist),
             )
     return _r
+
 
 @LINKED_DATA.route("/<path:source_name>/<path:identifier>/navigation")
 async def get_navigation_modes(source_name: str, identifier: str):
