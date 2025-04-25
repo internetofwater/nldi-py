@@ -96,7 +96,7 @@ class BasinService:
         return features
 
 
-async def basin_svc(db_session: AsyncSession) :
-    """Provider function as part of the dependency-injection mechanism."""
-    async with BasinService(session=db_session) as service:
-        yield service
+# async def basin_svc(db_session: AsyncSession) :
+#     """Provider function as part of the dependency-injection mechanism."""
+#     async with BasinService(session=db_session) as service:
+#         yield service

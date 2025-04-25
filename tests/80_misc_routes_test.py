@@ -132,19 +132,7 @@ def test_api_get_root(ls_client_localhost) -> None:
 
 @pytest.mark.order(89)
 @pytest.mark.integration
-def test_api_get_hydrolocation(ls_client_containerized) -> None:
-    r = ls_client_containerized.get(
-        f"{API_PREFIX}/linked-data/hydrolocation?f=json&coords=POINT(-89.22401470690966 42.82769689708948)"
-    )
-    assert r.status_code == 200
-    actual = r.json()
-    assert actual["type"] == "FeatureCollection"
-    assert len(actual["features"]) == 2
-
-
-@pytest.mark.order(89)
-@pytest.mark.integration
-def test_api_get_hydrolocation_flask(f_client_containerized) -> None:
+def test_api_get_hydrolocation(f_client_containerized) -> None:
     r = f_client_containerized.get(
         f"{API_PREFIX}/linked-data/hydrolocation?f=json&coords=POINT(-89.22401470690966 42.82769689708948)"
     )
@@ -152,3 +140,12 @@ def test_api_get_hydrolocation_flask(f_client_containerized) -> None:
     actual = r.json
     assert actual["type"] == "FeatureCollection"
     assert len(actual["features"]) == 2
+
+
+@pytest.mark.order(69)
+def test_api_get_basin_by_id(f_client_containerized) -> None:
+    source_name = "wqp"
+    identifier = "USGS-05427930"
+    url =f"{API_PREFIX}/linked-data/{source_name}/{identifier}/basin?f=json"
+    r = f_client_containerized.get(url)
+    assert r.status_code == 200

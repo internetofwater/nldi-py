@@ -277,11 +277,3 @@ def test_api_list_features_by_source(f_client_containerized) -> None:
     assert isinstance(features_upcase, list)
     assert len(features_upcase) == len(features_lowcase)
 
-
-@pytest.mark.order(69)
-def test_api_get_basin_by_id(f_client_containerized) -> None:
-    source_name = "wqp"
-    identifier = "USGS-05427930"
-    url =f"{API_PREFIX}/linked-data/{source_name}/{identifier}/basin?f=json"
-    r = f_client_containerized.get(url)
-    assert r.status_code == 200

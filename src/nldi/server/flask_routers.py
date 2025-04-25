@@ -309,7 +309,7 @@ async def get_basin_by_id(source_name: str, identifier: str) -> dict[str, Any]:
         _r = flask.Response(
             headers={"Content-Type": "application/json"},
             status=http.HTTPStatus.OK,
-            response=util.stream_j2_template("FeatureCollection.j2", featurelist),
+            response=util.stream_j2_template("FeatureCollection.j2", [msgspec.to_builtins(f) for f in featurelist]),
         )
     return _r
 
