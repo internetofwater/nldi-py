@@ -281,8 +281,9 @@ async def get_feature_by_identifier(source_name: str, identifier: str):
 
     async with AsyncSession(bind=db.async_engine) as db_session:
         async with services.FeatureService.new(session=db_session) as feature_svc:
-            feature = await feature_svc.feature_lookup(source_name, identifier)
-            if not feature:
+            try:
+                feature = await feature_svc.feature_lookup(source_name, identifier)
+            except NotFoundError :
                 raise NotFound(description=f"Not Found: {source_name}/{identifier}")
             nav_url = util.url_join(
                 flask.current_app.NLDI_CONFIG.server.base_url, "linked-data", source_name, identifier, "navigation"

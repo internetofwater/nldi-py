@@ -124,8 +124,8 @@ async def test_basin_get_from_id(dbsession_containerized):
 
 @pytest.mark.order(85)
 @pytest.mark.unittest
-def test_api_get_root(ls_client_localhost) -> None:
-    r = ls_client_localhost.get(f"{API_PREFIX}?f=json")
+def test_api_get_root(f_client_containerized) -> None:
+    r = f_client_containerized.get(f"{API_PREFIX}?f=json")
     assert r.status_code == 200
     assert r.headers["content-type"].startswith("application/json")
 

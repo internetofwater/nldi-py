@@ -65,24 +65,6 @@ def test_server_healthcheck_form(f_client_containerized) -> None:
     assert actual.get("pygeoapi") is not None
 
 
-# @pytest.mark.order(21)
-# @pytest.mark.unittest
-# def test_server_health_db(f_client_containerized) -> None:
-#     r = f_client_containerized.get(f"{API_PREFIX}/about/health/db")
-#     assert r.status_code == 200
-#     actual = r.json
-#     assert isinstance(actual, dict)
-#     assert actual.get("cfg").startswith("postgresql")
-
-
-# @pytest.mark.order(21)
-# @pytest.mark.unittest
-# def test_server_health_pygeoapi(ls_client_localhost) -> None:
-#     r = ls_client_localhost.get(f"{API_PREFIX}/about/health/pygeoapi")
-#     assert r.status_code == 200
-#     actual = r.json()
-#     assert isinstance(actual, dict)
-#     assert actual.get("cfg").startswith("http")
 
 
 # region containerized
