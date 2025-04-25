@@ -17,7 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 from testcontainers.core.container import DockerContainer
 from testcontainers.core.waiting_utils import wait_for_logs
 
-from nldi import litestar_asgi
+from nldi import flask_wsgi, litestar_asgi
 
 
 @pytest.fixture
@@ -179,26 +179,9 @@ async def dbsession_containerized(engine_containerized) -> AsyncGenerator[AsyncS
 
 
 @pytest.fixture()
-def client_localhost(monkeypatch, yaml_config_file, localhost_env_info) -> TestClient:
+def f_client_containerized(monkeypatch, yaml_config_file, containerized_db_env_info):
     """
-    Client for submitting to endpoints, using ``localhost`` configuration.
-
-    Intended for unit-testing, where no database queries are actually made. This config
-    merely exists to offer a fully populated API config, without actually connecting
-    to anything.
-    """
-    for k, v in localhost_env_info.items():
-        monkeypatch.setenv(k, v)
-    monkeypatch.setenv("NLDI_CONFIG", yaml_config_file)
-    _app = litestar_asgi.litestar_app_factory()
-    with TestClient(app=_app) as client:
-        yield client
-
-
-@pytest.fixture()
-def client_containerized(monkeypatch, yaml_config_file, containerized_db_env_info) -> TestClient:
-    """
-    A LiteStar-connected client, configured to use the containerized testing database.
+    A Flask-connected client, configured to use the containerized testing database.
 
     The containerized database is intended for integration testing: testing at the API endpoint
     level and all business logic that it invokes.
@@ -206,15 +189,15 @@ def client_containerized(monkeypatch, yaml_config_file, containerized_db_env_inf
     for k, v in containerized_db_env_info.items():
         monkeypatch.setenv(k, v)
     monkeypatch.setenv("NLDI_CONFIG", yaml_config_file)
-    _app = litestar_asgi.litestar_app_factory()
-    with TestClient(app=_app) as client:
+    _app = flask_wsgi.flask_nldi_app_factory()
+    with _app.test_client() as client:
         yield client
 
 
 @pytest.fixture()
-def client_testdb(monkeypatch, yaml_config_file, testdb_env_info) -> TestClient:
+def f_client_testdb(monkeypatch, yaml_config_file, testdb_env_info):
     """
-    A LiteStar-connected client, configured to use the cloud-hosted testing database.
+    A Flask-connected client, configured to use the cloud-hosted testing database.
 
     This database connection is intended for system/end-to-end testing and performance
     testing. The main difference between this and the containerized database connection
@@ -224,6 +207,6 @@ def client_testdb(monkeypatch, yaml_config_file, testdb_env_info) -> TestClient:
     for k, v in testdb_env_info.items():
         monkeypatch.setenv(k, v)
     monkeypatch.setenv("NLDI_CONFIG", yaml_config_file)
-    _app = litestar_asgi.litestar_app_factory()
-    with TestClient(app=_app) as client:
+    _app = flask_wsgi.flask_nldi_app_factory()
+    with _app.test_client() as client:
         yield client

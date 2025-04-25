@@ -8,7 +8,7 @@
 Random other endpoints.
 
 - [ ] Endpoint(s)
-    - [ ] GET f"{API_PREFIX}/"
+    - [X] GET f"{API_PREFIX}/"
     - [x] GET f"{API_PREFIX}/linked-data/hydrolocation?{coords}"
       - requires pygeoapi
     - [ ] GET f"{API_PREFIX}/linked-data/{source_name}/{identifier}/basin"
@@ -21,7 +21,8 @@ Random other endpoints.
 import psycopg
 import pytest
 
-from nldi.domain.linked_data.services import pygeoapi
+from nldi.db.schemas import struct_geojson
+from nldi.domain.linked_data.services import basin, catchment, pygeoapi
 
 from . import API_PREFIX
 
@@ -77,13 +78,13 @@ async def test_pygeoapi_service_hydrolocation(dbsession_containerized):
         ],
     }
     # NOTE: actual is a msgspec struct at this point. Comparing to a dict of similar structure
-    assert str(actual.features[0].properties["measure"]) == expected["features"][0]["properties"]["measure"]
-    assert str(actual.features[0].properties["reachcode"]) == expected["features"][0]["properties"]["reachcode"]
-    assert str(actual.features[0].properties["comid"]) == expected["features"][0]["properties"]["comid"]
-    assert actual.features[0].geometry["coordinates"][0] == pytest.approx(
+    assert str(actual[0].properties["measure"]) == expected["features"][0]["properties"]["measure"]
+    assert str(actual[0].properties["reachcode"]) == expected["features"][0]["properties"]["reachcode"]
+    assert str(actual[0].properties["comid"]) == expected["features"][0]["properties"]["comid"]
+    assert actual[0].geometry["coordinates"][0] == pytest.approx(
         expected["features"][0]["geometry"]["coordinates"][0], abs=1e-6
     )
-    assert actual.features[0].geometry["coordinates"][1] == pytest.approx(
+    assert actual[0].geometry["coordinates"][1] == pytest.approx(
         expected["features"][0]["geometry"]["coordinates"][1], abs=1e-6
     )
 
@@ -95,28 +96,56 @@ async def test_pygeoapi_service_splitcatchment(dbsession_containerized):
     actual = await svc.splitcatchment_at_coords("POINT(-89.22401470690966 42.82769689708948)")
     assert actual["type"] == "Feature"
     assert actual["geometry"]["type"].endswith("Polygon")  ## could be Polygon or MultiPolygon
+    ## TODO:  Verify the computed values are correct.
 
 
-# region LiteStar Endpoints
+@pytest.mark.order(83)
+@pytest.mark.integration
+async def test_catchment_by_comid(dbsession_containerized):
+    svc = catchment.CatchmentService(session=dbsession_containerized)
+    actual = await svc.get_drainage_basin_by_comid(13297166, simplified=False)
+    assert actual is not None
+
+
+@pytest.mark.order(83)
+@pytest.mark.integration
+async def test_basin_get_from_id(dbsession_containerized):
+    svc = basin.BasinService(session=dbsession_containerized, pygeoapi_url="https://api.water.usgs.gov/nldi/pygeoapi")
+    assert svc is not None
+    features = await svc.get_by_id(identifier="USGS-05427930", source_name="wqp", simplified=False, split=False)
+    assert isinstance(features, list)
+    assert len(features) == 1
+    f = features[0]
+    assert isinstance(f, struct_geojson.Feature)
+
+
+# region Endpoints
 
 
 @pytest.mark.order(85)
 @pytest.mark.unittest
-def test_api_get_root(client_localhost) -> None:
-    r = client_localhost.get(f"{API_PREFIX}?f=json")
+def test_api_get_root(f_client_containerized) -> None:
+    r = f_client_containerized.get(f"{API_PREFIX}?f=json")
     assert r.status_code == 200
     assert r.headers["content-type"].startswith("application/json")
 
 
 @pytest.mark.order(89)
 @pytest.mark.integration
-def test_api_get_hydrolocation(client_containerized) -> None:
-    # NOTE: At this point, we are merely testing that the endpoint(s) exists.  Should return a HTTP 501 (NOT_IMPLEMENTED) for now.
-
-    r = client_containerized.get(
+def test_api_get_hydrolocation(f_client_containerized) -> None:
+    r = f_client_containerized.get(
         f"{API_PREFIX}/linked-data/hydrolocation?f=json&coords=POINT(-89.22401470690966 42.82769689708948)"
     )
     assert r.status_code == 200
-    actual = r.json()
-    assert actual['type'] == "FeatureCollection"
-    assert len(actual['features']) == 2
+    actual = r.json
+    assert actual["type"] == "FeatureCollection"
+    assert len(actual["features"]) == 2
+
+
+@pytest.mark.order(69)
+def test_api_get_basin_by_id(f_client_containerized) -> None:
+    source_name = "wqp"
+    identifier = "USGS-05427930"
+    url =f"{API_PREFIX}/linked-data/{source_name}/{identifier}/basin?f=json"
+    r = f_client_containerized.get(url)
+    assert r.status_code == 200

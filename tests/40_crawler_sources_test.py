@@ -119,14 +119,13 @@ async def test_source_service_suffix_exists(dbsession_containerized) -> None:
     assert actual is False
 
 
-# region: Litestar Endpoints
 @pytest.mark.order(45)
 @pytest.mark.unittest
-def test_source_list_endpoint(client_containerized) -> None:
-    r = client_containerized.get(f"{API_PREFIX}/linked-data?f=json")
+def test_source_list_endpoint(f_client_containerized) -> None:
+    r = f_client_containerized.get(f"{API_PREFIX}/linked-data?f=json")
     assert r.status_code == 200
     assert r.headers["content-type"].startswith("application/json")
 
-    actual = r.json()
+    actual = r.json
     assert isinstance(actual, list)
     assert len(actual) == 3  # < true for containerized db

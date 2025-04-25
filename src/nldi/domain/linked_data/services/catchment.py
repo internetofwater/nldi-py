@@ -13,6 +13,7 @@ but then applies its own logic/handling.  I think of the services
 object as being an implementation of a unit-of-work pattern.
 """
 
+import json
 import logging
 from collections.abc import AsyncGenerator
 
@@ -24,7 +25,7 @@ from geomet import wkt
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 from sqlalchemy.sql.expression import Select
 
-from nldi.db.schemas.nhdplus import CatchmentModel, FlowlineModel
+from nldi.db.schemas.nhdplus import CatchmentModel, FlowlineModel, FlowlineVAAModel
 from nldi.db.schemas.nldi_data import CrawlerSourceModel, FeatureSourceModel
 
 from .... import util
@@ -55,6 +56,63 @@ class CatchmentService(SQLAlchemyAsyncRepositoryService[CatchmentModel]):
         """
         _catchment = await self.get_one_or_none(sqlalchemy.func.ST_Intersects(CatchmentModel.the_geom, point))
         return _catchment
+
+    async def get_drainage_basin_by_comid(self, comid: int, simplified: bool) -> struct_geojson.Feature:
+        """
+        Compute upstream basin from a named comid.
+
+        The comid matches a flowine
+
+        :param comid: _description_
+        :type comid: int
+        :param simplified: _description_
+        :type simplified: bool
+        :raises KeyError: _description_
+        :return: _description_
+        :rtype: struct_geojson.Feature
+        """
+        nav = (
+            sqlalchemy.select(FlowlineVAAModel.comid, FlowlineVAAModel.hydroseq, FlowlineVAAModel.startflag)
+            .where(FlowlineVAAModel.comid == sqlalchemy.text(":comid"))
+            .cte("nav", recursive=True)
+        )
+
+        #vaa = sqlalchemy.alias(FlowlineVAAModel, name="vaa")
+        nav_basin = nav.union(
+            sqlalchemy.select(FlowlineVAAModel.comid, FlowlineVAAModel.hydroseq, FlowlineVAAModel.startflag).where(
+                sqlalchemy.and_(
+                    (nav.c.startflag != 1),
+                    sqlalchemy.or_(
+                        (FlowlineVAAModel.dnhydroseq == nav.c.hydroseq),
+                        sqlalchemy.and_((FlowlineVAAModel.dnminorhyd != 0), (FlowlineVAAModel.dnminorhyd == nav.c.hydroseq)),
+                    ),
+                )
+            )
+        )
+
+        if simplified:
+            _geom = sqlalchemy.func.ST_AsGeoJSON(
+                sqlalchemy.func.ST_Simplify(sqlalchemy.func.ST_Union(CatchmentModel.the_geom), 0.001), 9, 0
+            ).label("the_geom")
+        else:
+            _geom = sqlalchemy.func.ST_AsGeoJSON(sqlalchemy.func.ST_Union(CatchmentModel.the_geom), 9, 0).label(
+                "the_geom"
+            )
+
+        # Create the final query
+        query = (
+            sqlalchemy.select(_geom)
+            .select_from(nav_basin)
+            .join(CatchmentModel, nav_basin.c.comid == CatchmentModel.featureid)
+        )
+
+        stmt = query.params(comid=comid)
+        logging.debug(stmt.compile())
+        hits = await self.repository._execute(stmt)
+        result = hits.fetchone()
+        if result is None:
+            raise KeyError(f"No such item: {comid}")
+        return struct_geojson.Feature(properties=dict(), id=0, geometry=json.loads(result.the_geom))
 
 
 async def catchment_svc(db_session: AsyncSession) -> AsyncGenerator[CatchmentModel, None]:

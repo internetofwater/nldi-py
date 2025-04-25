@@ -5,5 +5,3 @@
 
 """ """
 
-import psycopg
-import pytest

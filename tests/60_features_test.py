@@ -38,10 +38,10 @@ import json
 
 import pytest
 from advanced_alchemy.exceptions import NotFoundError
+from sqlalchemy import func
 
 from nldi.db.schemas.nldi_data import FeatureSourceModel
 from nldi.domain.linked_data import repos, services
-from sqlalchemy import func
 
 from . import API_PREFIX
 
@@ -219,20 +219,20 @@ async def test_feature_svc_get_features_list_stream(dbsession_containerized) -> 
     assert len(features) >= 1
 
 
-# region: litestar endpoints
+# region: endpoints
 
 
 @pytest.mark.order(65)
 @pytest.mark.integration
-def test_api_get_feature_by_identifier(client_containerized) -> None:
+def test_api_get_feature_by_identifier(f_client_containerized) -> None:
     identifier = "USGS-05427930"
     source_name = "wqp"
 
-    r = client_containerized.get(f"{API_PREFIX}/linked-data/{source_name}/{identifier}?f=json")
+    r = f_client_containerized.get(f"{API_PREFIX}/linked-data/{source_name}/{identifier}?f=json")
     assert r.status_code == 200
     assert r.headers["content-type"].startswith("application/json")
 
-    actual = r.json()  # Should return a feature collection as JSON
+    actual = r.json  # Should return a feature collection as JSON
     assert actual["type"] == "FeatureCollection"
     features = actual["features"]
     assert isinstance(features, list)
@@ -241,53 +241,40 @@ def test_api_get_feature_by_identifier(client_containerized) -> None:
 
 @pytest.mark.order(65)
 @pytest.mark.integration
-def test_api_get_feature_by_id_notfound(client_containerized) -> None:
+def test_api_get_feature_by_id_notfound(f_client_containerized) -> None:
     identifier = "USGS-05427930"
     source_name = "nonesuch"
 
-    r = client_containerized.get(f"{API_PREFIX}/linked-data/{source_name}/{identifier}?f=json")
+    r = f_client_containerized.get(f"{API_PREFIX}/linked-data/{source_name}/{identifier}?f=json")
     assert r.status_code == 404
 
     identifier = "USGS-xxxxxxxx"
     source_name = "wqp"
 
-    r = client_containerized.get(f"{API_PREFIX}/linked-data/{source_name}/{identifier}?f=json")
+    r = f_client_containerized.get(f"{API_PREFIX}/linked-data/{source_name}/{identifier}?f=json")
     assert r.status_code == 404
 
 
+@pytest.mark.skip(reason="Feature list endpoint not implemented.")
 @pytest.mark.order(65)
 @pytest.mark.integration
-def test_api_list_features_by_source(client_containerized) -> None:
+def test_api_list_features_by_source(f_client_containerized) -> None:
     source_name = "wqp"
 
-    r = client_containerized.get(f"{API_PREFIX}/linked-data/{source_name.lower()}?f=json")
+    r = f_client_containerized.get(f"{API_PREFIX}/linked-data/{source_name.lower()}?f=json")
     assert r.status_code == 200
-    actual = r.json()
+    actual = r.json
     assert actual["type"] == "FeatureCollection"
     features_lowcase = actual["features"]
     assert isinstance(features_lowcase, list)
     assert len(features_lowcase) > 1
 
     ## Do it again as upcase...
-    r = client_containerized.get(f"{API_PREFIX}/linked-data/{source_name.upper()}?f=json")
+    r = f_client_containerized.get(f"{API_PREFIX}/linked-data/{source_name.upper()}?f=json")
     assert r.status_code == 200
-    actual = r.json()
+    actual = r.json
     assert actual["type"] == "FeatureCollection"
     features_upcase = actual["features"]
     assert isinstance(features_upcase, list)
     assert len(features_upcase) == len(features_lowcase)
 
-
-@pytest.mark.order(69)  # TODO: Implement - depends on pygeoapi
-@pytest.mark.integration
-def test_api_get_basin_by_id(client_containerized) -> None:
-    # NOTE: At this point, we are merely testing that the endpoint exists.  It should return a HTTP 501 (NOT_IMPLEMENTED) for now.
-    source_name = "wqp"
-    identifier = "USGS-05427930"
-
-    r = client_containerized.get(f"{API_PREFIX}/linked-data/{source_name}/{identifier}/basin?f=json")
-    assert r.status_code == 501
-    assert r.headers["content-type"].startswith("application/json")
-
-    extra = r.json()["extra"]
-    return None

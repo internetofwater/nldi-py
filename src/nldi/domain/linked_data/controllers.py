@@ -157,8 +157,11 @@ class LinkedDataController(litestar.Controller):
     async def get_hydrolocation(
         self, pygeoapi_svc: services.PyGeoAPIService, coords: str, base_url: str
     ) -> struct_geojson.FeatureCollection:
-        returnval = await pygeoapi_svc.hydrolocation_by_coords(coords, base_url=base_url)
-        return returnval
+        features = await pygeoapi_svc.hydrolocation_by_coords(coords, base_url=base_url)
+
+        return struct_geojson.FeatureCollection(
+            features=features
+        )
 
     # region Routes Per-Source:
 
