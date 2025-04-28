@@ -163,7 +163,8 @@ def parse_incoming_request() -> None:
     # NOTE: This is a special request for the interface:  If the requesting client accepts HTML, we
     # are assuming that it is a web browser or other general-purpose client. We want them to specifically
     # ask for JSON with the `f=json` query param.
-    if flask.request.args.get("f") == "html" or flask.request.accept_mimetypes.accept_html:
+    _html_specified = "text/html" in flask.request.headers.get("Accept", "")
+    if flask.request.args.get("f") == "html" or _html_specified:
         _q = dict(flask.request.args)
         _q["f"] = "json"
         _qstring = "&".join([f"{k}={v}" for k, v in _q.items()])
