@@ -8,32 +8,10 @@
 
 import pathlib
 
-from litestar.openapi.config import OpenAPIConfig
-from litestar.openapi.plugins import RedocRenderPlugin, SwaggerRenderPlugin
-
 from .. import __version__
 from ..config import get_config, load_yaml
 
-# region FastAPI Config
 _CFG = get_config()
-
-config = OpenAPIConfig(
-    title=_CFG.metadata.title,
-    description=_CFG.metadata.description,
-    license=_CFG.metadata.license,
-    terms_of_service=_CFG.metadata.terms_of_service,
-    version=__version__,
-    use_handler_docstrings=True,
-    path="/openapi",
-    render_plugins=[
-        SwaggerRenderPlugin(path="/swagger"),
-        RedocRenderPlugin(path="/redoc", google_fonts=True, version="next"),
-    ],
-)
-
-
-# region FLASK Config
-
 
 def generate_openapi_json():
     """

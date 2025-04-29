@@ -4,7 +4,7 @@
 # SPDX-FileCopyrightText: 2024-present USGS
 # See the full copyright notice in LICENSE.md
 #
-""" """
+"""Routers/blueprints for flask app endpoints."""
 
 import http
 import json
@@ -16,7 +16,7 @@ import flask
 import msgspec
 from advanced_alchemy.exceptions import NotFoundError
 from sqlalchemy.ext.asyncio import AsyncSession
-from werkzeug.exceptions import BadRequest, NotFound, NotImplemented, ServiceUnavailable, UnprocessableEntity
+from werkzeug.exceptions import BadRequest, NotFound, ServiceUnavailable, UnprocessableEntity
 
 from .. import __version__, util
 from ..config import MasterConfig, status
