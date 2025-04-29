@@ -4,7 +4,7 @@
 # SPDX-FileCopyrightText: 2024-present USGS
 # See the full copyright notice in LICENSE.md
 #
-""" """
+"""Routers/blueprints for flask app endpoints related to linked data, navigation, etc."""
 
 import http
 import json
@@ -16,123 +16,16 @@ import flask
 import msgspec
 from advanced_alchemy.exceptions import NotFoundError
 from sqlalchemy.ext.asyncio import AsyncSession
-from werkzeug.exceptions import BadRequest, NotFound, NotImplemented, ServiceUnavailable, UnprocessableEntity
+from werkzeug.exceptions import BadRequest, NotFound, ServiceUnavailable, UnprocessableEntity
 
-from .. import __version__, util
-from ..config import MasterConfig, status
-from ..db.schemas import struct_geojson
-from ..domain.linked_data import services
+from ... import __version__, util
+from ...config import MasterConfig, status
+from ...db.schemas import struct_geojson
+from . import services
 
-ROOT = flask.Blueprint("nldi", __name__)
 LINKED_DATA = flask.Blueprint("linked-data", __name__)
 
 
-@ROOT.before_request
-def root_incoming_request() -> None:
-    logging.debug(f"{flask.request.method} {flask.request.url}")
-
-    rp = flask.request.path
-    if rp != "/" and rp.endswith("/"):
-        return flask.redirect(rp[:-1])
-
-
-## Sets up a callback to update headers after the request is processed.
-@ROOT.after_request
-def update_headers(r: flask.Response) -> flask.Response:
-    """Implement simple middlware function to update response headers."""
-    r.headers.update({"X-Powered-By": f"nldi {__version__} and FLASK"})
-    return r
-
-
-@ROOT.route("/")
-def home():
-    _cfg = flask.current_app.NLDI_CONFIG
-    return {
-        "title": _cfg.metadata.title,
-        "description": _cfg.metadata.description,
-        "links": [
-            {
-                "rel": "data",
-                "type": "application/json",
-                "title": "Sources",
-                "href": util.url_join(_cfg.server.base_url, "linked-data"),
-            },
-            {
-                "rel": "service-desc",
-                "type": "text/html",
-                "title": "The OpenAPI definition as HTML",
-                "href": util.url_join(_cfg.server.base_url, "docs"),
-            },
-            {
-                "rel": "service-desc",
-                "type": "application/vnd.oai.openapi+json;version=3.0",
-                "title": "The OpenAPI definition as JSON",
-                "href": util.url_join(_cfg.server.base_url, "docs", "openapi.json"),
-            },
-        ],
-    }
-
-
-# region ABOUT
-@ROOT.route("/about")
-def app_info() -> dict[str, Any]:
-    _ = flask.request
-    return {
-        "name": "nldi-py",
-        "version": __version__,
-    }
-
-
-@ROOT.route("/about/config")
-def app_configuration():
-    _app = flask.current_app
-    _sanitized_config = deepcopy(_app.NLDI_CONFIG)
-    _sanitized_config.db.password = "***"  # noqa: S105
-    return {
-        "server": vars(_sanitized_config.server),
-        "db": vars(_sanitized_config.db),
-        "metadata": vars(_sanitized_config.metadata),
-    }
-
-
-@ROOT.route("/about/health")
-def healthcheck():
-    """Simple healthcheck for app and its dependent services."""
-    _cfg = flask.current_app.NLDI_CONFIG
-    return {
-        "server": msgspec.structs.asdict(_cfg.server.healthstatus()),
-        "db": msgspec.structs.asdict(_cfg.db.healthstatus()),
-        "pygeoapi": msgspec.structs.asdict(_cfg.server.healthstatus("pygeoapi")),
-    }
-
-
-@ROOT.route("/docs/openapi.json")
-def openapi_json():
-    from .openapi import generate_openapi_json
-
-    r = flask.jsonify(generate_openapi_json())
-    r.headers["Content-Type"] = "application/vnd.oai.openapi+json;version=3.0"  # noqa
-    return r
-
-
-@ROOT.route("/docs")
-def openapi_ui():
-    template = "swagger.html"
-    data = {"openapi-document-path": "docs/openapi.json"}  ## NOTE: intentionally using relative path here
-    content = util.render_j2_template(template, data)
-    return flask.Response(
-        headers={"Content-Type": "text/html"},
-        status=http.HTTPStatus.OK,
-        response=content,
-    )
-
-
-@ROOT.route("/openapi")
-def openapi_redirect():
-    return flask.redirect("docs")
-
-
-# region  Linked-Data
 class HTML_JSON_Exception(Exception):
     pass
 
@@ -284,7 +177,7 @@ async def get_feature_by_identifier(source_name: str, identifier: str):
         async with services.FeatureService.new(session=db_session) as feature_svc:
             try:
                 feature = await feature_svc.feature_lookup(source_name, identifier)
-            except NotFoundError :
+            except NotFoundError:
                 raise NotFound(description=f"Not Found: {source_name}/{identifier}")
             nav_url = util.url_join(
                 flask.current_app.NLDI_CONFIG.server.base_url, "linked-data", source_name, identifier, "navigation"
@@ -306,7 +199,9 @@ async def get_basin_by_id(source_name: str, identifier: str) -> dict[str, Any]:
     split = flask.request.args.get("splitCatchment", "False").lower() == "true"
 
     async with AsyncSession(bind=db.async_engine) as db_session:
-        basin_svc = services.BasinService(session=db_session, pygeoapi_url=flask.current_app.NLDI_CONFIG.server.pygeoapi_url)
+        basin_svc = services.BasinService(
+            session=db_session, pygeoapi_url=flask.current_app.NLDI_CONFIG.server.pygeoapi_url
+        )
         featurelist = await basin_svc.get_by_id(identifier, source_name, simplified, split)
         _r = flask.Response(
             headers={"Content-Type": "application/json"},

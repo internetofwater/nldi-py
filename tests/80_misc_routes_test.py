@@ -22,7 +22,7 @@ import psycopg
 import pytest
 
 from nldi.db.schemas import struct_geojson
-from nldi.domain.linked_data.services import basin, catchment, pygeoapi
+from nldi.server.linked_data.services import basin, catchment, pygeoapi
 
 from . import API_PREFIX
 

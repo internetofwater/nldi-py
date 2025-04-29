@@ -21,7 +21,7 @@ Feature Lookups -- Finding source-specific features.
     - [+] stream all features for a source
     - [+] stream a single feature for a source
     - [+] stream raise NotFoundError if no features selected (due to bad ID or bad source_suffix)
-- [ ] Endpoints for litestar API
+- [ ] Endpoints for  API
     - [+] GET f"{API_PREFIX}/linked-data/{source_name}"
       - [+] stream data (all features) as FeatureCollection
       - [+] 404 if source not found
@@ -41,7 +41,7 @@ from advanced_alchemy.exceptions import NotFoundError
 from sqlalchemy import func
 
 from nldi.db.schemas.nldi_data import FeatureSourceModel
-from nldi.domain.linked_data import repos, services
+from nldi.server.linked_data import repos, services
 
 from . import API_PREFIX
 
@@ -165,58 +165,59 @@ async def test_feature_svc_list_all_bad_src(dbsession_containerized) -> None:
     assert len(_all_features) == 0
 
 
-@pytest.mark.order(62)
-@pytest.mark.integration
-async def test_feature_svc_get_features_get_stream(dbsession_containerized) -> None:
-    feature_svc = services.FeatureService(session=dbsession_containerized)
-    source_name = "wqp"
-    identifier = "USGS-05427930"
-    # feature_collection_stream is a generator... need to exhaust it in order to get the full result.
-    streamed_str = ""
-    async for chunk in feature_svc.feature_collection_stream(source_name, identifier):
-        streamed_str += chunk.decode("utf-8")
+# The stream response of feature is a litestar thing... we're using Flask. Disable for now.
+# @pytest.mark.order(62)
+# @pytest.mark.integration
+# async def test_feature_svc_get_features_get_stream(dbsession_containerized) -> None:
+#     feature_svc = services.FeatureService(session=dbsession_containerized)
+#     source_name = "wqp"
+#     identifier = "USGS-05427930"
+#     # feature_collection_stream is a generator... need to exhaust it in order to get the full result.
+#     streamed_str = ""
+#     async for chunk in feature_svc.feature_collection_stream(source_name, identifier):
+#         streamed_str += chunk.decode("utf-8")
 
-    actual = json.loads(streamed_str)
-    features = actual["features"]
-    assert isinstance(features, list)
-    assert len(features) == 1
-
-
-@pytest.mark.order(62)
-@pytest.mark.integration
-async def test_feature_svc_get_features_get_nonesuch_stream(dbsession_containerized) -> None:
-    feature_svc = services.FeatureService(session=dbsession_containerized)
-    source_name = "wqp"
-    identifier = "USGS-0542793x"
-    with pytest.raises(NotFoundError):
-        streamed_str = ""
-        async for chunk in feature_svc.feature_collection_stream(source_name, identifier):
-            streamed_str += chunk.decode("utf-8")
+#     actual = json.loads(streamed_str)
+#     features = actual["features"]
+#     assert isinstance(features, list)
+#     assert len(features) == 1
 
 
-@pytest.mark.order(62)
-@pytest.mark.integration
-async def test_feature_svc_get_features_list_stream(dbsession_containerized) -> None:
-    feature_svc = services.FeatureService(session=dbsession_containerized)
-    source_name = "wqp"
-    streamed_str = ""
-    async for chunk in feature_svc.feature_collection_stream(source_name.lower()):
-        streamed_str += chunk.decode("utf-8")
+# @pytest.mark.order(62)
+# @pytest.mark.integration
+# async def test_feature_svc_get_features_get_nonesuch_stream(dbsession_containerized) -> None:
+#     feature_svc = services.FeatureService(session=dbsession_containerized)
+#     source_name = "wqp"
+#     identifier = "USGS-0542793x"
+#     with pytest.raises(NotFoundError):
+#         streamed_str = ""
+#         async for chunk in feature_svc.feature_collection_stream(source_name, identifier):
+#             streamed_str += chunk.decode("utf-8")
 
-    actual = json.loads(streamed_str)
-    features = actual["features"]
-    assert isinstance(features, list)
-    assert len(features) >= 1
 
-    ## Do it all again with the upcase version of the source name... result should be the same.
-    streamed_str = ""
-    async for chunk in feature_svc.feature_collection_stream(source_name.upper()):
-        streamed_str += chunk.decode("utf-8")
+# @pytest.mark.order(62)
+# @pytest.mark.integration
+# async def test_feature_svc_get_features_list_stream(dbsession_containerized) -> None:
+#     feature_svc = services.FeatureService(session=dbsession_containerized)
+#     source_name = "wqp"
+#     streamed_str = ""
+#     async for chunk in feature_svc.feature_collection_stream(source_name.lower()):
+#         streamed_str += chunk.decode("utf-8")
 
-    actual = json.loads(streamed_str)
-    features = actual["features"]
-    assert isinstance(features, list)
-    assert len(features) >= 1
+    # actual = json.loads(streamed_str)
+    # features = actual["features"]
+    # assert isinstance(features, list)
+    # assert len(features) >= 1
+
+    # ## Do it all again with the upcase version of the source name... result should be the same.
+    # streamed_str = ""
+    # async for chunk in feature_svc.feature_collection_stream(source_name.upper()):
+    #     streamed_str += chunk.decode("utf-8")
+
+    # actual = json.loads(streamed_str)
+    # features = actual["features"]
+    # assert isinstance(features, list)
+    # assert len(features) >= 1
 
 
 # region: endpoints

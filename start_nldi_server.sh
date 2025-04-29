@@ -22,10 +22,8 @@ WSGI_WORKER_CLASS=${WSGI_WORKER_CLASS:=gevent}
 # Workdir
 cd ${NLDI_HOME}
 echo "name=${CONTAINER_NAME} ; bind=${CONTAINER_HOST}:${CONTAINER_PORT}"
-exec gunicorn --workers ${WSGI_WORKERS} \
-        --timeout ${WSGI_WORKER_TIMEOUT} \
-        --name=${CONTAINER_NAME} \
+exec hypercorn -w ${WSGI_WORKERS} \
+        --read-timeout ${WSGI_WORKER_TIMEOUT} \
         --bind ${CONTAINER_HOST}:${CONTAINER_PORT} \
-        nldi.flask_wsgi:APP
+        nldi.asgi:APP
 
-# or nldi.litestar_asgi:app

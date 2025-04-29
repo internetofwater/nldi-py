@@ -60,7 +60,7 @@ class PyGeoAPIService:
     def _post_to_external_service(cls, url: str, data: dict = {}, timeout: int = 0) -> dict:
         _to = timeout if timeout > 0 else cls.HTTP_TIMEOUT
         logging.info(f"{__class__.__name__} Sending POST (timeout={_to}) to: {url}")
-        logging.info(f"Paylod is {data}")
+        logging.debug(f"Paylod is {data}")
         try:
             with httpx.Client(verify=False) as client:
                 r = client.post(url, data=json.dumps(data), timeout=_to).raise_for_status()

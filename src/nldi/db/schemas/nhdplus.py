@@ -12,7 +12,6 @@ from functools import cached_property
 from typing import Any
 
 import geoalchemy2
-from litestar.dto import dto_field
 from sqlalchemy import Column, DateTime, Float, Integer, MetaData, SmallInteger, String
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 

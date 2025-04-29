@@ -4,10 +4,10 @@
 # SPDX-FileCopyrightText: 2024-present USGS
 # See the full copyright notice in LICENSE.md
 #
-"""System/infrastructure functionality."""
+"""An ASGI wrapper for the WSGI "standard" APP."""
 
-from . import controllers
+from asgiref.wsgi import WsgiToAsgi
 
-__all__ = [
-    "controllers",
-]
+from .wsgi import APP as _APP
+
+APP = WsgiToAsgi(_APP)
