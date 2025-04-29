@@ -2,22 +2,6 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "NLDI Server w/ LiteStar",
-            "type": "debugpy",
-            "justMyCode": false,
-            "envFile": "${workspaceFolder}/tests/data/secret.env",
-            "request": "launch",
-            "program": "${workspaceFolder}/.venv/bin/uvicorn",
-            "args": [
-                "nldi.litestar_asgi:app",
-                "--reload",
-                "--host",
-                "0.0.0.0",
-                "--port",
-                "8001"
-            ]
-        },
-        {
             "name": "NLDI Server w/ FLASK",
             "type": "debugpy",
             "justMyCode": false,
@@ -25,7 +9,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/.venv/bin/uvicorn",
             "args": [
-                "nldi.flask_wsgi:APP",
+                "nldi.wsgi:APP",
                 "--reload",
                 "--host",
                 "0.0.0.0",
@@ -48,7 +32,7 @@
                 "--workers",
                 "1",
                 "--timeout", "6000",
-                "nldi.flask_wsgi:APP",
+                "nldi.wsgi:APP",
             ]
         }
     ]

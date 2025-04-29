@@ -17,22 +17,6 @@ from litestar.testing import TestClient
 
 from . import API_PREFIX
 
-# region localhost
-# @pytest.mark.order(20)
-# @pytest.mark.unittest
-# def test_core_system_routes(f_client_containerized) -> None:
-#     """
-#     Fetch infrastructure files/routes; not relevant to API function itself.
-
-#       * robots.txt
-#       * faviocon.ico
-#     """
-#     r = f_client_containerized.get(f"{API_PREFIX}/robots.txt")
-#     assert r.status_code == 200
-
-#     r = f_client_containerized.get(f"{API_PREFIX}/favicon.ico")
-#     assert r.status_code == 200
-
 
 @pytest.mark.order(21)
 @pytest.mark.unittest
@@ -65,6 +49,19 @@ def test_server_healthcheck_form(f_client_containerized) -> None:
     assert actual.get("pygeoapi") is not None
 
 
+@pytest.mark.order(21)
+@pytest.mark.unittest
+def test_server_openapi_docs(f_client_containerized) -> None:
+    """
+    Health endpoint returns a list of status objects (one for each dependent subsystem).
+
+    We don't care about the actual status (at this point) -- just that we get the right object/structure.
+    """
+    r = f_client_containerized.get(f"{API_PREFIX}/docs")
+    assert r.status_code == 200
+
+    r = f_client_containerized.get(f"{API_PREFIX}/docs/openapi.json")
+    assert r.status_code == 200
 
 
 # region containerized

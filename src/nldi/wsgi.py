@@ -10,7 +10,8 @@ import flask
 from flask_cors import CORS
 
 from .config import get_config
-from .server.flask_routers import LINKED_DATA, ROOT
+from .server.linked_data.endpoints import LINKED_DATA
+from .server.root.endpoints import ROOT
 
 
 def flask_nldi_app_factory() -> flask.Flask:

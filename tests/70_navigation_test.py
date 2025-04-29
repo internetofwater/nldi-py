@@ -27,7 +27,7 @@ import psycopg
 import pytest
 
 from nldi.db.schemas.nldi_data import CrawlerSourceModel, FeatureSourceModel
-from nldi.domain.linked_data import repos, services
+from nldi.server.linked_data import repos, services
 
 from . import API_PREFIX, AUTH_PREFIX
 
