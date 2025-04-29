@@ -25,7 +25,7 @@ Flowline Lookups -- Finding "FlowLine" features using "comid" source.
 
 import geoalchemy2
 import pytest
-from litestar.exceptions import HTTPException
+
 
 from nldi.server.linked_data import repos, services
 

@@ -13,7 +13,6 @@ tests of those handlers will be handled elsewhere.
 import logging
 
 import pytest
-from litestar.testing import TestClient
 
 from . import API_PREFIX
 

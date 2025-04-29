@@ -2,7 +2,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "NLDI Server w/ FLASK",
+            "name": "WSGI - uvicorn",
             "type": "debugpy",
             "justMyCode": false,
             "envFile": "${workspaceFolder}/tests/data/secret.env",
@@ -20,7 +20,23 @@
             ]
         },
         {
-            "name": "GUNICORN",
+            "name": "ASGI - uvicorn",
+            "type": "debugpy",
+            "justMyCode": false,
+            "envFile": "${workspaceFolder}/tests/data/secret.env",
+            "request": "launch",
+            "program": "${workspaceFolder}/.venv/bin/uvicorn",
+            "args": [
+                "nldi.asgi:APP",
+                "--reload",
+                "--host",
+                "0.0.0.0",
+                "--port",
+                "8001",
+            ]
+        },
+        {
+            "name": "WSGI - GUNICORN",
             "type": "debugpy",
             "justMyCode": false,
             "envFile": "${workspaceFolder}/tests/data/secret.env",
@@ -31,8 +47,23 @@
                 "0.0.0.0:8001",
                 "--workers",
                 "1",
-                "--timeout", "6000",
+                "--timeout",
+                "6000",
                 "nldi.wsgi:APP",
+            ]
+        },
+        {
+            "name": "ASGI - HYPERCORN",
+            "type": "debugpy",
+            "justMyCode": false,
+            "envFile": "${workspaceFolder}/tests/data/secret.env",
+            "request": "launch",
+            "program": "${workspaceFolder}/.venv/bin/hypercorn",
+            "args": [
+                "--bind",
+                "0.0.0.0:8001",
+                "-w", "1",
+                "nldi.asgi:APP",
             ]
         }
     ]
