@@ -183,12 +183,6 @@ def generate_openapi_json():
         }
     }
 
-    ## A set of paths per source --
-    # comid_source = {"source_suffix": "comid", "source_name": "NHDPlus COMID"}
-    # all_sources = [comid_source, *self.config["sources"]]
-    # source_names_enumerated = {source["source_suffix"]: source for source in self.config["sources"]}
-    # LOGGER.info(f"Generating paths for {len(all_sources)} sources: {[k['source_suffix'] for k in all_sources]}")
-
     paths["/linked-data/comid/position"] = {
         "get": {
             "summary": "ComidByCoordinates",

@@ -14,4 +14,3 @@ import logging
 NAD83_SRID = 4269
 
 LOGGER = logging.getLogger(__name__)
-# LOGGER.setLevel(logging.WARNING) ## Can be adjusted later

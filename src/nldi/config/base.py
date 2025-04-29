@@ -146,7 +146,6 @@ class MasterConfig:
 
     @classmethod
     def from_yaml(cls, input: Any) -> Self:
-        LOGGER.debug("Loading configuration...")
         try:
             cfg = load_yaml(input)
         except OSError as e:
