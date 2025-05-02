@@ -44,6 +44,7 @@ flask-cors = "^5.0.1"
 hypercorn = "^0.17.3"
 httpx = "^0.28.1"
 msgspec = "^0.19.0"
+rich = "^14.0.0"
 
 
 [tool.poetry.group.dev.dependencies]

@@ -16,7 +16,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 from testcontainers.core.container import DockerContainer
 from testcontainers.core.waiting_utils import wait_for_logs
 
-from nldi import wsgi
+# from nldi import wsgi
 
 
 @pytest.fixture
@@ -188,7 +188,8 @@ def f_client_containerized(monkeypatch, yaml_config_file, containerized_db_env_i
     for k, v in containerized_db_env_info.items():
         monkeypatch.setenv(k, v)
     monkeypatch.setenv("NLDI_CONFIG", yaml_config_file)
-    _app = wsgi.flask_nldi_app_factory()
+    from nldi.wsgi import flask_nldi_app_factory
+    _app = flask_nldi_app_factory()
     with _app.test_client() as client:
         yield client
 
@@ -206,6 +207,7 @@ def f_client_testdb(monkeypatch, yaml_config_file, testdb_env_info):
     for k, v in testdb_env_info.items():
         monkeypatch.setenv(k, v)
     monkeypatch.setenv("NLDI_CONFIG", yaml_config_file)
-    _app = wsgi.flask_nldi_app_factory()
+    from nldi.wsgi import flask_nldi_app_factory
+    _app = flask_nldi_app_factory()
     with _app.test_client() as client:
         yield client
