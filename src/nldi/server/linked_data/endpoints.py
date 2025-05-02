@@ -108,7 +108,6 @@ async def get_hydrolocation():
 
 @LINKED_DATA.route("/comid/<path:comid>")
 async def get_flowline_by_comid(comid: int | None = None):
-
     base_url = flask.current_app.NLDI_CONFIG.server.base_url
     try:
         _comid = int(comid)
@@ -158,10 +157,10 @@ async def flowline_by_position():
         xtra_props={"navigation": util.url_join(base_url, "comid", comid, "navigation")},
     )
     _r = flask.Response(
-            headers={"Content-Type": "application/json"},
-            status=http.HTTPStatus.OK,
-            response=util.stream_j2_template("FeatureCollection.j2", [msgspec.structs.asdict(flowline_feature)]),
-        )
+        headers={"Content-Type": "application/json"},
+        status=http.HTTPStatus.OK,
+        response=util.stream_j2_template("FeatureCollection.j2", [msgspec.structs.asdict(flowline_feature)]),
+    )
     return _r
 
 
@@ -194,16 +193,17 @@ async def get_basin_by_id(source_name: str, identifier: str) -> dict[str, Any]:
     simplified = flask.request.args.get("simplified", "True").lower() == "true"
     split = flask.request.args.get("splitCatchment", "False").lower() == "true"
 
-    async with AsyncSession(bind=db.async_engine) as db_session:
-        basin_svc = services.BasinService(
-            session=db_session, pygeoapi_url=flask.current_app.NLDI_CONFIG.server.pygeoapi_url
-        )
-        featurelist = await basin_svc.get_by_id(identifier, source_name, simplified, split)
-        _r = flask.Response(
-            headers={"Content-Type": "application/json"},
-            status=http.HTTPStatus.OK,
-            response=util.stream_j2_template("FeatureCollection.j2", [msgspec.to_builtins(f) for f in featurelist]),
-        )
+    basin_svc = services.BasinService(
+        session=flask.current_app.alchemy.get_async_session(),
+        pygeoapi_url=flask.current_app.NLDI_CONFIG.server.pygeoapi_url,
+    )
+
+    featurelist = await basin_svc.get_by_id(identifier, source_name, simplified, split)
+    _r = flask.Response(
+        headers={"Content-Type": "application/json"},
+        status=http.HTTPStatus.OK,
+        response=util.stream_j2_template("FeatureCollection.j2", [msgspec.to_builtins(f) for f in featurelist]),
+    )
     return _r
 
 
