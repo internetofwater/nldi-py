@@ -15,7 +15,6 @@ from typing import Any, Literal, TypeVar
 import flask
 import msgspec
 from advanced_alchemy.exceptions import NotFoundError
-from sqlalchemy.ext.asyncio import AsyncSession
 from werkzeug.exceptions import BadRequest, NotFound, ServiceUnavailable, UnprocessableEntity
 
 from ... import __version__, util
@@ -89,15 +88,15 @@ async def get_hydrolocation():
         return flask.Response(status=http.HTTPStatus.BAD_REQUEST, response="No coordinates provided")
     db = flask.current_app.NLDI_CONFIG.db
     base_url = flask.current_app.NLDI_CONFIG.server.base_url
+    pygeoapi_svc = services.PyGeoAPIService(session=flask.current_app.alchemy.get_async_session())
 
-    async with AsyncSession(bind=db.async_engine) as db_session:
-        async with services.PyGeoAPIService.new(session=db_session) as pygeoapi_svc:
-            try:
-                features = await pygeoapi_svc.hydrolocation_by_coords(coords, base_url=base_url)
-            except RuntimeError as e:
-                raise ServiceUnavailable(description=str(e))
-            except KeyError as e:
-                raise NotFound(description=str(e))
+    try:
+        features = await pygeoapi_svc.hydrolocation_by_coords(coords, base_url=base_url)
+    except RuntimeError as e:
+        raise ServiceUnavailable(description=str(e))
+    except KeyError as e:
+        raise NotFound(description=str(e))
+
     _r = flask.Response(
         headers={"Content-Type": "application/json"},
         status=http.HTTPStatus.OK,
@@ -278,20 +277,21 @@ async def get_flowline_navigation(
         trim_start = False
     except (TypeError, ValueError) as e:
         return flask.Response(status=http.HTTPStatus.BAD_REQUEST, response="Invalid trimStart provided")
-    db = flask.current_app.NLDI_CONFIG.db
-    async with AsyncSession(bind=db.async_engine) as db_session:
-        async with services.NavigationService.new(session=db_session) as navigation_svc:
-            try:
-                features = await navigation_svc.walk_flowlines(source_name, identifier, nav_mode, distance, trim_start)
-            except NotFoundError as e:
-                raise NotFound(description=str(e))
-            except ValueError as e:
-                raise BadRequest(description=str(e))
-            _r = flask.Response(
-                headers={"Content-Type": "application/json"},
-                status=http.HTTPStatus.OK,
-                response=util.stream_j2_template("FeatureCollection.j2", [msgspec.to_builtins(f) for f in features]),
-            )
+
+    navigation_svc = services.NavigationService(session=flask.current_app.alchemy.get_async_session())
+
+    try:
+        features = await navigation_svc.walk_flowlines(source_name, identifier, nav_mode, distance, trim_start)
+    except NotFoundError as e:
+        raise NotFound(description=str(e))
+    except ValueError as e:
+        raise BadRequest(description=str(e))
+
+    _r = flask.Response(
+        headers={"Content-Type": "application/json"},
+        status=http.HTTPStatus.OK,
+        response=util.stream_j2_template("FeatureCollection.j2", [msgspec.to_builtins(f) for f in features]),
+    )
     return _r
 
 
@@ -310,18 +310,17 @@ async def get_feature_navigation(
     except (TypeError, ValueError) as e:
         return flask.Response(status=http.HTTPStatus.BAD_REQUEST, response="Invalid distance provided")
 
-    db = flask.current_app.NLDI_CONFIG.db
-    async with AsyncSession(bind=db.async_engine) as db_session:
-        async with services.NavigationService.new(session=db_session) as navigation_svc:
-            try:
-                features = await navigation_svc.walk_features(source_name, identifier, nav_mode, data_source, distance)
-            except NotFoundError as e:
-                raise NotFound(description=str(e))
-            except ValueError as e:
-                raise BadRequest(description=str(e))
-            _r = flask.Response(
-                headers={"Content-Type": "application/json"},
-                status=http.HTTPStatus.OK,
-                response=util.stream_j2_template("FeatureCollection.j2", [msgspec.to_builtins(f) for f in features]),
-            )
+    navigation_svc = services.NavigationService(session=flask.current_app.alchemy.get_async_session())
+    try:
+        features = await navigation_svc.walk_features(source_name, identifier, nav_mode, data_source, distance)
+    except NotFoundError as e:
+        raise NotFound(description=str(e))
+    except ValueError as e:
+        raise BadRequest(description=str(e))
+
+    _r = flask.Response(
+        headers={"Content-Type": "application/json"},
+        status=http.HTTPStatus.OK,
+        response=util.stream_j2_template("FeatureCollection.j2", [msgspec.to_builtins(f) for f in features]),
+    )
     return _r
