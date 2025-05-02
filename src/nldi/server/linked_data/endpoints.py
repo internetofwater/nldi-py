@@ -77,11 +77,9 @@ def ld_update_headers(r: flask.Response) -> flask.Response:
 
 @LINKED_DATA.route("/")
 async def list_sources():
-    db = flask.current_app.NLDI_CONFIG.db
-    async with AsyncSession(bind=db.async_engine) as db_session:
-        async with services.CrawlerSourceService.new(session=db_session) as sources_svc:
-            src_list = await sources_svc.list()
-            _r = list(src_list)
+    sources_svc = services.CrawlerSourceService(session=flask.current_app.alchemy.get_async_session())
+    src_list = await sources_svc.list()
+    _r = list(src_list)
     return [f._as_dict for f in _r]
 
 
@@ -215,11 +213,11 @@ async def get_basin_by_id(source_name: str, identifier: str) -> dict[str, Any]:
 async def get_navigation_modes(source_name: str, identifier: str):
     db = flask.current_app.NLDI_CONFIG.db
     base_url = flask.current_app.NLDI_CONFIG.server.base_url
-    async with AsyncSession(bind=db.async_engine) as db_session:
-        async with services.CrawlerSourceService.new(session=db_session) as sources_svc:
-            src_exists = await sources_svc.suffix_exists(source_name)
-            if not src_exists:
-                raise NotFound(description == f"No such source: {source_name}")
+
+    sources_svc = services.CrawlerSourceService(session=flask.current_app.alchemy.get_async_session())
+    src_exists = await sources_svc.suffix_exists(source_name)
+    if not src_exists:
+        raise NotFound(description == f"No such source: {source_name}")
 
     nav_url = util.url_join(base_url, "linked-data", source_name, identifier, "navigation")
     content = {
@@ -237,28 +235,27 @@ async def get_navigation_info(source_name: str, identifier: str, nav_mode: str) 
     base_url = flask.current_app.NLDI_CONFIG.server.base_url
     nav_url = util.url_join(base_url, "linked-data", source_name, identifier, "navigation")
 
-    async with AsyncSession(bind=db.async_engine) as db_session:
-        async with services.CrawlerSourceService.new(session=db_session) as sources_svc:
-            src_exists = await sources_svc.suffix_exists(source_name)
-            if not src_exists:
-                raise NotFound(description=f"No such source: {source_name}")
+    sources_svc = services.CrawlerSourceService(session=flask.current_app.alchemy.get_async_session())
+    src_exists = await sources_svc.suffix_exists(source_name)
+    if not src_exists:
+        raise NotFound(description == f"No such source: {source_name}")
 
-            content = [
-                {
-                    "source": "Flowlines",
-                    "sourceName": "NHDPlus flowlines",
-                    "features": util.url_join(nav_url, nav_mode, "flowlines"),
-                }
-            ]
-            for source in await sources_svc.list():
-                src_id = source.source_suffix
-                content.append(
-                    {
-                        "source": src_id,
-                        "sourceName": source.source_name,
-                        "features": util.url_join(nav_url, nav_mode, src_id.lower()),
-                    }
-                )
+    content = [
+        {
+            "source": "Flowlines",
+            "sourceName": "NHDPlus flowlines",
+            "features": util.url_join(nav_url, nav_mode, "flowlines"),
+        }
+    ]
+    for source in await sources_svc.list():
+        src_id = source.source_suffix
+        content.append(
+            {
+                "source": src_id,
+                "sourceName": source.source_name,
+                "features": util.url_join(nav_url, nav_mode, src_id.lower()),
+            }
+        )
     return content
 
 

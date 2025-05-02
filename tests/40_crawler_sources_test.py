@@ -77,6 +77,13 @@ async def test_source_repo_listall(dbsession_containerized) -> None:
     assert isinstance(features[0], CrawlerSourceModel)
 
 
+async def test_source_svc_listall(dbsession_containerized) -> None:
+    src_svc = services.CrawlerSourceService(session=dbsession_containerized)
+    features = await src_svc.list()
+    assert isinstance(features, list)
+    assert isinstance(features[0], CrawlerSourceModel)
+
+
 # region: service layer
 @pytest.mark.order(42)
 @pytest.mark.unittest
