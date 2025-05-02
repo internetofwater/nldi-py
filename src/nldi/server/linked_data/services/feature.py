@@ -19,6 +19,7 @@ from collections.abc import AsyncGenerator
 import geoalchemy2
 import sqlalchemy
 from advanced_alchemy.exceptions import NotFoundError
+from advanced_alchemy.extensions.flask import FlaskServiceMixin
 from advanced_alchemy.service import SQLAlchemyAsyncRepositoryService
 from geomet import wkt
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
@@ -32,7 +33,7 @@ from ....db.schemas import struct_geojson
 from .. import repos
 
 
-class FeatureService(SQLAlchemyAsyncRepositoryService[FeatureSourceModel]):
+class FeatureService(FlaskServiceMixin, SQLAlchemyAsyncRepositoryService[FeatureSourceModel]):
     repository_type = repos.FeatureRepository
 
     async def feature_lookup(self, source_suffix: str, identifier: str) -> FeatureSourceModel:

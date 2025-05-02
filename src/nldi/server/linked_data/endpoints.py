@@ -168,24 +168,22 @@ async def flowline_by_position():
 # region Routes Per-Source
 @LINKED_DATA.route("/<path:source_name>/<path:identifier>")
 async def get_feature_by_identifier(source_name: str, identifier: str):
-    db = flask.current_app.NLDI_CONFIG.db
     base_url = flask.current_app.NLDI_CONFIG.server.base_url
 
-    async with AsyncSession(bind=db.async_engine) as db_session:
-        async with services.FeatureService.new(session=db_session) as feature_svc:
-            try:
-                feature = await feature_svc.feature_lookup(source_name, identifier)
-            except NotFoundError:
-                raise NotFound(description=f"Not Found: {source_name}/{identifier}")
-            nav_url = util.url_join(
-                flask.current_app.NLDI_CONFIG.server.base_url, "linked-data", source_name, identifier, "navigation"
-            )
-            _geojson = feature.as_feature(excl_props=["crawler_source_id"], xtra_props={"navigation": nav_url})
-            _r = flask.Response(
-                headers={"Content-Type": "application/json"},
-                status=http.HTTPStatus.OK,
-                response=util.stream_j2_template("FeatureCollection.j2", [msgspec.to_builtins(_geojson)]),
-            )
+    feature_svc = services.FeatureService(session=flask.current_app.alchemy.get_async_session())
+    try:
+        feature = await feature_svc.feature_lookup(source_name, identifier)
+    except NotFoundError:
+        raise NotFound(description=f"Not Found: {source_name}/{identifier}")
+    nav_url = util.url_join(
+        flask.current_app.NLDI_CONFIG.server.base_url, "linked-data", source_name, identifier, "navigation"
+    )
+    _geojson = feature.as_feature(excl_props=["crawler_source_id"], xtra_props={"navigation": nav_url})
+    _r = flask.Response(
+        headers={"Content-Type": "application/json"},
+        status=http.HTTPStatus.OK,
+        response=util.stream_j2_template("FeatureCollection.j2", [msgspec.to_builtins(_geojson)]),
+    )
     return _r
 
 
