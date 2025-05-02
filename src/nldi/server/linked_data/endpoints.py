@@ -108,27 +108,27 @@ async def get_hydrolocation():
 
 @LINKED_DATA.route("/comid/<path:comid>")
 async def get_flowline_by_comid(comid: int | None = None):
-    db = flask.current_app.NLDI_CONFIG.db
+
     base_url = flask.current_app.NLDI_CONFIG.server.base_url
     try:
         _comid = int(comid)
     except Exception as e:
         raise BadRequest(f"Could not make {comid} an integer") from None
 
-    async with AsyncSession(bind=db.async_engine) as db_session:
-        async with services.FlowlineService.new(session=db_session) as flowline_svc:
-            try:
-                flowline_feature = await flowline_svc.get_feature(
-                    comid,
-                    xtra_props={"navigation": util.url_join(base_url, "comid", comid, "navigation")},
-                )
-            except NotFoundError:
-                raise NotFound(description=f"COMID {comid} not found.")
-        _r = flask.Response(
-            headers={"Content-Type": "application/json"},
-            status=http.HTTPStatus.OK,
-            response=util.stream_j2_template("FeatureCollection.j2", [msgspec.structs.asdict(flowline_feature)]),
+    flowline_svc = services.FlowlineService(session=flask.current_app.alchemy.get_async_session())
+
+    try:
+        flowline_feature = await flowline_svc.get_feature(
+            comid,
+            xtra_props={"navigation": util.url_join(base_url, "comid", comid, "navigation")},
         )
+    except NotFoundError:
+        raise NotFound(description=f"COMID {comid} not found.")
+    _r = flask.Response(
+        headers={"Content-Type": "application/json"},
+        status=http.HTTPStatus.OK,
+        response=util.stream_j2_template("FeatureCollection.j2", [msgspec.structs.asdict(flowline_feature)]),
+    )
     return _r
 
 
@@ -151,17 +151,18 @@ async def flowline_by_position():
                 raise UnprocessableEntity(description=str(e))
             except NotFoundError as e:
                 raise NotFound(description=str(e))
+
     # Step2: use that catchment's COMID to lookup flowline
-    async with services.FlowlineService.new(session=db_session) as flowline_svc:
-        flowline_feature = await flowline_svc.get_feature(
-            comid,
-            xtra_props={"navigation": util.url_join(base_url, "comid", comid, "navigation")},
-        )
-    _r = flask.Response(
-        headers={"Content-Type": "application/json"},
-        status=http.HTTPStatus.OK,
-        response=util.stream_j2_template("FeatureCollection.j2", [msgspec.structs.asdict(flowline_feature)]),
+    flowline_svc = services.FlowlineService(session=flask.current_app.alchemy.get_async_session())
+    flowline_feature = await flowline_svc.get_feature(
+        comid,
+        xtra_props={"navigation": util.url_join(base_url, "comid", comid, "navigation")},
     )
+    _r = flask.Response(
+            headers={"Content-Type": "application/json"},
+            status=http.HTTPStatus.OK,
+            response=util.stream_j2_template("FeatureCollection.j2", [msgspec.structs.asdict(flowline_feature)]),
+        )
     return _r
 
 

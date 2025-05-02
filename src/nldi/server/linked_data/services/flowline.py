@@ -19,6 +19,7 @@ from collections.abc import AsyncGenerator
 
 # import geoalchemy2
 import sqlalchemy
+from advanced_alchemy.extensions.flask import FlaskServiceMixin
 
 # from advanced_alchemy.exceptions import NotFoundError
 from advanced_alchemy.service import SQLAlchemyAsyncRepositoryService
@@ -35,7 +36,7 @@ from ....db.schemas import struct_geojson
 from .. import repos
 
 
-class FlowlineService(SQLAlchemyAsyncRepositoryService[FlowlineModel]):
+class FlowlineService(FlaskServiceMixin, SQLAlchemyAsyncRepositoryService[FlowlineModel]):
     repository_type = repos.FlowlineRepository
 
     async def get(self, id: str | int, *args, **kwargs) -> FlowlineModel:
