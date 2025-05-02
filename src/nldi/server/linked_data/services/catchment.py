@@ -20,6 +20,7 @@ from collections.abc import AsyncGenerator
 import geoalchemy2
 import sqlalchemy
 from advanced_alchemy.exceptions import NotFoundError
+from advanced_alchemy.extensions.flask import FlaskServiceMixin
 from advanced_alchemy.service import SQLAlchemyAsyncRepositoryService
 from geomet import wkt
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
@@ -33,7 +34,7 @@ from ....db.schemas import struct_geojson
 from .. import repos
 
 
-class CatchmentService(SQLAlchemyAsyncRepositoryService[CatchmentModel]):
+class CatchmentService(FlaskServiceMixin, SQLAlchemyAsyncRepositoryService[CatchmentModel]):
     repository_type = repos.CatchmentRepository
 
     async def get_by_wkt_point(self, coord_string: str) -> CatchmentModel:
@@ -77,14 +78,16 @@ class CatchmentService(SQLAlchemyAsyncRepositoryService[CatchmentModel]):
             .cte("nav", recursive=True)
         )
 
-        #vaa = sqlalchemy.alias(FlowlineVAAModel, name="vaa")
+        # vaa = sqlalchemy.alias(FlowlineVAAModel, name="vaa")
         nav_basin = nav.union(
             sqlalchemy.select(FlowlineVAAModel.comid, FlowlineVAAModel.hydroseq, FlowlineVAAModel.startflag).where(
                 sqlalchemy.and_(
                     (nav.c.startflag != 1),
                     sqlalchemy.or_(
                         (FlowlineVAAModel.dnhydroseq == nav.c.hydroseq),
-                        sqlalchemy.and_((FlowlineVAAModel.dnminorhyd != 0), (FlowlineVAAModel.dnminorhyd == nav.c.hydroseq)),
+                        sqlalchemy.and_(
+                            (FlowlineVAAModel.dnminorhyd != 0), (FlowlineVAAModel.dnminorhyd == nav.c.hydroseq)
+                        ),
                     ),
                 )
             )

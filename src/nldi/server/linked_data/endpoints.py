@@ -142,15 +142,14 @@ async def flowline_by_position():
         return flask.Response(status=http.HTTPStatus.BAD_REQUEST, response="No coordinates provided")
 
     # Step 1: Get the COMID of the catchment polygon holding the point.
-    async with AsyncSession(bind=db.async_engine) as db_session:
-        async with services.CatchmentService.new(session=db_session) as catchment_svc:
-            try:
-                catchment = await catchment_svc.get_by_wkt_point(coords)
-                comid = int(catchment.featureid)
-            except ValueError as e:
-                raise UnprocessableEntity(description=str(e))
-            except NotFoundError as e:
-                raise NotFound(description=str(e))
+    catchment_svc = services.CatchmentService(session=flask.current_app.alchemy.get_async_session())
+    try:
+        catchment = await catchment_svc.get_by_wkt_point(coords)
+        comid = int(catchment.featureid)
+    except ValueError as e:
+        raise UnprocessableEntity(description=str(e))
+    except NotFoundError as e:
+        raise NotFound(description=str(e))
 
     # Step2: use that catchment's COMID to lookup flowline
     flowline_svc = services.FlowlineService(session=flask.current_app.alchemy.get_async_session())
