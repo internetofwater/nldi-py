@@ -6,6 +6,8 @@
 #
 """ORM Configuration for interacting with the characteristic_data schema."""
 
+from typing import Any
+
 import geoalchemy2
 from sqlalchemy import Column, DateTime, Float, Integer, MetaData, SmallInteger, String
 from sqlalchemy.orm import DeclarativeBase, Mapped, declarative_mixin, mapped_column, relationship
@@ -15,15 +17,9 @@ from . import struct_geojson
 
 
 class CharacteristicsBaseModel(DeclarativeBase):
-    """
-    Base model for all tables in the ``nhdplus`` schema.
+    """Base model for all tables in the ``characteristic_data`` schema."""
 
-    Note that in most of these models, we are only declaring a subset of the columns
-    found in the authoritative/complete NHD+ data model. We only use a small subset of those
-    attributes, so we only declare those columns that we need in these models.
-    """
-
-    metadata = MetaData(schema="nhdplus")
+    metadata = MetaData(schema="characteristic_data")
 
 
 class CharacteristicMetaData(CharacteristicsBaseModel):
@@ -31,7 +27,8 @@ class CharacteristicMetaData(CharacteristicsBaseModel):
 
     characteristic_id: Mapped[str] = mapped_column(String, primary_key=True, nullable=False)
     characteristic_description: Mapped[str] = mapped_column(String)
-    UnicodeTranslateErrordataset_label: Mapped[str] = mapped_column(String)
+    units: Mapped[str] = mapped_column(String)
+    dataset_label: Mapped[str] = mapped_column(String)
     dataset_url: Mapped[str] = mapped_column(String)
     theme_label: Mapped[str] = mapped_column(String)
     theme_url: Mapped[str] = mapped_column(String)
@@ -45,7 +42,7 @@ class CharBaseTable:
     comid: Mapped[int] = mapped_column(Integer, primary_key=True)
     characteristic_id: Mapped[str] = mapped_column(String, primary_key=True)
     characteristic_value: Mapped[float] = mapped_column(Float)
-    percent_nodata: Mapped[int] = mkapped_column(Integer)
+    percent_nodata: Mapped[int] = mapped_column(Integer)
 
 
 class DivergenceCharacteristics(CharBaseTable, CharacteristicsBaseModel):
