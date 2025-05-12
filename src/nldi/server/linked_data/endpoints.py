@@ -176,19 +176,11 @@ async def get_feature_by_identifier(source_name: str, identifier: str = ""):
     feature_svc = services.FeatureService(session=flask.current_app.alchemy.get_async_session())
     if not identifier:
         # List all features in the named source
-        _features = await feature_svc.list_by_src(source_name)
-
         _r = flask.Response(
             headers={"Content-Type": "application/json"},
             status=http.HTTPStatus.OK,
-            response=util.stream_j2_template(
-                _template,
-                [
-                    msgspec.to_builtins(
-                        f.as_feature(excl_props=["crawler_source_id"])
-                    )
-                    for f in _features
-                ],
+            response=util.stream_j2_template_async(
+                _template, feature_svc.iter_by_src(source_name, base_url=base_url)
             ),
         )
     else:
