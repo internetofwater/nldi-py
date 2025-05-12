@@ -53,7 +53,7 @@ class FeatureService(FlaskServiceMixin, SQLAlchemyAsyncRepositoryService[Feature
             sqlalchemy.func.lower(CrawlerSourceModel.source_suffix) == source_suffix.lower(),
             statement=sqlalchemy.select(FeatureSourceModel).join(
                 CrawlerSourceModel, FeatureSourceModel.crawler_source_id == CrawlerSourceModel.crawler_source_id
-            ),
+            ).limit(10),
         )
         return list(_l)
 

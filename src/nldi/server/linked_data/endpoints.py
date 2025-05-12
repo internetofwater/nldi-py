@@ -49,7 +49,7 @@ def parse_incoming_request() -> None:
     if rp != "/" and rp.endswith("/"):
         return flask.redirect(rp[:-1])
 
-    if flask.request.args.get("f") in [ "json", "jsonld"]:
+    if flask.request.args.get("f") in ["json", "jsonld"]:
         logging.debug(f"JSON specifically requested")
         flask.request.format = flask.request.args.get("f")
         return
@@ -166,13 +166,31 @@ async def flowline_by_position():
 # region Routes Per-Source
 @LINKED_DATA.route("/<path:source_name>")
 @LINKED_DATA.route("/<path:source_name>/<path:identifier>")
-async def get_feature_by_identifier(source_name: str, identifier: str=""):
+async def get_feature_by_identifier(source_name: str, identifier: str = ""):
     base_url = flask.current_app.NLDI_CONFIG.server.base_url
+    if flask.request.format == "jsonld":
+        _template = "FeatureCollectionGraph.j2"
+    else:
+        _template = "FeatureCollection.j2"
 
     feature_svc = services.FeatureService(session=flask.current_app.alchemy.get_async_session())
     if not identifier:
         # List all features in the named source
-        pass
+        _features = await feature_svc.list_by_src(source_name)
+
+        _r = flask.Response(
+            headers={"Content-Type": "application/json"},
+            status=http.HTTPStatus.OK,
+            response=util.stream_j2_template(
+                _template,
+                [
+                    msgspec.to_builtins(
+                        f.as_feature(excl_props=["crawler_source_id"])
+                    )
+                    for f in _features
+                ],
+            ),
+        )
     else:
         try:
             feature = await feature_svc.feature_lookup(source_name, identifier)
@@ -182,10 +200,6 @@ async def get_feature_by_identifier(source_name: str, identifier: str=""):
             flask.current_app.NLDI_CONFIG.server.base_url, "linked-data", source_name, identifier, "navigation"
         )
         _geojson = feature.as_feature(excl_props=["crawler_source_id"], xtra_props={"navigation": nav_url})
-        if flask.request.format == "jsonld":
-            _template = "FeatureCollectionGraph.j2"
-        else:
-            _template = "FeatureCollection.j2"
         _r = flask.Response(
             headers={"Content-Type": "application/json"},
             status=http.HTTPStatus.OK,
