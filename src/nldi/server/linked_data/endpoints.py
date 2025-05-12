@@ -173,13 +173,30 @@ async def get_feature_by_identifier(source_name: str, identifier: str = ""):
     else:
         _template = "FeatureCollection.j2"
 
+    try:
+        _limit = int(flask.request.args.get("limit", 1000))  # < TODO: make this page size configurable as env var.
+        _offset = int(flask.request.args.get("offset", 0))
+    except ValueError:
+        raise BadRequest(f"limit and offset must be integers") from None
+
     feature_svc = services.FeatureService(session=flask.current_app.alchemy.get_async_session())
     if not identifier:
         # List all features in the named source
+        feature_iterator = feature_svc.iter_by_src(source_name, base_url=base_url, limit=_limit, offset=_offset)
+        _feature_count = await feature_svc.featurecount(source_name)
+        if _offset + _limit < _feature_count:
+            _next_page_link = (
+                f"{flask.request.base_url}?f={flask.request.format}&offset={_offset + _limit}&limit={_limit}"
+            )
+            _link_header = {"Link": f'<{_next_page_link}>; rel="next"'}
+        else:
+            _link_header = dict()
+
+        _link_header.update({"Content-Type": "application/json"})
         _r = flask.Response(
-            headers={"Content-Type": "application/json"},
+            headers=_link_header,
             status=http.HTTPStatus.OK,
-            response=util.stream_j2_template_async(_template, feature_svc.iter_by_src(source_name, base_url=base_url)),
+            response=util.stream_j2_template_async(_template, feature_iterator),
         )
     else:
         try:
