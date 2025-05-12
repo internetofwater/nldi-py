@@ -21,7 +21,7 @@ import geoalchemy2
 import msgspec
 import sqlalchemy
 from advanced_alchemy.exceptions import NotFoundError
-from advanced_alchemy.extensions.flask import FlaskServiceMixin
+from advanced_alchemy.extensions.flask import FlaskServiceMixin, filters
 from advanced_alchemy.service import SQLAlchemyAsyncRepositoryService
 from geomet import wkt
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
@@ -51,22 +51,24 @@ class FeatureService(FlaskServiceMixin, SQLAlchemyAsyncRepositoryService[Feature
         return _f
 
     async def list_by_src(self, source_suffix: str) -> list[FeatureSourceModel]:
+
         _l = await self.repository.list(
             sqlalchemy.func.lower(CrawlerSourceModel.source_suffix) == source_suffix.lower(),
+            filters.LimitOffset(limit=20, offset=10),
             statement=sqlalchemy.select(FeatureSourceModel)
             .join(CrawlerSourceModel, FeatureSourceModel.crawler_source_id == CrawlerSourceModel.crawler_source_id)
-            .limit(10),  # limit to ten for now/testing;  eventually we want to page this.
         )
         return list(_l)
 
-    async def iter_by_src(self, source_suffix: str, base_url: str = "") -> AsyncGenerator[bytes, None]:
-        """        Provides a streaming response for the feature collection.        """
+    async def iter_by_src(self, source_suffix: str, base_url: str = "", offset:int=0, limit:int=100) -> AsyncGenerator[bytes, None]:
+        """Provides a streaming response for the feature collection."""
         stmt = (
             sqlalchemy.select(FeatureSourceModel)
             .where(sqlalchemy.func.lower(CrawlerSourceModel.source_suffix) == source_suffix.lower())
             .execution_options(yield_per=5)
             .join(CrawlerSourceModel, FeatureSourceModel.crawler_source_id == CrawlerSourceModel.crawler_source_id)
-            .limit(10)
+            .offset(6)
+            .limit(5)
         )
 
         query_result = await self.repository.session.stream(stmt)
