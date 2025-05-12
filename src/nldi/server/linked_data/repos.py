@@ -48,6 +48,7 @@ class FeatureRepository(SQLAlchemyAsyncRepository[FeatureSourceModel]):
     model_type = FeatureSourceModel
     id_attribute = "identifier"
 
-class CharacteristicsDataRepository(SQLAlchemyAsyncRepository[CharacteristicMetaData]):
-    model_type = CharacteristicMetaData
-    id_attribute = "characteristic_id"
+# DEPRECATED
+# class CharacteristicsDataRepository(SQLAlchemyAsyncRepository[CharacteristicMetaData]):
+#     model_type = CharacteristicMetaData
+#     id_attribute = "characteristic_id"

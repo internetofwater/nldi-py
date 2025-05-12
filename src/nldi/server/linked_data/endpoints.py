@@ -49,12 +49,13 @@ def parse_incoming_request() -> None:
     if rp != "/" and rp.endswith("/"):
         return flask.redirect(rp[:-1])
 
-    if flask.request.args.get("f") == "json":
+    if flask.request.args.get("f") in ["json", "jsonld"]:
         logging.debug(f"JSON specifically requested")
+        flask.request.format = flask.request.args.get("f")
         return
-    # NOTE: This is a special request for the interface:  If the requesting client accepts HTML, we
-    # are assuming that it is a web browser or other general-purpose client. We want them to specifically
-    # ask for JSON with the `f=json` query param.
+    # NOTE: This is a special request for the interface:  If the requesting client specifically calls out
+    # that it accepts HTML (as opposed to */*), we are assuming that it is a web browser or other
+    # general-purpose client. We want them to specifically ask for JSON with the `f=json` query param.
     _html_specified = "text/html" in flask.request.headers.get("Accept", "")
     if flask.request.args.get("f") == "html" or _html_specified:
         _q = dict(flask.request.args)
@@ -63,8 +64,7 @@ def parse_incoming_request() -> None:
         logging.debug(f"REDIRECT from HTML")
         new_url = f"{rp}?{_qstring}"
         raise HTML_JSON_Exception(new_url)
-
-    ## Sets up a callback to update headers after the request is processed.
+    flask.request.format = "json"
 
 
 @LINKED_DATA.after_request
@@ -164,24 +164,37 @@ async def flowline_by_position():
 
 
 # region Routes Per-Source
+@LINKED_DATA.route("/<path:source_name>")
 @LINKED_DATA.route("/<path:source_name>/<path:identifier>")
-async def get_feature_by_identifier(source_name: str, identifier: str):
+async def get_feature_by_identifier(source_name: str, identifier: str = ""):
     base_url = flask.current_app.NLDI_CONFIG.server.base_url
+    if flask.request.format == "jsonld":
+        _template = "FeatureCollectionGraph.j2"
+    else:
+        _template = "FeatureCollection.j2"
 
     feature_svc = services.FeatureService(session=flask.current_app.alchemy.get_async_session())
-    try:
-        feature = await feature_svc.feature_lookup(source_name, identifier)
-    except NotFoundError:
-        raise NotFound(description=f"Not Found: {source_name}/{identifier}")
-    nav_url = util.url_join(
-        flask.current_app.NLDI_CONFIG.server.base_url, "linked-data", source_name, identifier, "navigation"
-    )
-    _geojson = feature.as_feature(excl_props=["crawler_source_id"], xtra_props={"navigation": nav_url})
-    _r = flask.Response(
-        headers={"Content-Type": "application/json"},
-        status=http.HTTPStatus.OK,
-        response=util.stream_j2_template("FeatureCollection.j2", [msgspec.to_builtins(_geojson)]),
-    )
+    if not identifier:
+        # List all features in the named source
+        _r = flask.Response(
+            headers={"Content-Type": "application/json"},
+            status=http.HTTPStatus.OK,
+            response=util.stream_j2_template_async(_template, feature_svc.iter_by_src(source_name, base_url=base_url)),
+        )
+    else:
+        try:
+            feature = await feature_svc.feature_lookup(source_name, identifier)
+        except NotFoundError:
+            raise NotFound(description=f"Not Found: {source_name}/{identifier}")
+        nav_url = util.url_join(
+            flask.current_app.NLDI_CONFIG.server.base_url, "linked-data", source_name, identifier, "navigation"
+        )
+        _geojson = feature.as_feature(excl_props=["crawler_source_id"], xtra_props={"navigation": nav_url})
+        _r = flask.Response(
+            headers={"Content-Type": "application/json"},
+            status=http.HTTPStatus.OK,
+            response=util.stream_j2_template(_template, [msgspec.to_builtins(_geojson)]),
+        )
     return _r
 
 
@@ -302,6 +315,11 @@ async def get_feature_navigation(
     nav_mode: str,
     data_source: str,
 ) -> struct_geojson.FeatureCollection:
+    if flask.request.format == "jsonld":
+        _template = "FeatureCollectionGraph.j2"
+    else:
+        _template = "FeatureCollection.j2"
+
     try:
         _d = flask.request.args["distance"]
         distance = float(_d)
@@ -321,6 +339,6 @@ async def get_feature_navigation(
     _r = flask.Response(
         headers={"Content-Type": "application/json"},
         status=http.HTTPStatus.OK,
-        response=util.stream_j2_template("FeatureCollection.j2", [msgspec.to_builtins(f) for f in features]),
+        response=util.stream_j2_template(_template, [msgspec.to_builtins(f) for f in features]),
     )
     return _r
