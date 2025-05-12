@@ -179,9 +179,7 @@ async def get_feature_by_identifier(source_name: str, identifier: str = ""):
         _r = flask.Response(
             headers={"Content-Type": "application/json"},
             status=http.HTTPStatus.OK,
-            response=util.stream_j2_template_async(
-                _template, feature_svc.iter_by_src(source_name, base_url=base_url)
-            ),
+            response=util.stream_j2_template_async(_template, feature_svc.iter_by_src(source_name, base_url=base_url)),
         )
     else:
         try:
@@ -317,6 +315,11 @@ async def get_feature_navigation(
     nav_mode: str,
     data_source: str,
 ) -> struct_geojson.FeatureCollection:
+    if flask.request.format == "jsonld":
+        _template = "FeatureCollectionGraph.j2"
+    else:
+        _template = "FeatureCollection.j2"
+
     try:
         _d = flask.request.args["distance"]
         distance = float(_d)
@@ -336,6 +339,6 @@ async def get_feature_navigation(
     _r = flask.Response(
         headers={"Content-Type": "application/json"},
         status=http.HTTPStatus.OK,
-        response=util.stream_j2_template("FeatureCollection.j2", [msgspec.to_builtins(f) for f in features]),
+        response=util.stream_j2_template(_template, [msgspec.to_builtins(f) for f in features]),
     )
     return _r
