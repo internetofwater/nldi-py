@@ -38,8 +38,8 @@ def link_header(r: flask.Request, offset: int, limit: int, maxcount: int) -> dic
         hdr = dict()
     else:
         next_ = f'<{r.base_url}?f={r.format}&limit={limit}&offset={next_offset}>;rel="next"'
-        last_ = f'<{r.base_url}?f={r.format}&limit={limit}&offset={last_offset}>;rel="last"'
-        hdr = {"Link": ",".join([next_, last_])}
+        # last_ = f'<{r.base_url}?f={r.format}&limit={limit}&offset={last_offset}>;rel="last"'
+        hdr = {"Link": next_}
     return hdr
 
 
