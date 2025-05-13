@@ -17,7 +17,7 @@ import json
 import logging
 from collections.abc import AsyncGenerator
 
-# import geoalchemy2
+import msgspec
 import sqlalchemy
 from advanced_alchemy.extensions.flask import FlaskServiceMixin
 
@@ -30,6 +30,8 @@ from sqlalchemy.sql.expression import Select
 
 from nldi.db.schemas.nhdplus import CatchmentModel, FlowlineModel
 from nldi.db.schemas.nldi_data import CrawlerSourceModel, FeatureSourceModel
+
+from .... import __version__, util
 
 # from .... import util
 from ....db.schemas import struct_geojson
@@ -224,6 +226,27 @@ class FlowlineService(FlaskServiceMixin, SQLAlchemyAsyncRepositoryService[Flowli
             return None
         logging.debug("{feature_source}/{feature_id} matches {pt} on flowline")
         return pt
+
+    async def feature_iterator(
+        self, base_url: str = "", offset: int = 0, limit: int = 1000
+    ) -> AsyncGenerator[bytes, None]:
+        """Provides a streaming response for the feature collection."""
+        stmt = sqlalchemy.select(FlowlineModel).execution_options(yield_per=5).offset(offset).limit(limit)
+
+        query_result = await self.repository.session.stream(stmt)
+        while f := await query_result.fetchone():
+            nav_url = util.url_join(base_url, "linked-data", "comid", f[0].nhdplus_comid, "navigation")
+            yield (
+                msgspec.to_builtins(
+                    f[0].as_feature(
+                        rename_fields={
+                            "permanent_identifier": "identifier",
+                            "nhdplus_comid": "comid",
+                        },
+                        xtra_props={"navigation": nav_url},
+                    )
+                )
+            )
 
 
 async def flowline_svc(db_session: AsyncSession) -> AsyncGenerator[FlowlineService, None]:

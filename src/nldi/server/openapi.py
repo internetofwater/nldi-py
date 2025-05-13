@@ -13,6 +13,7 @@ from ..config import get_config, load_yaml
 
 _CFG = get_config()
 
+
 def generate_openapi_json():
     """
     Generate an OpenAPI document for the API.
@@ -278,9 +279,14 @@ def generate_openapi_json():
 
         paths[f"{base_path}"] = {
             "get": {
-                "description": "returns all features.",
+                "description": """Returns a FeatureCollection of features from the named source.
+                    \n\nThe response is paginated, returning 1000 rows at a time.  You can specify
+                    a different number of rows by setting the `limit` query parameter.  By default,
+                    the first `limit` rows are returned.  Specify an `offset` to request a specific
+                    range of records.""",
                 "tags": ["by_comid" if src == "comid" else "by_sourceid"],
                 "operationId": f"{src_name}AllFeatures",
+                "parameters": [{"$ref": "#/components/parameters/limit"}, {"$ref": "#/components/parameters/offset"}],
                 "responses": {
                     "200": {
                         "description": "OK",

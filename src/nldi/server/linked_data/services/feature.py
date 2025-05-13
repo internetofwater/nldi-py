@@ -21,10 +21,11 @@ import geoalchemy2
 import msgspec
 import sqlalchemy
 from advanced_alchemy.exceptions import NotFoundError
-from advanced_alchemy.extensions.flask import FlaskServiceMixin
+from advanced_alchemy.extensions.flask import FlaskServiceMixin, filters
 from advanced_alchemy.service import SQLAlchemyAsyncRepositoryService
 from geomet import wkt
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
+from sqlalchemy.orm import joinedload, load_only, selectinload
 from sqlalchemy.sql.expression import Select
 
 from nldi.db.schemas.nhdplus import CatchmentModel, FlowlineModel
@@ -50,23 +51,36 @@ class FeatureService(FlaskServiceMixin, SQLAlchemyAsyncRepositoryService[Feature
             raise NotFoundError(f"Feature {identifier} from source {source_suffix} not found.")
         return _f
 
-    async def list_by_src(self, source_suffix: str) -> list[FeatureSourceModel]:
+    async def featurecount(self, source_suffix: str) -> int:
+        _count = await self.count(
+            sqlalchemy.func.lower(CrawlerSourceModel.source_suffix) == source_suffix.lower(),
+            statement=sqlalchemy.select(FeatureSourceModel.identifier).join(
+                CrawlerSourceModel, FeatureSourceModel.crawler_source_id == CrawlerSourceModel.crawler_source_id
+            ),
+        )
+        return _count
+
+    async def list_by_src(self, source_suffix: str, offset: int = 0, limit: int = 1000) -> list[FeatureSourceModel]:
         _l = await self.repository.list(
             sqlalchemy.func.lower(CrawlerSourceModel.source_suffix) == source_suffix.lower(),
-            statement=sqlalchemy.select(FeatureSourceModel)
-            .join(CrawlerSourceModel, FeatureSourceModel.crawler_source_id == CrawlerSourceModel.crawler_source_id)
-            .limit(10),  # limit to ten for now/testing;  eventually we want to page this.
+            filters.LimitOffset(limit=limit, offset=offset),
+            statement=sqlalchemy.select(FeatureSourceModel).join(
+                CrawlerSourceModel, FeatureSourceModel.crawler_source_id == CrawlerSourceModel.crawler_source_id
+            ),
         )
         return list(_l)
 
-    async def iter_by_src(self, source_suffix: str, base_url: str = "") -> AsyncGenerator[bytes, None]:
-        """        Provides a streaming response for the feature collection.        """
+    async def iter_by_src(
+        self, source_suffix: str, base_url: str = "", offset: int = 0, limit: int = 1000
+    ) -> AsyncGenerator[bytes, None]:
+        """Provides a streaming response for the feature collection."""
         stmt = (
             sqlalchemy.select(FeatureSourceModel)
             .where(sqlalchemy.func.lower(CrawlerSourceModel.source_suffix) == source_suffix.lower())
             .execution_options(yield_per=5)
             .join(CrawlerSourceModel, FeatureSourceModel.crawler_source_id == CrawlerSourceModel.crawler_source_id)
-            .limit(10)
+            .offset(offset)
+            .limit(limit)
         )
 
         query_result = await self.repository.session.stream(stmt)
