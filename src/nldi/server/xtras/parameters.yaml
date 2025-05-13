@@ -156,3 +156,20 @@ characteristicId:
     - TOT_BFI
     - TOT_PET
     - TOT_CONTACT
+
+
+limit:
+  name: limit
+  in: query
+  required: false
+  schema:
+    type: integer
+    default: 1000
+
+offset:
+  name: offset
+  in: query
+  required: false
+  schema:
+    type: integer
+    default: 0
