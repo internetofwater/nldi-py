@@ -29,6 +29,20 @@ class HTML_JSON_Exception(Exception):
     pass
 
 
+def link_header(r: flask.Request, offset: int, limit: int, maxcount: int) -> dict:
+    next_offset = offset + limit
+    last_offset = maxcount - (maxcount % limit)
+
+    if next_offset > maxcount:
+        # There is no next; we're already on the last page.
+        hdr = dict()
+    else:
+        next_ = f"<{r.base_url}?f={r.format}&limit={limit}&offset={next_offset}>;rel=\"next\""
+        last_ = f"<{r.base_url}?f={r.format}&limit={limit}&offset={last_offset}>;rel=\"last\""
+        hdr = {"Link": ",".join([next_, last_])}
+    return hdr
+
+
 @LINKED_DATA.errorhandler(HTML_JSON_Exception)
 def html_to_json_redirect(e) -> flask.Response:
     logging.debug("Redirection HTML")
@@ -139,27 +153,28 @@ async def flowline_by_position():
         LOGGER.error("No coordinates provided")
         return flask.Response(status=http.HTTPStatus.BAD_REQUEST, response="No coordinates provided")
 
-    # Step 1: Get the COMID of the catchment polygon holding the point.
-    catchment_svc = services.CatchmentService(session=flask.current_app.alchemy.get_async_session())
-    try:
-        catchment = await catchment_svc.get_by_wkt_point(coords)
-        comid = int(catchment.featureid)
-    except ValueError as e:
-        raise UnprocessableEntity(description=str(e))
-    except NotFoundError as e:
-        raise NotFound(description=str(e))
+    with flask.current_app.alchemy.with_session() as db_session:
+        # Step 1: Get the COMID of the catchment polygon holding the point.
+        catchment_svc = services.CatchmentService(session=db_session)
+        try:
+            catchment = await catchment_svc.get_by_wkt_point(coords)
+            comid = int(catchment.featureid)
+        except ValueError as e:
+            raise UnprocessableEntity(description=str(e))
+        except NotFoundError as e:
+            raise NotFound(description=str(e))
 
-    # Step2: use that catchment's COMID to lookup flowline
-    flowline_svc = services.FlowlineService(session=flask.current_app.alchemy.get_async_session())
-    flowline_feature = await flowline_svc.get_feature(
-        comid,
-        xtra_props={"navigation": util.url_join(base_url, "comid", comid, "navigation")},
-    )
-    _r = flask.Response(
-        headers={"Content-Type": "application/json"},
-        status=http.HTTPStatus.OK,
-        response=util.stream_j2_template("FeatureCollection.j2", [msgspec.structs.asdict(flowline_feature)]),
-    )
+        # Step2: use that catchment's COMID to lookup flowline
+        flowline_svc = services.FlowlineService(session=db_session)
+        flowline_feature = await flowline_svc.get_feature(
+            comid,
+            xtra_props={"navigation": util.url_join(base_url, "comid", comid, "navigation")},
+        )
+        _r = flask.Response(
+            headers={"Content-Type": "application/json"},
+            status=http.HTTPStatus.OK,
+            response=util.stream_j2_template("FeatureCollection.j2", [msgspec.structs.asdict(flowline_feature)]),
+        )
     return _r
 
 
@@ -179,39 +194,33 @@ async def get_feature_by_identifier(source_name: str, identifier: str = ""):
     except ValueError:
         raise BadRequest(f"limit and offset must be integers") from None
 
-    feature_svc = services.FeatureService(session=flask.current_app.alchemy.get_async_session())
-    if not identifier:
-        # List all features in the named source
-        feature_iterator = feature_svc.iter_by_src(source_name, base_url=base_url, limit=_limit, offset=_offset)
-        _feature_count = await feature_svc.featurecount(source_name)
-        if _offset + _limit < _feature_count:
-            _next_page_link = (
-                f"{flask.request.base_url}?f={flask.request.format}&offset={_offset + _limit}&limit={_limit}"
+    with flask.current_app.alchemy.with_session() as db_session:
+        feature_svc = services.FeatureService(session=db_session)
+        if not identifier:
+            # List all features in the named source
+            feature_iterator = feature_svc.iter_by_src(source_name, base_url=base_url, limit=_limit, offset=_offset)
+            _featurecount = await feature_svc.featurecount(source_name)
+            _link_hdr = link_header(flask.request, offset=_offset, limit=_limit, maxcount=_featurecount)
+            _link_hdr.update({"Content-Type": "application/json"})
+            _r = flask.Response(
+                headers=_link_hdr,
+                status=http.HTTPStatus.OK,
+                response=util.stream_j2_template_async(_template, feature_iterator),
             )
-            _link_header = {"Link": f'<{_next_page_link}>; rel="next"'}
         else:
-            _link_header = dict()
-
-        _link_header.update({"Content-Type": "application/json"})
-        _r = flask.Response(
-            headers=_link_header,
-            status=http.HTTPStatus.OK,
-            response=util.stream_j2_template_async(_template, feature_iterator),
-        )
-    else:
-        try:
-            feature = await feature_svc.feature_lookup(source_name, identifier)
-        except NotFoundError:
-            raise NotFound(description=f"Not Found: {source_name}/{identifier}")
-        nav_url = util.url_join(
-            flask.current_app.NLDI_CONFIG.server.base_url, "linked-data", source_name, identifier, "navigation"
-        )
-        _geojson = feature.as_feature(excl_props=["crawler_source_id"], xtra_props={"navigation": nav_url})
-        _r = flask.Response(
-            headers={"Content-Type": "application/json"},
-            status=http.HTTPStatus.OK,
-            response=util.stream_j2_template(_template, [msgspec.to_builtins(_geojson)]),
-        )
+            try:
+                feature = await feature_svc.feature_lookup(source_name, identifier)
+            except NotFoundError:
+                raise NotFound(description=f"Not Found: {source_name}/{identifier}")
+            nav_url = util.url_join(
+                flask.current_app.NLDI_CONFIG.server.base_url, "linked-data", source_name, identifier, "navigation"
+            )
+            _geojson = feature.as_feature(excl_props=["crawler_source_id"], xtra_props={"navigation": nav_url})
+            _r = flask.Response(
+                headers={"Content-Type": "application/json"},
+                status=http.HTTPStatus.OK,
+                response=util.stream_j2_template(_template, [msgspec.to_builtins(_geojson)]),
+            )
     return _r
 
 
