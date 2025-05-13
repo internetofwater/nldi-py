@@ -120,6 +120,35 @@ async def get_hydrolocation():
     )
     return _r
 
+@LINKED_DATA.route("/comid")
+async def get_all_flowlines():
+    base_url = flask.current_app.NLDI_CONFIG.server.base_url
+    if flask.request.format == "jsonld":
+        _template = "FeatureCollectionGraph.j2"
+    else:
+        _template = "FeatureCollection.j2"
+
+    try:
+        _limit = int(flask.request.args.get("limit", 1000))  # < TODO: make this page size configurable as env var.
+        _offset = int(flask.request.args.get("offset", 0))
+    except ValueError:
+        raise BadRequest(f"limit and offset must be integers") from None
+
+    with flask.current_app.alchemy.with_session() as db_session:
+        flowline_svc = services.FlowlineService(session=db_session)
+        # List all features in the named source
+        feature_iterator = flowline_svc.feature_iterator(base_url=base_url, limit=_limit, offset=_offset)
+        _featurecount = await flowline_svc.count()
+        _link_hdr = link_header(flask.request, offset=_offset, limit=_limit, maxcount=_featurecount)
+        _link_hdr.update({"Content-Type": "application/json"})
+        _r = flask.Response(
+            headers=_link_hdr,
+            status=http.HTTPStatus.OK,
+            response=util.stream_j2_template_async(_template, feature_iterator),
+        )
+    return _r
+
+
 
 @LINKED_DATA.route("/comid/<path:comid>")
 async def get_flowline_by_comid(comid: int | None = None):
