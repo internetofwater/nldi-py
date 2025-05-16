@@ -146,6 +146,6 @@ def test_api_get_hydrolocation(f_client_containerized) -> None:
 def test_api_get_basin_by_id(f_client_containerized) -> None:
     source_name = "wqp"
     identifier = "USGS-05427930"
-    url =f"{API_PREFIX}/linked-data/{source_name}/{identifier}/basin?f=json"
+    url = f"{API_PREFIX}/linked-data/{source_name}/{identifier}/basin?f=json"
     r = f_client_containerized.get(url)
     assert r.status_code == 200

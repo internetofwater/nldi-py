@@ -204,20 +204,20 @@ def test_feature_svc_list_all_bad_src(dbsession_containerized) -> None:
 #     for chunk in feature_svc.feature_collection_stream(source_name.lower()):
 #         streamed_str += chunk.decode("utf-8")
 
-    # actual = json.loads(streamed_str)
-    # features = actual["features"]
-    # assert isinstance(features, list)
-    # assert len(features) >= 1
+# actual = json.loads(streamed_str)
+# features = actual["features"]
+# assert isinstance(features, list)
+# assert len(features) >= 1
 
-    # ## Do it all again with the upcase version of the source name... result should be the same.
-    # streamed_str = ""
-    # for chunk in feature_svc.feature_collection_stream(source_name.upper()):
-    #     streamed_str += chunk.decode("utf-8")
+# ## Do it all again with the upcase version of the source name... result should be the same.
+# streamed_str = ""
+# for chunk in feature_svc.feature_collection_stream(source_name.upper()):
+#     streamed_str += chunk.decode("utf-8")
 
-    # actual = json.loads(streamed_str)
-    # features = actual["features"]
-    # assert isinstance(features, list)
-    # assert len(features) >= 1
+# actual = json.loads(streamed_str)
+# features = actual["features"]
+# assert isinstance(features, list)
+# assert len(features) >= 1
 
 
 # region: endpoints
@@ -278,4 +278,3 @@ def test_api_list_features_by_source(f_client_containerized) -> None:
     features_upcase = actual["features"]
     assert isinstance(features_upcase, list)
     assert len(features_upcase) == len(features_lowcase)
-

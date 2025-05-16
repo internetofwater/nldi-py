@@ -56,7 +56,7 @@ class CatchmentService(FlaskServiceMixin, SQLAlchemySyncRepositoryService[Catchm
         explicitly only returns one.  We produce the list internally, then just take
         the first item.  "first" is defined by the database .
         """
-        _catchment =   self.get_one_or_none(sqlalchemy.func.ST_Intersects(CatchmentModel.the_geom, point))
+        _catchment = self.get_one_or_none(sqlalchemy.func.ST_Intersects(CatchmentModel.the_geom, point))
         return _catchment
 
     def get_drainage_basin_by_comid(self, comid: int, simplified: bool) -> struct_geojson.Feature:

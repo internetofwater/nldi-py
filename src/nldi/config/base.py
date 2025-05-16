@@ -102,8 +102,6 @@ class DatabaseConfig:
         )
 
 
-
-
 @dataclass
 class MetadataConfig:
     title: str

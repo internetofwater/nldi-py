@@ -20,6 +20,4 @@ extensions = [
 html_theme = "sphinx_rtd_theme"
 html_static_path = ["_static"]
 autodoc_default_options = {"member-order": "bysource"}
-intersphinx_mapping = {
-    "sqlalchemy": ("http://docs.sqlalchemy.org/en/stable/", None)
-    }
+intersphinx_mapping = {"sqlalchemy": ("http://docs.sqlalchemy.org/en/stable/", None)}

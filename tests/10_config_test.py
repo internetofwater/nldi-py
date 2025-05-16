@@ -70,4 +70,3 @@ def test_cfg_from_yaml_with_env(yaml_config_file, localhost_env_info, monkeypatc
     assert settings.metadata.title.startswith("Network Link")
     assert settings.metadata.provider["name"] == "United States Geological Survey"
     assert settings.server.url == "https://localhost/"
-

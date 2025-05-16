@@ -322,7 +322,7 @@ def get_navigation_info(source_name: str, identifier: str, nav_mode: str) -> lis
             "features": util.url_join(nav_url, nav_mode, "flowlines"),
         }
     ]
-    for source in   sources_svc.list():
+    for source in sources_svc.list():
         src_id = source.source_suffix
         content.append(
             {

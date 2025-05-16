@@ -52,4 +52,3 @@ AUTH_PREFIX = "https://nhgf.dev-wma.chs.usgs.gov/api/nldi"
 # - 80_misc_routes_test.py
 #   - f"{API_PREFIX}/"
 #   - f"{API_PREFIX}/linked-data/hydrolocation?{coords}"
-

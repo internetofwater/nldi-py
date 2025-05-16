@@ -40,10 +40,10 @@ from . import API_PREFIX
 @pytest.mark.unittest
 def test_source_repo_get_by_id(dbsession_containerized) -> None:
     src_repo = repos.CrawlerSourceRepository(session=dbsession_containerized)
-    healthy =   src_repo.check_health(src_repo.session)
+    healthy = src_repo.check_health(src_repo.session)
     assert healthy
 
-    feature =   src_repo.get(1)
+    feature = src_repo.get(1)
     assert feature is not None
 
 

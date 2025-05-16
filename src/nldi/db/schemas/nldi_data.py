@@ -37,6 +37,7 @@ class CrawlerSourceModel(NLDIBaseModel):
     def _as_dict(self):
         return {col.name: getattr(self, col.name) for col in self.__table__.columns}
 
+
 class FeatureSourceModel(NLDIBaseModel, GeoJSONMixin):
     __tablename__ = "feature"
 
@@ -45,7 +46,7 @@ class FeatureSourceModel(NLDIBaseModel, GeoJSONMixin):
     name: Mapped[str] = mapped_column(String(256), nullable=True)
     uri: Mapped[str] = mapped_column(String(256), nullable=True)
     location: Mapped[Geometry] = mapped_column(Geometry, nullable=True)
-    comid: Mapped[str] = mapped_column(Integer,  ForeignKey("mainstem_lookup.nhdpv2_comid"), nullable=True)
+    comid: Mapped[str] = mapped_column(Integer, ForeignKey("mainstem_lookup.nhdpv2_comid"), nullable=True)
     reachcode: Mapped[str] = mapped_column(String(14), nullable=True)
     measure: Mapped[float] = mapped_column(Float(38), nullable=True)
     crawler_source = relationship(
@@ -65,17 +66,11 @@ class FeatureSourceModel(NLDIBaseModel, GeoJSONMixin):
     )
     mainstem: AssociationProxy[str] = association_proxy("mainstem_lookup", "uri")
 
-
     def __properties__(self, exclude: set) -> dict[str, str]:
         _props = super().__properties__(exclude)
         ## Extend the properties dict with the AssociationProxy(s) of iterest; these are not dumped with columns by default.
         _props.update(
-            {
-                "mainstem": self.mainstem,
-                "sourceName": self.sourceName,
-                "source": self.source,
-                "type": self.type
-            }
+            {"mainstem": self.mainstem, "sourceName": self.sourceName, "source": self.source, "type": self.type}
         )
         return _props
 

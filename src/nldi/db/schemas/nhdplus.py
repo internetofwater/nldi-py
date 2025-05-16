@@ -85,6 +85,7 @@ class FlowlineModel(NHDBaseModel, GeoJSONMixin):
 
 class FlowlineVAAModel(NHDBaseModel):
     """ORM mapping to "nhdplus.plusflowlinevaa_np21" table."""
+
     ## TODO: Verify that we will be using all of these columns; drop unusued from the model.
     __tablename__ = "plusflowlinevaa_np21"
 

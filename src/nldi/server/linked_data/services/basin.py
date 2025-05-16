@@ -6,7 +6,6 @@
 #
 """ """
 
-
 from sqlalchemy.orm import Session
 
 from . import CatchmentService, FeatureService, FlowlineService
@@ -24,7 +23,6 @@ class BasinService:
         self.feature_svc = FeatureService(session=self._session)
         self.pygeoapi_svc = PyGeoAPIService(session=self._session, pygeoapi_url=pygeoapi_url)
 
-
     def _get_start_comid(self, identifier: str, source_name: str) -> tuple[int, bool]:
         try:
             if source_name.lower() == "comid":
@@ -33,7 +31,7 @@ class BasinService:
                 is_point = False
                 feature = None  # sentinal; indicates not a feature lookup.
             else:
-                hit =  self.feature_svc.feature_lookup(source_name, identifier)
+                hit = self.feature_svc.feature_lookup(source_name, identifier)
                 feature = hit.as_feature()
                 start_comid = int(feature.properties["comid"])
                 is_point = feature.geometry["type"] == "Point"
@@ -62,7 +60,7 @@ class BasinService:
         feature.
         """
         source_name = source_name.lower() if source_name else "comid"
-        (start_comid, is_point, feature) =  self._get_start_comid(identifier, source_name)
+        (start_comid, is_point, feature) = self._get_start_comid(identifier, source_name)
 
         if is_point and split:
             # Plan A: the point is on a FlowLine
@@ -90,7 +88,7 @@ class BasinService:
             wkt_geom = f"POINT({lon} {lat})"
             features = [self.pygeoapi_svc.splitcatchment_at_coords(wkt_geom)]
         else:
-            feature =   self.catchment_svc.get_drainage_basin_by_comid(start_comid, simplified)
+            feature = self.catchment_svc.get_drainage_basin_by_comid(start_comid, simplified)
             features = [feature]
         return features
 
