@@ -164,7 +164,6 @@ limit:
   required: false
   schema:
     type: integer
-    default: 1000
 
 offset:
   name: offset
@@ -172,4 +171,4 @@ offset:
   required: false
   schema:
     type: integer
-    default: 0
+ 

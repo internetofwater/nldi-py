@@ -130,7 +130,7 @@ def get_all_flowlines():
         _template = "FeatureCollection.j2"
 
     try:
-        _limit = int(flask.request.args.get("limit", 1000))  # < TODO: make this page size configurable as env var.
+        _limit = int(flask.request.args.get("limit", 0))
         _offset = int(flask.request.args.get("offset", 0))
     except ValueError:
         raise BadRequest(f"limit and offset must be integers") from None
@@ -140,11 +140,13 @@ def get_all_flowlines():
         # List all features in the named source
         feature_iterator = flowline_svc.feature_iterator(base_url=base_url, limit=_limit, offset=_offset)
         _featurecount = flowline_svc.count()
+        _limit = _limit or _featurecount
         _link_hdr = link_header(flask.request, offset=_offset, limit=_limit, maxcount=_featurecount)
-        _link_hdr.update({"Content-Type": "application/json"})
+        #_link_hdr.update({"Content-Type": "application/json"})
         _r = flask.Response(
             headers=_link_hdr,
             status=http.HTTPStatus.OK,
+            mimetype="application/json",
             response=util.stream_j2_template(_template, feature_iterator),
         )
     return _r
@@ -220,7 +222,7 @@ def get_feature_by_identifier(source_name: str, identifier: str = ""):
         _template = "FeatureCollection.j2"
 
     try:
-        _limit = int(flask.request.args.get("limit", 1000))  # < TODO: make this page size configurable as env var.
+        _limit = int(flask.request.args.get("limit", 0))
         _offset = int(flask.request.args.get("offset", 0))
     except ValueError:
         raise BadRequest(f"limit and offset must be integers") from None
@@ -236,9 +238,11 @@ def get_feature_by_identifier(source_name: str, identifier: str = ""):
                 offset=_offset,
             )
             _featurecount = feature_svc.featurecount(source_name)
+            _limit = _limit or _featurecount
             _link_hdr = link_header(flask.request, offset=_offset, limit=_limit, maxcount=_featurecount)
-            _link_hdr.update({"Content-Type": "application/json"})
+#            _link_hdr.update({"Content-Type": "application/json"})
             _r = flask.Response(
+                headers=_link_hdr,
                 response=util.stream_j2_template(_template, feature_iterator),
                 mimetype="application/json",
                 status=http.HTTPStatus.OK,
