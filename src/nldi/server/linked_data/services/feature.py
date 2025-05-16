@@ -95,7 +95,7 @@ class FeatureService(FlaskServiceMixin, SQLAlchemySyncRepositoryService[FeatureS
             )
         # logging.debug("DONE")
 
-    def features_from_nav_query(self, source_suffix: str, nav_query: Select) -> list[FeatureSourceModel]:
+    def features_from_nav_query(self, source_suffix: str, nav_query: Select):
         subq = nav_query.subquery()
         stmt = (
             sqlalchemy.select(FeatureSourceModel)
@@ -105,7 +105,8 @@ class FeatureService(FlaskServiceMixin, SQLAlchemySyncRepositoryService[FeatureS
         )
         hits = self.repository._execute(stmt)
         r = hits.fetchall()
-        return [f[0].as_feature(excl_props=["reachcode"]) for f in r]
+        # NOTE: we're returning a generator comprehension here -- so this function is used as an iterator.
+        return (f[0].as_feature(excl_props=["reachcode"]) for f in r)
 
 
 def feature_svc(db_session: Session) -> Generator[FeatureSourceModel, None, None]:
