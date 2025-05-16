@@ -8,7 +8,9 @@
 
 from sqlalchemy.orm import Session
 
-from . import CatchmentService, FeatureService, FlowlineService
+from .catchment import CatchmentService
+from .feature import FeatureService
+from .flowline import FlowlineService
 from .pygeoapi import PyGeoAPIService
 
 
