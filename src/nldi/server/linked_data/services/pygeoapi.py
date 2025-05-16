@@ -19,7 +19,9 @@ from nldi.db.schemas.nhdplus import CatchmentModel, FlowlineModel
 
 from .... import util
 from ....db.schemas import struct_geojson
-from . import CatchmentService, FlowlineService, NavigationService
+from .catchment import CatchmentService
+from .flowline import FlowlineService
+from .navigation import NavigationService
 
 
 class PyGeoAPIService:

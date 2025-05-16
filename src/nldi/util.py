@@ -75,7 +75,9 @@ def stream_j2_template(template: Path, data: dict) -> str:
     """
     template_paths = [TEMPLATES, "."]
     env = Environment(
-        loader=FileSystemLoader(template_paths), extensions=["jinja2.ext.i18n"], autoescape=select_autoescape()
+        loader=FileSystemLoader(template_paths),
+        extensions=["jinja2.ext.i18n"],
+        autoescape=select_autoescape(),
     )
 
     env.filters["to_json"] = to_json

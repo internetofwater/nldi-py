@@ -21,7 +21,9 @@ from nldi.db.schemas.nhdplus import CatchmentModel, FlowlineModel, FlowlineVAAMo
 from nldi.db.schemas.nldi_data import CrawlerSourceModel, FeatureSourceModel
 
 from .... import util
-from . import CrawlerSourceService, FeatureService, FlowlineService
+from .crawlersource import CrawlerSourceService
+from .feature import FeatureService
+from .flowline import FlowlineService
 
 COASTAL_FCODE = 56600
 
