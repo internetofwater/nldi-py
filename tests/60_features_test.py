@@ -57,8 +57,8 @@ async def test_feature_repo_get(dbsession_containerized) -> None:
 
     ## "old" lookup method, without association proxies on FeatureSourceModel
     sources_svc = services.CrawlerSourceService(session=dbsession_containerized)
-    _src = await sources_svc.get_by_suffix(source_name)
-    _feature = await feature_repo.get_one_or_none(
+    _src = sources_svc.get_by_suffix(source_name)
+    _feature = feature_repo.get_one_or_none(
         FeatureSourceModel.identifier == identifier,
         FeatureSourceModel.crawler_source_id == _src.crawler_source_id,
     )
@@ -78,10 +78,10 @@ async def test_feature_repo_get_notfound(dbsession_containerized) -> None:
     source_name = "wqp"
 
     # Invalid source name is tested elsewhere. 40_crawler_sources_test.py
-    _src = await sources_svc.get_by_suffix(source_name)
+    _src = sources_svc.get_by_suffix(source_name)
     assert _src.source_suffix.lower() == source_name
 
-    _feature = await feature_repo.get_one_or_none(
+    _feature = feature_repo.get_one_or_none(
         FeatureSourceModel.identifier == identifier,
         FeatureSourceModel.crawler_source_id == _src.crawler_source_id,
     )
@@ -98,10 +98,10 @@ async def test_feature_repo_get_all(dbsession_containerized) -> None:
     source_name = "wqp"
 
     # Invalid source name is tested elsewhere. 40_crawler_sources_test.py
-    _src = await sources_svc.get_by_suffix(source_name)
+    _src = sources_svc.get_by_suffix(source_name)
     assert _src.source_suffix.lower() == source_name
 
-    _features = await feature_repo.list(FeatureSourceModel.crawler_source_id == _src.crawler_source_id)
+    _features = feature_repo.list(FeatureSourceModel.crawler_source_id == _src.crawler_source_id)
 
     assert isinstance(_features, list)
     assert len(_features) > 1
@@ -116,10 +116,10 @@ async def test_feature_svc_get(dbsession_containerized) -> None:
     identifier = "USGS-05427930"  # < this ID and source must be in the containerized DB.
     source_name = "wqp"
 
-    feature_lower = await feature_svc.feature_lookup(source_name.lower(), identifier)
+    feature_lower = feature_svc.feature_lookup(source_name.lower(), identifier)
     assert feature_lower.comid == 13294176
 
-    feature_upper = await feature_svc.feature_lookup(source_name.upper(), identifier)
+    feature_upper = feature_svc.feature_lookup(source_name.upper(), identifier)
     assert feature_upper.comid == 13294176
 
 
@@ -132,13 +132,13 @@ async def test_feature_svc_get_nonesuch_id(dbsession_containerized) -> None:
     identifier = "USGS-00000000"
     source_name = "wqp"
     with pytest.raises(NotFoundError):
-        _feature = await feature_svc.feature_lookup(source_name, identifier)
+        _feature = feature_svc.feature_lookup(source_name, identifier)
 
     # if the ID is good, but the source is not:
     identifier = "USGS-05427930"
     source_name = "nonesuch"
     with pytest.raises(NotFoundError):
-        _feature = await feature_svc.feature_lookup(source_name, identifier)
+        _feature = feature_svc.feature_lookup(source_name, identifier)
 
 
 @pytest.mark.order(62)
@@ -146,11 +146,11 @@ async def test_feature_svc_get_nonesuch_id(dbsession_containerized) -> None:
 async def test_feature_svc_list_all(dbsession_containerized) -> None:
     feature_svc = services.FeatureService(session=dbsession_containerized)
     source_name = "wqp"
-    _all_features = await feature_svc.list_by_src(source_name)
+    _all_features = feature_svc.list_by_src(source_name)
     assert isinstance(_all_features, list)
     assert len(_all_features) > 1
 
-    _all_features = await feature_svc.list_by_src(source_name.upper())
+    _all_features = feature_svc.list_by_src(source_name.upper())
     assert isinstance(_all_features, list)
     assert len(_all_features) > 1
 
@@ -160,7 +160,7 @@ async def test_feature_svc_list_all(dbsession_containerized) -> None:
 async def test_feature_svc_list_all_bad_src(dbsession_containerized) -> None:
     feature_svc = services.FeatureService(session=dbsession_containerized)
     source_name = "nonesuch"
-    _all_features = await feature_svc.list_by_src(source_name)
+    _all_features = feature_svc.list_by_src(source_name)
     assert isinstance(_all_features, list)
     assert len(_all_features) == 0
 

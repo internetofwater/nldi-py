@@ -13,7 +13,7 @@ hide a lot of the detail for fetching items from the underlying data store.
 The repository exposes CRUD (and CRUD-like) methods to the caller.
 """
 
-from advanced_alchemy.repository import SQLAlchemyAsyncRepository
+from advanced_alchemy.repository import SQLAlchemySyncRepository
 
 from nldi.db.schemas import struct_geojson
 from nldi.db.schemas.characteristics import DivergenceCharacteristics, LocalCharacteristics, TotalAccCharacteristics
@@ -21,7 +21,7 @@ from nldi.db.schemas.nhdplus import CatchmentModel, FlowlineModel
 from nldi.db.schemas.nldi_data import CrawlerSourceModel, FeatureSourceModel
 
 
-class CrawlerSourceRepository(SQLAlchemyAsyncRepository[CrawlerSourceModel]):
+class CrawlerSourceRepository(SQLAlchemySyncRepository[CrawlerSourceModel]):
     model_type = CrawlerSourceModel
     id_attribute = "crawler_source_id"
 
@@ -34,21 +34,21 @@ class CrawlerSourceRepository(SQLAlchemyAsyncRepository[CrawlerSourceModel]):
         return super().__init__(**kwargs)
 
 
-class FlowlineRepository(SQLAlchemyAsyncRepository[FlowlineModel]):
+class FlowlineRepository(SQLAlchemySyncRepository[FlowlineModel]):
     model_type = FlowlineModel
     id_attribute = "nhdplus_comid"
 
 
-class CatchmentRepository(SQLAlchemyAsyncRepository[CatchmentModel]):
+class CatchmentRepository(SQLAlchemySyncRepository[CatchmentModel]):
     model_type = CatchmentModel
     id_attribute = "featureid"
 
 
-class FeatureRepository(SQLAlchemyAsyncRepository[FeatureSourceModel]):
+class FeatureRepository(SQLAlchemySyncRepository[FeatureSourceModel]):
     model_type = FeatureSourceModel
     id_attribute = "identifier"
 
 # DEPRECATED
-# class CharacteristicsDataRepository(SQLAlchemyAsyncRepository[CharacteristicMetaData]):
+# class CharacteristicsDataRepository(SQLAlchemySyncRepository[CharacteristicMetaData]):
 #     model_type = CharacteristicMetaData
 #     id_attribute = "characteristic_id"

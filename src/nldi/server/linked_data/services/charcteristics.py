@@ -41,8 +41,8 @@
 # class CharacteristicService(FlaskServiceMixin, SQLAlchemyAsyncRepositoryService[CharacteristicMetaData]):
 #     repository_type = repos.CharacteristicsDataRepository
 
-#     async def ListByType(self) -> list[CharacteristicMetaData]:
-#         flist, c = await svc.list_and_count(CharacteristicMetaData.characteristic_id.like("TOT%"))
+#       def ListByType(self) -> list[CharacteristicMetaData]:
+#         flist, c =   svc.list_and_count(CharacteristicMetaData.characteristic_id.like("TOT%"))
 #         logging.debug(f"Found {c} TOT characteristics")
 #         return flist
 

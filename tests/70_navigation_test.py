@@ -49,11 +49,11 @@ def test_repo_list_nav_modes(dbsession_containerized) -> None:
 
 @pytest.mark.order(70)
 @pytest.mark.integration
-async def test_svc_dm_from_comid(dbsession_containerized) -> None:
+def test_svc_dm_from_comid(dbsession_containerized) -> None:
     nav_svc = services.NavigationService(session=dbsession_containerized)
     comid = 13294366
     q = nav_svc.dm(comid, 10.0)
-    actual = await nav_svc.flowline_svc.list(statement=q)
+    actual = nav_svc.flowline_svc.list(statement=q)
     # produces a list of COMIDs matching the nav from the starting comid specified.
     expected = [13294366, 13293406, 13294268, 13293404, 13293396, 13293394, 13293398, 13294110]
     # expected according to https://nhgf.dev-wma.chs.usgs.gov/api/nldi/linked-data/comid/13294366/navigation/DM/flowlines?f=json&distance=10
@@ -62,11 +62,11 @@ async def test_svc_dm_from_comid(dbsession_containerized) -> None:
 
 @pytest.mark.order(70)
 @pytest.mark.integration
-async def test_svc_dd_from_comid(dbsession_containerized) -> None:
+def test_svc_dd_from_comid(dbsession_containerized) -> None:
     nav_svc = services.NavigationService(session=dbsession_containerized)
     comid = 13294366
     q = nav_svc.dd(comid, 10.0)
-    actual = await nav_svc.flowline_svc.list(statement=q)
+    actual = nav_svc.flowline_svc.list(statement=q)
     expected = [13294366, 13293406, 13294268, 13293404, 13293400, 13293396, 13294110, 13293394, 13293398]
     # expected according to https://nhgf.dev-wma.chs.usgs.gov/api/nldi/linked-data/comid/13294366/navigation/DD/flowlines?f=json&distance=10
     assert isinstance(actual, list)
@@ -75,11 +75,11 @@ async def test_svc_dd_from_comid(dbsession_containerized) -> None:
 
 @pytest.mark.order(70)
 @pytest.mark.integration
-async def test_svc_ut_from_comid(dbsession_containerized) -> None:
+def test_svc_ut_from_comid(dbsession_containerized) -> None:
     nav_svc = services.NavigationService(session=dbsession_containerized)
     comid = 13294366
     q = nav_svc.ut(comid, 10.0)
-    actual = await nav_svc.flowline_svc.list(statement=q)
+    actual = nav_svc.flowline_svc.list(statement=q)
     expected = [13294366]
     # expected according to https://nhgf.dev-wma.chs.usgs.gov/api/nldi/linked-data/comid/13294366/navigation/UT/flowlines?f=json&distance=10
     assert isinstance(actual, list)
@@ -88,11 +88,11 @@ async def test_svc_ut_from_comid(dbsession_containerized) -> None:
 
 @pytest.mark.order(70)
 @pytest.mark.integration
-async def test_svc_um_from_comid(dbsession_containerized) -> None:
+def test_svc_um_from_comid(dbsession_containerized) -> None:
     nav_svc = services.NavigationService(session=dbsession_containerized)
     comid = 13294366
     q = nav_svc.um(comid, 10.0)
-    actual = await nav_svc.flowline_svc.list(statement=q)
+    actual = nav_svc.flowline_svc.list(statement=q)
     expected = [13294366]
     # expected according to https://nhgf.dev-wma.chs.usgs.gov/api/nldi/linked-data/comid/13294366/navigation/UM/flowlines?f=json&distance=10
     assert isinstance(actual, list)
@@ -101,58 +101,58 @@ async def test_svc_um_from_comid(dbsession_containerized) -> None:
 
 @pytest.mark.order(70)
 @pytest.mark.integration
-async def test_svc_estimate_measure(dbsession_containerized) -> None:
+def test_svc_estimate_measure(dbsession_containerized) -> None:
     nav_svc = services.NavigationService(session=dbsession_containerized)
     source_name = "wqp"
     identifier = "USGS-05427930"
-    actual = await nav_svc.estimate_measure(identifier, source_name)
+    actual = nav_svc.estimate_measure(identifier, source_name)
     assert actual == pytest.approx(16.633304437714568)
 
 
 @pytest.mark.order(71)
 @pytest.mark.integration
-async def test_svc_nav_wrapper_function(dbsession_containerized) -> None:
+def test_svc_nav_wrapper_function(dbsession_containerized) -> None:
     nav_svc = services.NavigationService(session=dbsession_containerized)
     comid = 13294366
 
-    a = await nav_svc.flowline_svc.list(statement=nav_svc.um(comid, 10.0))
-    b = await nav_svc.flowline_svc.list(statement=nav_svc.navigation("UM", comid, 10.0))
+    a = nav_svc.flowline_svc.list(statement=nav_svc.um(comid, 10.0))
+    b = nav_svc.flowline_svc.list(statement=nav_svc.navigation("UM", comid, 10.0))
     assert a == b
 
-    a = await nav_svc.flowline_svc.list(statement=nav_svc.ut(comid, 10.0))
-    b = await nav_svc.flowline_svc.list(statement=nav_svc.navigation("UT", comid, 10.0))
+    a = nav_svc.flowline_svc.list(statement=nav_svc.ut(comid, 10.0))
+    b = nav_svc.flowline_svc.list(statement=nav_svc.navigation("UT", comid, 10.0))
     assert a == b
 
-    a = await nav_svc.flowline_svc.list(statement=nav_svc.dm(comid, 10.0))
-    b = await nav_svc.flowline_svc.list(statement=nav_svc.navigation("DM", comid, 10.0))
+    a = nav_svc.flowline_svc.list(statement=nav_svc.dm(comid, 10.0))
+    b = nav_svc.flowline_svc.list(statement=nav_svc.navigation("DM", comid, 10.0))
     assert a == b
 
-    a = await nav_svc.flowline_svc.list(statement=nav_svc.dd(comid, 10.0))
-    b = await nav_svc.flowline_svc.list(statement=nav_svc.navigation("DD", comid, 10.0))
+    a = nav_svc.flowline_svc.list(statement=nav_svc.dd(comid, 10.0))
+    b = nav_svc.flowline_svc.list(statement=nav_svc.navigation("DD", comid, 10.0))
     assert a == b
 
 
 @pytest.mark.order(72)
 @pytest.mark.integration
-async def test_svc_dm_from_comid_as_features(dbsession_containerized) -> None:
+def test_svc_dm_from_comid_as_features(dbsession_containerized) -> None:
     nav_svc = services.NavigationService(session=dbsession_containerized)
     comid = 13294366
     ## Construct the query by hand....
     q = nav_svc.dm(comid, 10.0)
-    actual_direct = await nav_svc.flowline_svc.features_from_nav_query(q)
+    actual_direct = nav_svc.flowline_svc.features_from_nav_query(q)
 
     ## Use the wrapper in the service/business-logic layer
-    actual_from_bl = await nav_svc.walk_flowlines("comid", comid, "DM", 10.0)
+    actual_from_bl = nav_svc.walk_flowlines("comid", comid, "DM", 10.0)
     assert len(actual_direct) == len(actual_from_bl)
 
 
 @pytest.mark.order(73)
 @pytest.mark.integration
-async def test_svc_dm_from_comid_trimmed(dbsession_containerized) -> None:
+def test_svc_dm_from_comid_trimmed(dbsession_containerized) -> None:
     nav_svc = services.NavigationService(session=dbsession_containerized)
     source_name = "wqp"
     identifier = "USGS-05427930"
-    actual = await nav_svc.walk_flowlines(source_name, identifier, "UT", 10.0, True)
+    actual = nav_svc.walk_flowlines(source_name, identifier, "UT", 10.0, True)
     assert len(actual) == 5
     # https://nhgf.dev-wma.chs.usgs.gov/api/nldi/linked-data/wqp/USGS-05427930/navigation/UT/flowlines?f=json&distance=10&trimStart=true
 

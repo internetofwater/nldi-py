@@ -7,6 +7,7 @@
 """Generic util functions used in the code"""
 
 import json
+import logging
 import os
 import pathlib
 import re
@@ -85,9 +86,8 @@ def stream_j2_template_async(template: Path, data: dict) -> str:
 
     template = env.get_template(template)
 
-    rv = template.stream(data=data)
-    rv.enable_buffering(16)
-
+    rv = template.generate_async(data=data)
+    # rv.enable_buffering(5)
     return rv
 
 
@@ -149,7 +149,6 @@ def to_json(dict_, pretty=False):
         indent = 4
     else:
         indent = None
-
     return json.dumps(dict_, default=json_serial, indent=indent)
 
 

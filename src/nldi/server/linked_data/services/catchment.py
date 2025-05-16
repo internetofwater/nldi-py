@@ -15,15 +15,19 @@ object as being an implementation of a unit-of-work pattern.
 
 import json
 import logging
-from collections.abc import AsyncGenerator
+
+# from collections.abc import AsyncGenerator
+from typing import Iterator
 
 import geoalchemy2
 import sqlalchemy
 from advanced_alchemy.exceptions import NotFoundError
 from advanced_alchemy.extensions.flask import FlaskServiceMixin
-from advanced_alchemy.service import SQLAlchemyAsyncRepositoryService
+from advanced_alchemy.service import SQLAlchemySyncRepositoryService
 from geomet import wkt
-from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
+from sqlalchemy.orm import Session
+
+# from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 from sqlalchemy.sql.expression import Select
 
 from nldi.db.schemas.nhdplus import CatchmentModel, FlowlineModel, FlowlineVAAModel
@@ -34,20 +38,20 @@ from ....db.schemas import struct_geojson
 from .. import repos
 
 
-class CatchmentService(FlaskServiceMixin, SQLAlchemyAsyncRepositoryService[CatchmentModel]):
+class CatchmentService(FlaskServiceMixin, SQLAlchemySyncRepositoryService[CatchmentModel]):
     repository_type = repos.CatchmentRepository
 
-    async def get_by_wkt_point(self, coord_string: str) -> CatchmentModel:
+    def get_by_wkt_point(self, coord_string: str) -> CatchmentModel:
         NAD83_SRID = 4269
         try:
             _ = wkt.loads(coord_string)  # using geomet just to validate the WKT.
             point = geoalchemy2.WKTElement(coord_string, srid=NAD83_SRID)
         except Exception as e:
             raise ValueError(f"Could not parse {coord_string} to valid geometry: {e}")
-        catchment = await self.get_by_geom(point)
+        catchment = self.get_by_geom(point)
         return catchment
 
-    async def get_by_geom(self, point: geoalchemy2.WKTElement | geoalchemy2.WKBElement) -> CatchmentModel:
+    def get_by_geom(self, point: geoalchemy2.WKTElement | geoalchemy2.WKBElement) -> CatchmentModel:
         """
         Get a catchment feature by spatial intersect with the specified geometry.
 
@@ -55,10 +59,10 @@ class CatchmentService(FlaskServiceMixin, SQLAlchemyAsyncRepositoryService[Catch
         explicitly only returns one.  We produce the list internally, then just take
         the first item.  "first" is defined by the database .
         """
-        _catchment = await self.get_one_or_none(sqlalchemy.func.ST_Intersects(CatchmentModel.the_geom, point))
+        _catchment =   self.get_one_or_none(sqlalchemy.func.ST_Intersects(CatchmentModel.the_geom, point))
         return _catchment
 
-    async def get_drainage_basin_by_comid(self, comid: int, simplified: bool) -> struct_geojson.Feature:
+    def get_drainage_basin_by_comid(self, comid: int, simplified: bool) -> struct_geojson.Feature:
         """
         Compute upstream basin from a named comid.
 
@@ -111,14 +115,14 @@ class CatchmentService(FlaskServiceMixin, SQLAlchemyAsyncRepositoryService[Catch
 
         stmt = query.params(comid=comid)
         logging.debug(stmt.compile())
-        hits = await self.repository._execute(stmt)
+        hits = self.repository._execute(stmt)
         result = hits.fetchone()
         if result is None:
             raise KeyError(f"No such item: {comid}")
         return struct_geojson.Feature(properties=dict(), id=0, geometry=json.loads(result.the_geom))
 
 
-async def catchment_svc(db_session: AsyncSession) -> AsyncGenerator[CatchmentModel, None]:
+def catchment_svc(db_session: Session) -> Iterator[CatchmentModel, None]:
     """Provider function as part of the dependency-injection mechanism."""
-    async with CatchmentService.new(session=db_session) as service:
+    with CatchmentService.new(session=db_session) as service:
         yield service

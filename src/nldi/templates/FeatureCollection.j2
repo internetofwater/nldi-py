@@ -1,1 +1,11 @@
-{"type": "FeatureCollection", "features": [{%- for feature in data -%}{{ feature | to_json | safe }}{%- if not loop.last -%},{%- endif -%}{%- endfor -%}]}
+{
+    "type": "FeatureCollection",
+    "features": [
+        {%- for feature in data -%}
+           {{ feature | to_json | safe }}
+           {%- if not loop.last -%},
+           {%- endif -%}
+           {{"\r\n"}}
+        {%- endfor -%}
+        ]
+}

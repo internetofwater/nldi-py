@@ -7,14 +7,11 @@
 
 import json
 import logging
-from collections.abc import AsyncGenerator
-from contextlib import asynccontextmanager
-from typing import Any, AsyncIterator, Dict, List, Self
+from typing import Any, Dict, Iterator, List, Self
 
 import httpx
 import shapely
 import sqlalchemy
-from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 
 from nldi.db.schemas.nhdplus import CatchmentModel, FlowlineModel
 
@@ -41,18 +38,15 @@ class PyGeoAPIService:
         "uri": "",
     }
 
-    def __init__(self, session: AsyncSession, pygeoapi_url: str = DEFAULT_PYGEOAPI_URL):
+    def __init__(self, session:  Session, pygeoapi_url: str = DEFAULT_PYGEOAPI_URL):
         self._service_url = pygeoapi_url
         self._session = session
         self.flowline_svc = FlowlineService(session=self._session)
         self.catchment_svc = CatchmentService(session=self._session)
 
     @classmethod
-    @asynccontextmanager
-    async def new(
-        cls,
-        session: AsyncSession,
-    ) -> AsyncIterator[Self]:
+    @contextmanager
+    def new(cls, session: Session) -> Iterator[Self]:
         if session:
             yield cls(session=session)
 
@@ -81,7 +75,7 @@ class PyGeoAPIService:
         """Return the url for the split catchment service endpoint."""
         return util.url_join(self._service_url, "processes", "nldi-splitcatchment", "execution")
 
-    async def hydrolocation_by_coords(self, coords: str, base_url: str = "/") -> list[struct_geojson.Feature]:
+    def hydrolocation_by_coords(self, coords: str, base_url: str = "/") -> list[struct_geojson.Feature]:
         """Get a hydrolocation by coordinates."""
         point_shp = shapely.from_wkt(coords)
         request_payload = {
@@ -96,7 +90,7 @@ class PyGeoAPIService:
         (lon, lat) = response["features"][0]["properties"]["intersection_point"]  # noqa
         flowtrace_return_pt_wkt = f"POINT({lon} {lat})"
 
-        _catchment = await self.catchment_svc.get_by_wkt_point(flowtrace_return_pt_wkt)
+        _catchment =  self.catchment_svc.get_by_wkt_point(flowtrace_return_pt_wkt)
         if not _catchment:
             raise KeyError("Catchment not found.")
         nhdplus_comid = _catchment.featureid
@@ -114,11 +108,11 @@ class PyGeoAPIService:
             * (FlowlineModel.tmeasure - FlowlineModel.fmeasure)
         ).label("measure")
 
-        computed_reach = await self.flowline_svc.get_one_or_none(
+        computed_reach =  self.flowline_svc.get_one_or_none(
             FlowlineModel.nhdplus_comid == nhdplus_comid,
             statement=sqlalchemy.select(FlowlineModel.reachcode),
         )
-        computed_measure = await self.flowline_svc.get_one_or_none(
+        computed_measure =  self.flowline_svc.get_one_or_none(
             FlowlineModel.nhdplus_comid == nhdplus_comid,
             statement=sqlalchemy.select(measure),
         )
@@ -126,30 +120,30 @@ class PyGeoAPIService:
             raise KeyError(f"No measure found for: {coords}.")
 
         _return_features = [
-                struct_geojson.Feature(
-                    geometry={"type": "Point", "coordinates": [lon, lat]},
-                    properties={
-                        "identifier": "",
-                        "navigation": nav_url,
-                        "measure": computed_measure,
-                        "reachcode": computed_reach,
-                        "name": "",
-                        "source": "indexed",
-                        "sourceName": "Automatically indexed by the NLDI",
-                        "comid": nhdplus_comid,
-                        "type": "hydrolocation",
-                        "uri": "",
-                    },
-                ),
-                struct_geojson.Feature(
-                    geometry=point_shp.__geo_interface__,
-                    properties=self.DEFAULT_PROPS,
-                ),
-            ]
+            struct_geojson.Feature(
+                geometry={"type": "Point", "coordinates": [lon, lat]},
+                properties={
+                    "identifier": "",
+                    "navigation": nav_url,
+                    "measure": computed_measure,
+                    "reachcode": computed_reach,
+                    "name": "",
+                    "source": "indexed",
+                    "sourceName": "Automatically indexed by the NLDI",
+                    "comid": nhdplus_comid,
+                    "type": "hydrolocation",
+                    "uri": "",
+                },
+            ),
+            struct_geojson.Feature(
+                geometry=point_shp.__geo_interface__,
+                properties=self.DEFAULT_PROPS,
+            ),
+        ]
 
         return _return_features
 
-    async def splitcatchment_at_coords(self, coords: str) -> dict:
+    def splitcatchment_at_coords(self, coords: str) -> dict:
         point_shp = shapely.from_wkt(coords)
 
         request_payload = {
@@ -182,7 +176,7 @@ class PyGeoAPIService:
         # make their own list if they need this feature in that form.
 
 
-async def pygeoapi_svc(db_session: AsyncSession) -> AsyncGenerator[NavigationService, None]:
+def pygeoapi_svc(db_session: Session) -> Generator[NavigationService, None]:
     """Provider function as part of the dependency-injection mechanism."""
-    async with PyGeoAPIService.new(session=db_session) as service:
+    with PyGeoAPIService.new(session=db_session) as service:
         yield service

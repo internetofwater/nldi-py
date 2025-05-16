@@ -15,17 +15,18 @@ object as being an implementation of a unit-of-work pattern.
 
 import json
 import logging
-from collections.abc import AsyncGenerator
+from typing import Iterator
 
 import msgspec
 import sqlalchemy
 from advanced_alchemy.extensions.flask import FlaskServiceMixin
 
 # from advanced_alchemy.exceptions import NotFoundError
-from advanced_alchemy.service import SQLAlchemyAsyncRepositoryService
+from advanced_alchemy.service import SQLAlchemySyncRepositoryService
+from sqlalchemy.orm import Session
 
 # from geomet import wkt
-from sqlalchemy.ext.asyncio import AsyncSession
+# from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.expression import Select
 
 from nldi.db.schemas.nhdplus import CatchmentModel, FlowlineModel
@@ -38,14 +39,14 @@ from ....db.schemas import struct_geojson
 from .. import repos
 
 
-class FlowlineService(FlaskServiceMixin, SQLAlchemyAsyncRepositoryService[FlowlineModel]):
+class FlowlineService(FlaskServiceMixin, SQLAlchemySyncRepositoryService[FlowlineModel]):
     repository_type = repos.FlowlineRepository
 
-    async def get(self, id: str | int, *args, **kwargs) -> FlowlineModel:
+    def get(self, id: str | int, *args, **kwargs) -> FlowlineModel:
         _id = int(id)  # Force the id as an integer; is there a better way to do this?
-        return await super().get(_id, *args, **kwargs)
+        return super().get(_id, *args, **kwargs)
 
-    async def get_feature(self, comid: str | int, xtra_props: dict[str, str] | None = None) -> struct_geojson.Feature:
+    def get_feature(self, comid: str | int, xtra_props: dict[str, str] | None = None) -> struct_geojson.Feature:
         """
         Get a flowline by its comid.
 
@@ -56,7 +57,7 @@ class FlowlineService(FlaskServiceMixin, SQLAlchemyAsyncRepositoryService[Flowli
         :return: A geojson feature with the specified comid
         :rtype: struct_geojson.Feature
         """
-        _feature = await self.get(comid)
+        _feature =   self.get(comid)
 
         ## Need to manipulate the properties key to match expectations.
         _result = _feature.as_feature(
@@ -69,17 +70,17 @@ class FlowlineService(FlaskServiceMixin, SQLAlchemyAsyncRepositoryService[Flowli
         _result.id = _feature.nhdplus_comid
         return _result
 
-    async def features_from_nav_query(self, nav_query: Select) -> list[struct_geojson.Feature]:
+    def features_from_nav_query(self, nav_query: Select) -> list[struct_geojson.Feature]:
         subq = nav_query.subquery()
         stmt = sqlalchemy.select(FlowlineModel).join(subq, FlowlineModel.nhdplus_comid == subq.c.comid)
-        hits = await self.repository._execute(stmt)
+        hits =   self.repository._execute(stmt)
         r = hits.fetchall()
         return [
             f[0].as_feature(excl_props=["objectid", "permanent_identifier", "fmeasure", "tmeasure", "reachcode"])
             for f in r
         ]
 
-    async def trimed_features_from_nav_query(self, nav_query: Select, trim_query: Select) -> list:
+    def trimed_features_from_nav_query(self, nav_query: Select, trim_query: Select) -> list:
         nav_subq = nav_query.subquery()
         trim_subq = trim_query.subquery()
         stmt = (
@@ -88,14 +89,14 @@ class FlowlineService(FlaskServiceMixin, SQLAlchemyAsyncRepositoryService[Flowli
             .join(trim_subq, FlowlineModel.nhdplus_comid == trim_subq.c.comid)
         )
         r = []
-        hits = await self.repository._execute(stmt)
+        hits = self.repository._execute(stmt)
         for f, g in hits.fetchall():
             _tmp = f.as_feature(excl_props=["objectid", "permanent_identifier", "fmeasure", "tmeasure", "reachcode"])
             _tmp.geometry = json.loads(g)  # Overwrite geom with trimmed geom
             r.append(_tmp)
         return r
 
-    async def feat_get_distance_from_flowline(self, feature_id: str, feature_source: str) -> float:
+    def feat_get_distance_from_flowline(self, feature_id: str, feature_source: str) -> float:
         x = (
             sqlalchemy.select([FlowlineModel.shape, FeatureSourceModel.location])
             .join(
@@ -117,7 +118,7 @@ class FlowlineService(FlaskServiceMixin, SQLAlchemyAsyncRepositoryService[Flowli
         query = sqlalchemy.select([sqlalchemy.func.ST_Distance(x.c.location, x.c.shape, False)])
         stmt = query.params(feature_id=feature_id, feature_source=feature_source)
         logging.debug(stmt.compile())
-        hits = await self.repository.execute(stmt)
+        hits = self.repository.execute(stmt)
 
         dist = hits.scalar()
         if dist is None:
@@ -126,7 +127,7 @@ class FlowlineService(FlaskServiceMixin, SQLAlchemyAsyncRepositoryService[Flowli
         logging.debug("{feature_source}/{feature_id} is {dist} from a flowline")
         return dist
 
-    async def feat_get_nearest_point_on_flowline(self, feature_id: str, feature_source: str) -> tuple[float, float]:
+    def feat_get_nearest_point_on_flowline(self, feature_id: str, feature_source: str) -> tuple[float, float]:
         """
         Interpolate a point on a flowline nearest to the named source/feature.
 
@@ -167,7 +168,7 @@ class FlowlineService(FlaskServiceMixin, SQLAlchemyAsyncRepositoryService[Flowli
         stmt = query.params(feature_id=feature_id, feature_source=feature_source)
 
         logging.debug(stmt.compile())
-        hits = await self.repository.execute(stmt)
+        hits = self.repository.execute(stmt)
 
         pt = hits.fetchone()
         if pt is None or None in pt:
@@ -176,7 +177,7 @@ class FlowlineService(FlaskServiceMixin, SQLAlchemyAsyncRepositoryService[Flowli
         logging.debug("{feature_source}/{feature_id} is closest to {pt} on flowline")
         return pt
 
-    async def feat_get_point_along_flowline(self, feature_id: str, feature_source: str) -> tuple[float, float]:
+    def feat_get_point_along_flowline(self, feature_id: str, feature_source: str) -> tuple[float, float]:
         """
         Interpolate a point along the flowline, matching the named source/feature.
 
@@ -218,7 +219,7 @@ class FlowlineService(FlaskServiceMixin, SQLAlchemyAsyncRepositoryService[Flowli
         ).params(feature_id=feature_id, feature_source=feature_source)
 
         logging.debug(stmt.compile())
-        hits = await self.repository.execute(stmt)
+        hits =   self.repository.execute(stmt)
 
         pt = hits.fetchone()
         if pt is None or None in pt:
@@ -227,14 +228,14 @@ class FlowlineService(FlaskServiceMixin, SQLAlchemyAsyncRepositoryService[Flowli
         logging.debug("{feature_source}/{feature_id} matches {pt} on flowline")
         return pt
 
-    async def feature_iterator(
+    def feature_iterator(
         self, base_url: str = "", offset: int = 0, limit: int = 1000
-    ) -> AsyncGenerator[bytes, None]:
+    ) -> Iterator[bytes, None]:
         """Provides a streaming response for the feature collection."""
         stmt = sqlalchemy.select(FlowlineModel).execution_options(yield_per=5).offset(offset).limit(limit)
 
-        query_result = await self.repository.session.stream(stmt)
-        while f := await query_result.fetchone():
+        query_result =   self.repository.session.stream(stmt)
+        while f :=   query_result.fetchone():
             nav_url = util.url_join(base_url, "linked-data", "comid", f[0].nhdplus_comid, "navigation")
             yield (
                 msgspec.to_builtins(
@@ -249,7 +250,7 @@ class FlowlineService(FlaskServiceMixin, SQLAlchemyAsyncRepositoryService[Flowli
             )
 
 
-async def flowline_svc(db_session: AsyncSession) -> AsyncGenerator[FlowlineService, None]:
+def flowline_svc(db_session: Session) -> Iterator[FlowlineService, None]:
     """Provider function as part of the dependency-injection mechanism."""
-    async with FlowlineService.new(session=db_session) as service:
+    with FlowlineService.new(session=db_session) as service:
         yield service
