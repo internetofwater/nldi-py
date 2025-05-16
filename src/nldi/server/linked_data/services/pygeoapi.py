@@ -7,11 +7,13 @@
 
 import json
 import logging
-from typing import Any, Dict, Iterator, List, Self
+from contextlib import contextmanager
+from typing import Any, Dict, Iterator, List, Self, Generator
 
 import httpx
 import shapely
 import sqlalchemy
+from sqlalchemy.orm import Session
 
 from nldi.db.schemas.nhdplus import CatchmentModel, FlowlineModel
 
@@ -38,7 +40,7 @@ class PyGeoAPIService:
         "uri": "",
     }
 
-    def __init__(self, session:  Session, pygeoapi_url: str = DEFAULT_PYGEOAPI_URL):
+    def __init__(self, session: Session, pygeoapi_url: str = DEFAULT_PYGEOAPI_URL):
         self._service_url = pygeoapi_url
         self._session = session
         self.flowline_svc = FlowlineService(session=self._session)
@@ -90,7 +92,7 @@ class PyGeoAPIService:
         (lon, lat) = response["features"][0]["properties"]["intersection_point"]  # noqa
         flowtrace_return_pt_wkt = f"POINT({lon} {lat})"
 
-        _catchment =  self.catchment_svc.get_by_wkt_point(flowtrace_return_pt_wkt)
+        _catchment = self.catchment_svc.get_by_wkt_point(flowtrace_return_pt_wkt)
         if not _catchment:
             raise KeyError("Catchment not found.")
         nhdplus_comid = _catchment.featureid
@@ -108,11 +110,11 @@ class PyGeoAPIService:
             * (FlowlineModel.tmeasure - FlowlineModel.fmeasure)
         ).label("measure")
 
-        computed_reach =  self.flowline_svc.get_one_or_none(
+        computed_reach = self.flowline_svc.get_one_or_none(
             FlowlineModel.nhdplus_comid == nhdplus_comid,
             statement=sqlalchemy.select(FlowlineModel.reachcode),
         )
-        computed_measure =  self.flowline_svc.get_one_or_none(
+        computed_measure = self.flowline_svc.get_one_or_none(
             FlowlineModel.nhdplus_comid == nhdplus_comid,
             statement=sqlalchemy.select(measure),
         )
@@ -176,7 +178,7 @@ class PyGeoAPIService:
         # make their own list if they need this feature in that form.
 
 
-def pygeoapi_svc(db_session: Session) -> Generator[NavigationService, None]:
+def pygeoapi_svc(db_session: Session) -> Generator[NavigationService, None, None]:
     """Provider function as part of the dependency-injection mechanism."""
     with PyGeoAPIService.new(session=db_session) as service:
         yield service

@@ -15,7 +15,7 @@ object as being an implementation of a unit-of-work pattern.
 
 import json
 import logging
-from typing import Iterator
+from collections.abc import Generator
 
 import geoalchemy2
 import msgspec
@@ -24,8 +24,6 @@ from advanced_alchemy.exceptions import NotFoundError
 from advanced_alchemy.extensions.flask import FlaskServiceMixin, filters
 from advanced_alchemy.service import SQLAlchemySyncRepositoryService
 from geomet import wkt
-
-# from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 from sqlalchemy.orm import Session, joinedload, load_only, selectinload
 from sqlalchemy.sql.expression import Select
 
@@ -53,7 +51,7 @@ class FeatureService(FlaskServiceMixin, SQLAlchemySyncRepositoryService[FeatureS
         return _f
 
     def featurecount(self, source_suffix: str) -> int:
-        _count =   self.count(
+        _count = self.count(
             sqlalchemy.func.lower(CrawlerSourceModel.source_suffix) == source_suffix.lower(),
             statement=sqlalchemy.select(FeatureSourceModel.identifier).join(
                 CrawlerSourceModel, FeatureSourceModel.crawler_source_id == CrawlerSourceModel.crawler_source_id
@@ -107,7 +105,7 @@ class FeatureService(FlaskServiceMixin, SQLAlchemySyncRepositoryService[FeatureS
         return [f[0].as_feature(excl_props=["reachcode"]) for f in r]
 
 
-def feature_svc(db_session: Session) -> Iterator[FeatureSourceModel, None]:
+def feature_svc(db_session: Session) -> Generator[FeatureSourceModel, None, None]:
     """Provider function as part of the dependency-injection mechanism."""
     with FeatureService.new(session=db_session) as service:
         yield service

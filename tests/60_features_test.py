@@ -49,7 +49,7 @@ from . import API_PREFIX
 # region: repository
 @pytest.mark.order(60)
 @pytest.mark.unittest
-async def test_feature_repo_get(dbsession_containerized) -> None:
+def test_feature_repo_get(dbsession_containerized) -> None:
     feature_repo = repos.FeatureRepository(session=dbsession_containerized)
 
     identifier = "USGS-05427930"  # < this ID and source must be in the containerized DB.
@@ -70,7 +70,7 @@ async def test_feature_repo_get(dbsession_containerized) -> None:
 
 @pytest.mark.order(60)
 @pytest.mark.unittest
-async def test_feature_repo_get_notfound(dbsession_containerized) -> None:
+def test_feature_repo_get_notfound(dbsession_containerized) -> None:
     feature_repo = repos.FeatureRepository(session=dbsession_containerized)
     sources_svc = services.CrawlerSourceService(session=dbsession_containerized)
 
@@ -91,7 +91,7 @@ async def test_feature_repo_get_notfound(dbsession_containerized) -> None:
 
 @pytest.mark.order(60)
 @pytest.mark.unittest
-async def test_feature_repo_get_all(dbsession_containerized) -> None:
+def test_feature_repo_get_all(dbsession_containerized) -> None:
     feature_repo = repos.FeatureRepository(session=dbsession_containerized)
     sources_svc = services.CrawlerSourceService(session=dbsession_containerized)
 
@@ -110,7 +110,7 @@ async def test_feature_repo_get_all(dbsession_containerized) -> None:
 # region: services
 @pytest.mark.order(62)
 @pytest.mark.integration
-async def test_feature_svc_get(dbsession_containerized) -> None:
+def test_feature_svc_get(dbsession_containerized) -> None:
     feature_svc = services.FeatureService(session=dbsession_containerized)
 
     identifier = "USGS-05427930"  # < this ID and source must be in the containerized DB.
@@ -125,7 +125,7 @@ async def test_feature_svc_get(dbsession_containerized) -> None:
 
 @pytest.mark.order(62)
 @pytest.mark.integration
-async def test_feature_svc_get_nonesuch_id(dbsession_containerized) -> None:
+def test_feature_svc_get_nonesuch_id(dbsession_containerized) -> None:
     feature_svc = services.FeatureService(session=dbsession_containerized)
 
     # If the ID is bogus, but source is good:
@@ -143,7 +143,7 @@ async def test_feature_svc_get_nonesuch_id(dbsession_containerized) -> None:
 
 @pytest.mark.order(62)
 @pytest.mark.integration
-async def test_feature_svc_list_all(dbsession_containerized) -> None:
+def test_feature_svc_list_all(dbsession_containerized) -> None:
     feature_svc = services.FeatureService(session=dbsession_containerized)
     source_name = "wqp"
     _all_features = feature_svc.list_by_src(source_name)
@@ -157,7 +157,7 @@ async def test_feature_svc_list_all(dbsession_containerized) -> None:
 
 @pytest.mark.order(62)
 @pytest.mark.integration
-async def test_feature_svc_list_all_bad_src(dbsession_containerized) -> None:
+def test_feature_svc_list_all_bad_src(dbsession_containerized) -> None:
     feature_svc = services.FeatureService(session=dbsession_containerized)
     source_name = "nonesuch"
     _all_features = feature_svc.list_by_src(source_name)
@@ -168,13 +168,13 @@ async def test_feature_svc_list_all_bad_src(dbsession_containerized) -> None:
 # The stream response of feature is a litestar thing... we're using Flask. Disable for now.
 # @pytest.mark.order(62)
 # @pytest.mark.integration
-# async def test_feature_svc_get_features_get_stream(dbsession_containerized) -> None:
+# def test_feature_svc_get_features_get_stream(dbsession_containerized) -> None:
 #     feature_svc = services.FeatureService(session=dbsession_containerized)
 #     source_name = "wqp"
 #     identifier = "USGS-05427930"
 #     # feature_collection_stream is a generator... need to exhaust it in order to get the full result.
 #     streamed_str = ""
-#     async for chunk in feature_svc.feature_collection_stream(source_name, identifier):
+#     for chunk in feature_svc.feature_collection_stream(source_name, identifier):
 #         streamed_str += chunk.decode("utf-8")
 
 #     actual = json.loads(streamed_str)
@@ -185,23 +185,23 @@ async def test_feature_svc_list_all_bad_src(dbsession_containerized) -> None:
 
 # @pytest.mark.order(62)
 # @pytest.mark.integration
-# async def test_feature_svc_get_features_get_nonesuch_stream(dbsession_containerized) -> None:
+# def test_feature_svc_get_features_get_nonesuch_stream(dbsession_containerized) -> None:
 #     feature_svc = services.FeatureService(session=dbsession_containerized)
 #     source_name = "wqp"
 #     identifier = "USGS-0542793x"
 #     with pytest.raises(NotFoundError):
 #         streamed_str = ""
-#         async for chunk in feature_svc.feature_collection_stream(source_name, identifier):
+#         for chunk in feature_svc.feature_collection_stream(source_name, identifier):
 #             streamed_str += chunk.decode("utf-8")
 
 
 # @pytest.mark.order(62)
 # @pytest.mark.integration
-# async def test_feature_svc_get_features_list_stream(dbsession_containerized) -> None:
+# def test_feature_svc_get_features_list_stream(dbsession_containerized) -> None:
 #     feature_svc = services.FeatureService(session=dbsession_containerized)
 #     source_name = "wqp"
 #     streamed_str = ""
-#     async for chunk in feature_svc.feature_collection_stream(source_name.lower()):
+#     for chunk in feature_svc.feature_collection_stream(source_name.lower()):
 #         streamed_str += chunk.decode("utf-8")
 
     # actual = json.loads(streamed_str)
@@ -211,7 +211,7 @@ async def test_feature_svc_list_all_bad_src(dbsession_containerized) -> None:
 
     # ## Do it all again with the upcase version of the source name... result should be the same.
     # streamed_str = ""
-    # async for chunk in feature_svc.feature_collection_stream(source_name.upper()):
+    # for chunk in feature_svc.feature_collection_stream(source_name.upper()):
     #     streamed_str += chunk.decode("utf-8")
 
     # actual = json.loads(streamed_str)

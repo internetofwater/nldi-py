@@ -15,8 +15,7 @@ object as being an implementation of a unit-of-work pattern.
 
 import logging
 
-# from collections.abc import AsyncGenerator
-from typing import Iterator
+from collections.abc import Generator
 
 import geoalchemy2
 import sqlalchemy
@@ -26,7 +25,6 @@ from advanced_alchemy.service import SQLAlchemySyncRepositoryService
 from geomet import wkt
 from sqlalchemy.orm import Session
 
-# from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 from sqlalchemy.sql.expression import Select
 
 from nldi.db.schemas.nhdplus import CatchmentModel, FlowlineModel
@@ -56,7 +54,7 @@ class CrawlerSourceService(FlaskServiceMixin, SQLAlchemySyncRepositoryService[Cr
         return True
 
 
-def crawler_source_svc(db_session: Session) -> Iterator[CrawlerSourceService, None]:
+def crawler_source_svc(db_session: Session) -> Generator[CrawlerSourceService, None, None]:
     """Provider function as part of the dependency-injection mechanism."""
     with CrawlerSourceService.new(session=db_session) as service:
         yield service

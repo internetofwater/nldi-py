@@ -145,7 +145,7 @@ def get_all_flowlines():
         _r = flask.Response(
             headers=_link_hdr,
             status=http.HTTPStatus.OK,
-            response=util.stream_j2_template_async(_template, feature_iterator),
+            response=util.stream_j2_template(_template, feature_iterator),
         )
     return _r
 
@@ -239,7 +239,7 @@ def get_feature_by_identifier(source_name: str, identifier: str = ""):
             _link_hdr = link_header(flask.request, offset=_offset, limit=_limit, maxcount=_featurecount)
             _link_hdr.update({"Content-Type": "application/json"})
             _r = flask.Response(
-                response=util.stream_j2_template_async(_template, feature_iterator),
+                response=util.stream_j2_template(_template, feature_iterator),
                 mimetype="application/json",
                 status=http.HTTPStatus.OK,
             )

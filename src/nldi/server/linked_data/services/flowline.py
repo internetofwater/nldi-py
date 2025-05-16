@@ -15,7 +15,7 @@ object as being an implementation of a unit-of-work pattern.
 
 import json
 import logging
-from typing import Iterator
+from collections.abc import Generator
 
 import msgspec
 import sqlalchemy
@@ -24,9 +24,6 @@ from advanced_alchemy.extensions.flask import FlaskServiceMixin
 # from advanced_alchemy.exceptions import NotFoundError
 from advanced_alchemy.service import SQLAlchemySyncRepositoryService
 from sqlalchemy.orm import Session
-
-# from geomet import wkt
-# from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.expression import Select
 
 from nldi.db.schemas.nhdplus import CatchmentModel, FlowlineModel
@@ -57,7 +54,7 @@ class FlowlineService(FlaskServiceMixin, SQLAlchemySyncRepositoryService[Flowlin
         :return: A geojson feature with the specified comid
         :rtype: struct_geojson.Feature
         """
-        _feature =   self.get(comid)
+        _feature = self.get(comid)
 
         ## Need to manipulate the properties key to match expectations.
         _result = _feature.as_feature(
@@ -73,7 +70,7 @@ class FlowlineService(FlaskServiceMixin, SQLAlchemySyncRepositoryService[Flowlin
     def features_from_nav_query(self, nav_query: Select) -> list[struct_geojson.Feature]:
         subq = nav_query.subquery()
         stmt = sqlalchemy.select(FlowlineModel).join(subq, FlowlineModel.nhdplus_comid == subq.c.comid)
-        hits =   self.repository._execute(stmt)
+        hits = self.repository._execute(stmt)
         r = hits.fetchall()
         return [
             f[0].as_feature(excl_props=["objectid", "permanent_identifier", "fmeasure", "tmeasure", "reachcode"])
@@ -219,7 +216,7 @@ class FlowlineService(FlaskServiceMixin, SQLAlchemySyncRepositoryService[Flowlin
         ).params(feature_id=feature_id, feature_source=feature_source)
 
         logging.debug(stmt.compile())
-        hits =   self.repository.execute(stmt)
+        hits = self.repository.execute(stmt)
 
         pt = hits.fetchone()
         if pt is None or None in pt:
@@ -228,14 +225,12 @@ class FlowlineService(FlaskServiceMixin, SQLAlchemySyncRepositoryService[Flowlin
         logging.debug("{feature_source}/{feature_id} matches {pt} on flowline")
         return pt
 
-    def feature_iterator(
-        self, base_url: str = "", offset: int = 0, limit: int = 1000
-    ) -> Iterator[bytes, None]:
+    def feature_iterator(self, base_url: str = "", offset: int = 0, limit: int = 1000) -> Generator[bytes, None, None]:
         """Provides a streaming response for the feature collection."""
         stmt = sqlalchemy.select(FlowlineModel).execution_options(yield_per=5).offset(offset).limit(limit)
 
-        query_result =   self.repository.session.stream(stmt)
-        while f :=   query_result.fetchone():
+        query_result = self.repository.session.stream(stmt)
+        while f := query_result.fetchone():
             nav_url = util.url_join(base_url, "linked-data", "comid", f[0].nhdplus_comid, "navigation")
             yield (
                 msgspec.to_builtins(
@@ -250,7 +245,7 @@ class FlowlineService(FlaskServiceMixin, SQLAlchemySyncRepositoryService[Flowlin
             )
 
 
-def flowline_svc(db_session: Session) -> Iterator[FlowlineService, None]:
+def flowline_svc(db_session: Session) -> Generator[FlowlineService, None, None]:
     """Provider function as part of the dependency-injection mechanism."""
     with FlowlineService.new(session=db_session) as service:
         yield service
