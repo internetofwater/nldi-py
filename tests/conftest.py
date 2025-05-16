@@ -5,18 +5,16 @@
 """Configuration for running pytest"""
 
 import pathlib
-from collections.abc import AsyncGenerator, Generator
+from collections.abc import Generator
 
 import pytest
-import pytest_asyncio
 from click.testing import CliRunner
 from dotenv import dotenv_values
+from sqlalchemy import Engine, create_engine
 from sqlalchemy.engine import URL as DB_URL
-from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.orm import Session, sessionmaker
 from testcontainers.core.container import DockerContainer
 from testcontainers.core.waiting_utils import wait_for_logs
-
-# from nldi import wsgi
 
 
 @pytest.fixture
@@ -122,7 +120,7 @@ def testdb_env_info() -> dict[str, str]:
 
 
 @pytest.fixture()
-async def engine_testdb(testdb_env_info) -> AsyncGenerator[AsyncEngine, None]:
+def engine_testdb(testdb_env_info) -> Generator[Engine, None, None]:
     """A sqlalchemy engine, configured for the containerized db."""
     _URL = DB_URL.create(  # noqa: N806
         "postgresql+psycopg",
@@ -132,25 +130,25 @@ async def engine_testdb(testdb_env_info) -> AsyncGenerator[AsyncEngine, None]:
         port=testdb_env_info["NLDI_DB_PORT"],
         database=testdb_env_info["NLDI_DB_NAME"],
     )
-    _private_engine = create_async_engine(_URL, echo=True)
+    _private_engine = create_engine(_URL, echo=True)
     try:
         yield _private_engine
     finally:
-        await _private_engine.dispose()
+        _private_engine.dispose()
 
 
 @pytest.fixture()
-async def dbsession_testdb(engine_testdb) -> AsyncGenerator[AsyncSession, None]:
-    """A sqlalchemy async session, connecting to the containerized DB."""
-    session = async_sessionmaker(bind=engine_testdb, expire_on_commit=False)()
+def dbsession_testdb(engine_testdb) -> Generator[Session, None, None]:
+    """A sqlalchemy session, connecting to the containerized DB."""
+    session = sessionmaker(bind=engine_testdb, expire_on_commit=False)()
     try:
         yield session
     finally:
-        await session.close()
+        session.close()
 
 
 @pytest.fixture()
-async def engine_containerized(containerized_db_env_info) -> AsyncGenerator[AsyncEngine, None]:
+def engine_containerized(containerized_db_env_info) -> Generator[Engine, None, None]:
     """A sqlalchemy engine, configured for the containerized db."""
     _URL = DB_URL.create(  # noqa: N806
         "postgresql+psycopg",
@@ -160,21 +158,21 @@ async def engine_containerized(containerized_db_env_info) -> AsyncGenerator[Asyn
         port=containerized_db_env_info["NLDI_DB_PORT"],
         database=containerized_db_env_info["NLDI_DB_NAME"],
     )
-    _private_engine = create_async_engine(_URL, echo=True)
+    _private_engine = create_engine(_URL, echo=True)
     try:
         yield _private_engine
     finally:
-        await _private_engine.dispose()
+        _private_engine.dispose()
 
 
 @pytest.fixture()
-async def dbsession_containerized(engine_containerized) -> AsyncGenerator[AsyncSession, None]:
-    """A sqlalchemy async session, connecting to the containerized DB."""
-    session = async_sessionmaker(bind=engine_containerized, expire_on_commit=False)()
+def dbsession_containerized(engine_containerized) -> Generator[Session, None, None]:
+    """A sqlalchemy session, connecting to the containerized DB."""
+    session = sessionmaker(bind=engine_containerized, expire_on_commit=False)()
     try:
         yield session
     finally:
-        await session.close()
+        session.close()
 
 
 @pytest.fixture()
@@ -189,6 +187,7 @@ def f_client_containerized(monkeypatch, yaml_config_file, containerized_db_env_i
         monkeypatch.setenv(k, v)
     monkeypatch.setenv("NLDI_CONFIG", yaml_config_file)
     from nldi.wsgi import flask_nldi_app_factory
+
     _app = flask_nldi_app_factory()
     with _app.test_client() as client:
         yield client
@@ -208,6 +207,7 @@ def f_client_testdb(monkeypatch, yaml_config_file, testdb_env_info):
         monkeypatch.setenv(k, v)
     monkeypatch.setenv("NLDI_CONFIG", yaml_config_file)
     from nldi.wsgi import flask_nldi_app_factory
+
     _app = flask_nldi_app_factory()
     with _app.test_client() as client:
         yield client

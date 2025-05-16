@@ -38,21 +38,21 @@ from . import API_PREFIX
 # region: respository
 @pytest.mark.order(40)
 @pytest.mark.unittest
-async def test_source_repo_get_by_id(dbsession_containerized) -> None:
+def test_source_repo_get_by_id(dbsession_containerized) -> None:
     src_repo = repos.CrawlerSourceRepository(session=dbsession_containerized)
-    healthy = await src_repo.check_health(src_repo.session)
+    healthy = src_repo.check_health(src_repo.session)
     assert healthy
 
-    feature = await src_repo.get(1)
+    feature = src_repo.get(1)
     assert feature is not None
 
 
 @pytest.mark.order(40)
 @pytest.mark.unittest
-async def test_source_repo_lookup_by_suffix(dbsession_containerized) -> None:
+def test_source_repo_lookup_by_suffix(dbsession_containerized) -> None:
     src_repo = repos.CrawlerSourceRepository(session=dbsession_containerized)
 
-    feature = await src_repo.get_one_or_none(
+    feature = src_repo.get_one_or_none(
         func.lower(CrawlerSourceModel.source_suffix) == "WQP".lower(),
     )
     assert feature.crawler_source_id == 1  # < known value for this source.
@@ -60,26 +60,26 @@ async def test_source_repo_lookup_by_suffix(dbsession_containerized) -> None:
 
 @pytest.mark.order(40)
 @pytest.mark.unittest
-async def test_source_repo_lookup_by_suffix_nonesuch(dbsession_containerized) -> None:
+def test_source_repo_lookup_by_suffix_nonesuch(dbsession_containerized) -> None:
     src_repo = repos.CrawlerSourceRepository(session=dbsession_containerized)
 
-    feature = await src_repo.get_one_or_none(CrawlerSourceModel.source_suffix == "nonesuch")
+    feature = src_repo.get_one_or_none(CrawlerSourceModel.source_suffix == "nonesuch")
     assert feature is None
 
 
 @pytest.mark.order(40)
 @pytest.mark.unittest
-async def test_source_repo_listall(dbsession_containerized) -> None:
+def test_source_repo_listall(dbsession_containerized) -> None:
     src_repo = repos.CrawlerSourceRepository(session=dbsession_containerized)
-    features, count = await src_repo.list_and_count()
+    features, count = src_repo.list_and_count()
     assert count == 3  # < true for the containerized db
     assert isinstance(features, list)
     assert isinstance(features[0], CrawlerSourceModel)
 
 
-async def test_source_svc_listall(dbsession_containerized) -> None:
+def test_source_svc_listall(dbsession_containerized) -> None:
     src_svc = services.CrawlerSourceService(session=dbsession_containerized)
-    features = await src_svc.list()
+    features = src_svc.list()
     assert isinstance(features, list)
     assert isinstance(features[0], CrawlerSourceModel)
 
@@ -87,42 +87,42 @@ async def test_source_svc_listall(dbsession_containerized) -> None:
 # region: service layer
 @pytest.mark.order(42)
 @pytest.mark.unittest
-async def test_source_service_search_by_suffix(dbsession_containerized) -> None:
+def test_source_service_search_by_suffix(dbsession_containerized) -> None:
     src_svc = services.CrawlerSourceService(session=dbsession_containerized)
 
-    feature = await src_svc.get_by_suffix("wqp")
+    feature = src_svc.get_by_suffix("wqp")
     assert feature.source_suffix.lower() == "wqp"
 
     ## Case insensitive:
-    feature = await src_svc.get_by_suffix("WQP")
+    feature = src_svc.get_by_suffix("WQP")
     assert feature.source_suffix.lower() == "wqp"
 
     ## weird case:
-    feature = await src_svc.get_by_suffix("wQp")
+    feature = src_svc.get_by_suffix("wQp")
     assert feature.source_suffix.lower() == "wqp"
 
 
 @pytest.mark.order(42)
 @pytest.mark.unittest
-async def test_source_service_search_by_suffix_nonesuch(dbsession_containerized) -> None:
+def test_source_service_search_by_suffix_nonesuch(dbsession_containerized) -> None:
     src_svc = services.CrawlerSourceService(session=dbsession_containerized)
 
     with pytest.raises(NotFoundError):
-        feature = await src_svc.get_by_suffix("nonesuch")
+        feature = src_svc.get_by_suffix("nonesuch")
 
 
 @pytest.mark.order(43)
 @pytest.mark.unittest
-async def test_source_service_suffix_exists(dbsession_containerized) -> None:
+def test_source_service_suffix_exists(dbsession_containerized) -> None:
     src_svc = services.CrawlerSourceService(session=dbsession_containerized)
 
-    actual = await src_svc.suffix_exists("wqp")
+    actual = src_svc.suffix_exists("wqp")
     assert actual is True
 
-    actual = await src_svc.suffix_exists("WQP")
+    actual = src_svc.suffix_exists("WQP")
     assert actual is True
 
-    actual = await src_svc.suffix_exists("nonesuch")
+    actual = src_svc.suffix_exists("nonesuch")
     assert actual is False
 
 

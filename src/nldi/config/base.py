@@ -13,7 +13,6 @@ from typing import Any, Self
 import httpx
 import sqlalchemy as sa
 from sqlalchemy.engine import URL as DB_URL
-from sqlalchemy.ext.asyncio import AsyncEngine, async_sessionmaker, create_async_engine
 
 from .. import LOGGER, util
 from . import default, status
@@ -101,18 +100,6 @@ class DatabaseConfig:
             cfg=str(self.URL),
             status="online" if self.ping() else "offline",
         )
-
-    @cached_property
-    def async_engine(self):
-        engine = create_async_engine(self.URL)
-        return engine
-
-    # async def async_session(self):
-    #     session = async_sessionmaker(bind=self.async_engine, expire_on_commit=False)()
-    #     try:
-    #         yield session
-    #     finally:
-    #         await session.close()
 
 
 @dataclass

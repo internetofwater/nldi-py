@@ -7,6 +7,7 @@
 """Generic util functions used in the code"""
 
 import json
+import logging
 import os
 import pathlib
 import re
@@ -63,34 +64,6 @@ def to_json(dict_: dict, pretty: bool = False) -> str:
     return json.dumps(dict_, indent=indent)
 
 
-def stream_j2_template_async(template: Path, data: dict) -> str:
-    """
-    Stream Jinja2 template
-
-    :param template: template (relative path)
-    :param data: dict of data
-
-    :returns: string of rendered template
-    """
-    template_paths = [TEMPLATES, "."]
-    env = Environment(
-        loader=FileSystemLoader(template_paths),
-        extensions=["jinja2.ext.i18n"],
-        autoescape=select_autoescape(),
-        enable_async=True,
-    )
-
-    env.filters["to_json"] = to_json
-    env.globals.update(to_json=to_json)
-
-    template = env.get_template(template)
-
-    rv = template.stream(data=data)
-    rv.enable_buffering(16)
-
-    return rv
-
-
 def stream_j2_template(template: Path, data: dict) -> str:
     """
     Stream Jinja2 template
@@ -111,7 +84,7 @@ def stream_j2_template(template: Path, data: dict) -> str:
     template = env.get_template(template)
 
     rv = template.stream(data=data)
-    rv.enable_buffering(16)
+    rv.enable_buffering(15)
 
     return rv
 
@@ -149,7 +122,6 @@ def to_json(dict_, pretty=False):
         indent = 4
     else:
         indent = None
-
     return json.dumps(dict_, default=json_serial, indent=indent)
 
 

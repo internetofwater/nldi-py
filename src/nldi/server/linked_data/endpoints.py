@@ -89,16 +89,16 @@ def ld_update_headers(r: flask.Response) -> flask.Response:
 
 
 @LINKED_DATA.route("/")
-async def list_sources():
+def list_sources():
     with flask.current_app.alchemy.with_session() as db_session:
         sources_svc = services.CrawlerSourceService(session=db_session)
-        src_list = await sources_svc.list()
+        src_list = sources_svc.list()
         _r = list(src_list)
     return [f._as_dict for f in _r]
 
 
 @LINKED_DATA.route("/hydrolocation")
-async def get_hydrolocation():
+def get_hydrolocation():
     if (coords := flask.request.args.get("coords")) is None:
         return flask.Response(status=http.HTTPStatus.BAD_REQUEST, response="No coordinates provided")
     db = flask.current_app.NLDI_CONFIG.db
@@ -107,7 +107,7 @@ async def get_hydrolocation():
     with flask.current_app.alchemy.with_session() as db_session:
         pygeoapi_svc = services.PyGeoAPIService(session=db_session)
         try:
-            features = await pygeoapi_svc.hydrolocation_by_coords(coords, base_url=base_url)
+            features = pygeoapi_svc.hydrolocation_by_coords(coords, base_url=base_url)
         except RuntimeError as e:
             raise ServiceUnavailable(description=str(e))
         except KeyError as e:
@@ -120,8 +120,9 @@ async def get_hydrolocation():
     )
     return _r
 
+
 @LINKED_DATA.route("/comid")
-async def get_all_flowlines():
+def get_all_flowlines():
     base_url = flask.current_app.NLDI_CONFIG.server.base_url
     if flask.request.format == "jsonld":
         _template = "FeatureCollectionGraph.j2"
@@ -138,20 +139,19 @@ async def get_all_flowlines():
         flowline_svc = services.FlowlineService(session=db_session)
         # List all features in the named source
         feature_iterator = flowline_svc.feature_iterator(base_url=base_url, limit=_limit, offset=_offset)
-        _featurecount = await flowline_svc.count()
+        _featurecount = flowline_svc.count()
         _link_hdr = link_header(flask.request, offset=_offset, limit=_limit, maxcount=_featurecount)
         _link_hdr.update({"Content-Type": "application/json"})
         _r = flask.Response(
             headers=_link_hdr,
             status=http.HTTPStatus.OK,
-            response=util.stream_j2_template_async(_template, feature_iterator),
+            response=util.stream_j2_template(_template, feature_iterator),
         )
     return _r
 
 
-
 @LINKED_DATA.route("/comid/<path:comid>")
-async def get_flowline_by_comid(comid: int | None = None):
+def get_flowline_by_comid(comid: int | None = None):
     base_url = flask.current_app.NLDI_CONFIG.server.base_url
     try:
         _comid = int(comid)
@@ -161,7 +161,7 @@ async def get_flowline_by_comid(comid: int | None = None):
     with flask.current_app.alchemy.with_session() as db_session:
         flowline_svc = services.FlowlineService(session=db_session)
         try:
-            flowline_feature = await flowline_svc.get_feature(
+            flowline_feature = flowline_svc.get_feature(
                 comid,
                 xtra_props={"navigation": util.url_join(base_url, "comid", comid, "navigation")},
             )
@@ -176,7 +176,7 @@ async def get_flowline_by_comid(comid: int | None = None):
 
 
 @LINKED_DATA.route("/comid/position")
-async def flowline_by_position():
+def flowline_by_position():
     """Find flowline by spatial search."""
     db = flask.current_app.NLDI_CONFIG.db
     base_url = flask.current_app.NLDI_CONFIG.server.base_url
@@ -188,7 +188,7 @@ async def flowline_by_position():
         # Step 1: Get the COMID of the catchment polygon holding the point.
         catchment_svc = services.CatchmentService(session=db_session)
         try:
-            catchment = await catchment_svc.get_by_wkt_point(coords)
+            catchment = catchment_svc.get_by_wkt_point(coords)
             comid = int(catchment.featureid)
         except ValueError as e:
             raise UnprocessableEntity(description=str(e))
@@ -197,7 +197,7 @@ async def flowline_by_position():
 
         # Step2: use that catchment's COMID to lookup flowline
         flowline_svc = services.FlowlineService(session=db_session)
-        flowline_feature = await flowline_svc.get_feature(
+        flowline_feature = flowline_svc.get_feature(
             comid,
             xtra_props={"navigation": util.url_join(base_url, "comid", comid, "navigation")},
         )
@@ -212,7 +212,7 @@ async def flowline_by_position():
 # region Routes Per-Source
 @LINKED_DATA.route("/<path:source_name>")
 @LINKED_DATA.route("/<path:source_name>/<path:identifier>")
-async def get_feature_by_identifier(source_name: str, identifier: str = ""):
+def get_feature_by_identifier(source_name: str, identifier: str = ""):
     base_url = flask.current_app.NLDI_CONFIG.server.base_url
     if flask.request.format == "jsonld":
         _template = "FeatureCollectionGraph.j2"
@@ -229,18 +229,23 @@ async def get_feature_by_identifier(source_name: str, identifier: str = ""):
         feature_svc = services.FeatureService(session=db_session)
         if not identifier:
             # List all features in the named source
-            feature_iterator = feature_svc.iter_by_src(source_name, base_url=base_url, limit=_limit, offset=_offset)
-            _featurecount = await feature_svc.featurecount(source_name)
+            feature_iterator = feature_svc.iter_by_src(
+                source_name,
+                base_url=base_url,
+                limit=_limit,
+                offset=_offset,
+            )
+            _featurecount = feature_svc.featurecount(source_name)
             _link_hdr = link_header(flask.request, offset=_offset, limit=_limit, maxcount=_featurecount)
             _link_hdr.update({"Content-Type": "application/json"})
             _r = flask.Response(
-                headers=_link_hdr,
+                response=util.stream_j2_template(_template, feature_iterator),
+                mimetype="application/json",
                 status=http.HTTPStatus.OK,
-                response=util.stream_j2_template_async(_template, feature_iterator),
             )
         else:
             try:
-                feature = await feature_svc.feature_lookup(source_name, identifier)
+                feature = feature_svc.feature_lookup(source_name, identifier)
             except NotFoundError:
                 raise NotFound(description=f"Not Found: {source_name}/{identifier}")
             nav_url = util.url_join(
@@ -256,7 +261,7 @@ async def get_feature_by_identifier(source_name: str, identifier: str = ""):
 
 
 @LINKED_DATA.route("/<path:source_name>/<path:identifier>/basin")
-async def get_basin_by_id(source_name: str, identifier: str) -> dict[str, Any]:
+def get_basin_by_id(source_name: str, identifier: str) -> dict[str, Any]:
     db = flask.current_app.NLDI_CONFIG.db
     base_url = flask.current_app.NLDI_CONFIG.server.base_url
     simplified = flask.request.args.get("simplified", "True").lower() == "true"
@@ -267,7 +272,7 @@ async def get_basin_by_id(source_name: str, identifier: str) -> dict[str, Any]:
             session=db_session,
             pygeoapi_url=flask.current_app.NLDI_CONFIG.server.pygeoapi_url,
         )
-        featurelist = await basin_svc.get_by_id(identifier, source_name, simplified, split)
+        featurelist = basin_svc.get_by_id(identifier, source_name, simplified, split)
 
         _r = flask.Response(
             headers={"Content-Type": "application/json"},
@@ -278,13 +283,13 @@ async def get_basin_by_id(source_name: str, identifier: str) -> dict[str, Any]:
 
 
 @LINKED_DATA.route("/<path:source_name>/<path:identifier>/navigation")
-async def get_navigation_modes(source_name: str, identifier: str):
+def get_navigation_modes(source_name: str, identifier: str):
     db = flask.current_app.NLDI_CONFIG.db
     base_url = flask.current_app.NLDI_CONFIG.server.base_url
 
     with flask.current_app.alchemy.with_session() as db_session:
         sources_svc = services.CrawlerSourceService(session=db_session)
-        src_exists = await sources_svc.suffix_exists(source_name)
+        src_exists = sources_svc.suffix_exists(source_name)
         if not src_exists:
             raise NotFound(description == f"No such source: {source_name}")
 
@@ -299,14 +304,14 @@ async def get_navigation_modes(source_name: str, identifier: str):
 
 
 @LINKED_DATA.route("/<path:source_name>/<path:identifier>/navigation/<path:nav_mode>")
-async def get_navigation_info(source_name: str, identifier: str, nav_mode: str) -> list[dict[str, str]]:
+def get_navigation_info(source_name: str, identifier: str, nav_mode: str) -> list[dict[str, str]]:
     db = flask.current_app.NLDI_CONFIG.db
     base_url = flask.current_app.NLDI_CONFIG.server.base_url
     nav_url = util.url_join(base_url, "linked-data", source_name, identifier, "navigation")
 
     with flask.current_app.alchemy.with_session() as db_session:
         sources_svc = services.CrawlerSourceService(session=db_session)
-        src_exists = await sources_svc.suffix_exists(source_name)
+        src_exists = sources_svc.suffix_exists(source_name)
         if not src_exists:
             raise NotFound(description == f"No such source: {source_name}")
 
@@ -317,7 +322,7 @@ async def get_navigation_info(source_name: str, identifier: str, nav_mode: str) 
             "features": util.url_join(nav_url, nav_mode, "flowlines"),
         }
     ]
-    for source in await sources_svc.list():
+    for source in sources_svc.list():
         src_id = source.source_suffix
         content.append(
             {
@@ -330,7 +335,7 @@ async def get_navigation_info(source_name: str, identifier: str, nav_mode: str) 
 
 
 @LINKED_DATA.route("/<path:source_name>/<path:identifier>/navigation/<path:nav_mode>/flowlines")
-async def get_flowline_navigation(
+def get_flowline_navigation(
     source_name: str,
     identifier: str,
     nav_mode: str,
@@ -355,7 +360,7 @@ async def get_flowline_navigation(
         navigation_svc = services.NavigationService(session=db_session)
 
         try:
-            features = await navigation_svc.walk_flowlines(source_name, identifier, nav_mode, distance, trim_start)
+            features = navigation_svc.walk_flowlines(source_name, identifier, nav_mode, distance, trim_start)
         except NotFoundError as e:
             raise NotFound(description=str(e))
         except ValueError as e:
@@ -370,7 +375,7 @@ async def get_flowline_navigation(
 
 
 @LINKED_DATA.route("/<path:source_name>/<path:identifier>/navigation/<path:nav_mode>/<path:data_source>")
-async def get_feature_navigation(
+def get_feature_navigation(
     source_name: str,
     identifier: str,
     nav_mode: str,
@@ -392,7 +397,7 @@ async def get_feature_navigation(
     with flask.current_app.alchemy.with_session() as db_session:
         navigation_svc = services.NavigationService(session=db_session)
         try:
-            features = await navigation_svc.walk_features(source_name, identifier, nav_mode, data_source, distance)
+            features = navigation_svc.walk_features(source_name, identifier, nav_mode, data_source, distance)
         except NotFoundError as e:
             raise NotFound(description=str(e))
         except ValueError as e:

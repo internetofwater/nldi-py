@@ -9,7 +9,7 @@
 import logging
 
 import flask
-from advanced_alchemy.extensions.flask import AdvancedAlchemy, SQLAlchemyAsyncConfig
+from advanced_alchemy.extensions.flask import AdvancedAlchemy, SQLAlchemySyncConfig
 from flask_cors import CORS
 from sqlalchemy.exc import OperationalError
 
@@ -29,7 +29,7 @@ def flask_nldi_app_factory() -> flask.Flask:
     app.register_blueprint(ROOT, url_prefix=_cfg.server.prefix)
     app.register_blueprint(LINKED_DATA, url_prefix=f"{_cfg.server.prefix}/linked-data")
     logging.info(f"Connection string: {_cfg.db.URL}")
-    _alchemy_config = SQLAlchemyAsyncConfig(connection_string=_cfg.db.URL, create_all=False)
+    _alchemy_config = SQLAlchemySyncConfig(connection_string=_cfg.db.URL, create_all=False)
     app.alchemy = AdvancedAlchemy(_alchemy_config, app)
     app.NLDI_CONFIG = _cfg
     return app

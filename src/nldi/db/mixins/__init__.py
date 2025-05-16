@@ -7,4 +7,3 @@
 """Mixins for SQLAlchemy Models"""
 
 from .geo import GeoJSONMixin
-

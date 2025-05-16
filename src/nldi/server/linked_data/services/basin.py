@@ -6,9 +6,7 @@
 #
 """ """
 
-from collections.abc import AsyncGenerator
-
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 
 from . import CatchmentService, FeatureService, FlowlineService
 from .pygeoapi import PyGeoAPIService
@@ -17,7 +15,7 @@ from .pygeoapi import PyGeoAPIService
 class BasinService:
     SPLIT_CATCHMENT_THRESHOLD = 200
 
-    def __init__(self, session: AsyncSession, pygeoapi_url: str):
+    def __init__(self, session: Session, pygeoapi_url: str):
         self._service_url = pygeoapi_url
         self._session = session
         self.flowline_svc = FlowlineService(session=self._session)
@@ -25,8 +23,7 @@ class BasinService:
         self.feature_svc = FeatureService(session=self._session)
         self.pygeoapi_svc = PyGeoAPIService(session=self._session, pygeoapi_url=pygeoapi_url)
 
-
-    async def _get_start_comid(self, identifier: str, source_name: str) -> tuple[int, bool]:
+    def _get_start_comid(self, identifier: str, source_name: str) -> tuple[int, bool]:
         try:
             if source_name.lower() == "comid":
                 _ = self.flowline_svc.get(identifier)  # just making sure it exists.
@@ -34,7 +31,7 @@ class BasinService:
                 is_point = False
                 feature = None  # sentinal; indicates not a feature lookup.
             else:
-                hit = await self.feature_svc.feature_lookup(source_name, identifier)
+                hit = self.feature_svc.feature_lookup(source_name, identifier)
                 feature = hit.as_feature()
                 start_comid = int(feature.properties["comid"])
                 is_point = feature.geometry["type"] == "Point"
@@ -43,7 +40,7 @@ class BasinService:
             raise KeyError(msg)
         return (start_comid, is_point, feature)
 
-    async def get_by_id(
+    def get_by_id(
         self,
         identifier: str,
         source_name: str | None = None,
@@ -63,7 +60,7 @@ class BasinService:
         feature.
         """
         source_name = source_name.lower() if source_name else "comid"
-        (start_comid, is_point, feature) = await self._get_start_comid(identifier, source_name)
+        (start_comid, is_point, feature) = self._get_start_comid(identifier, source_name)
 
         if is_point and split:
             # Plan A: the point is on a FlowLine
@@ -91,12 +88,12 @@ class BasinService:
             wkt_geom = f"POINT({lon} {lat})"
             features = [self.pygeoapi_svc.splitcatchment_at_coords(wkt_geom)]
         else:
-            feature = await self.catchment_svc.get_drainage_basin_by_comid(start_comid, simplified)
+            feature = self.catchment_svc.get_drainage_basin_by_comid(start_comid, simplified)
             features = [feature]
         return features
 
 
-# async def basin_svc(db_session: AsyncSession) :
+#  def basin_svc(db_session: Session) :
 #     """Provider function as part of the dependency-injection mechanism."""
-#     async with BasinService(session=db_session) as service:
+#     with BasinService(session=db_session) as service:
 #         yield service

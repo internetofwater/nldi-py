@@ -7,10 +7,10 @@
 
 """Service / business-logic layer."""
 
+from .basin import BasinService
 from .catchment import CatchmentService, catchment_svc
 from .crawlersource import CrawlerSourceService, crawler_source_svc
 from .feature import FeatureService, feature_svc
 from .flowline import FlowlineService, flowline_svc
 from .navigation import NavigationService, navigation_svc
 from .pygeoapi import PyGeoAPIService, pygeoapi_svc
-from .basin import BasinService

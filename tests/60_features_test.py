@@ -49,7 +49,7 @@ from . import API_PREFIX
 # region: repository
 @pytest.mark.order(60)
 @pytest.mark.unittest
-async def test_feature_repo_get(dbsession_containerized) -> None:
+def test_feature_repo_get(dbsession_containerized) -> None:
     feature_repo = repos.FeatureRepository(session=dbsession_containerized)
 
     identifier = "USGS-05427930"  # < this ID and source must be in the containerized DB.
@@ -57,8 +57,8 @@ async def test_feature_repo_get(dbsession_containerized) -> None:
 
     ## "old" lookup method, without association proxies on FeatureSourceModel
     sources_svc = services.CrawlerSourceService(session=dbsession_containerized)
-    _src = await sources_svc.get_by_suffix(source_name)
-    _feature = await feature_repo.get_one_or_none(
+    _src = sources_svc.get_by_suffix(source_name)
+    _feature = feature_repo.get_one_or_none(
         FeatureSourceModel.identifier == identifier,
         FeatureSourceModel.crawler_source_id == _src.crawler_source_id,
     )
@@ -70,7 +70,7 @@ async def test_feature_repo_get(dbsession_containerized) -> None:
 
 @pytest.mark.order(60)
 @pytest.mark.unittest
-async def test_feature_repo_get_notfound(dbsession_containerized) -> None:
+def test_feature_repo_get_notfound(dbsession_containerized) -> None:
     feature_repo = repos.FeatureRepository(session=dbsession_containerized)
     sources_svc = services.CrawlerSourceService(session=dbsession_containerized)
 
@@ -78,10 +78,10 @@ async def test_feature_repo_get_notfound(dbsession_containerized) -> None:
     source_name = "wqp"
 
     # Invalid source name is tested elsewhere. 40_crawler_sources_test.py
-    _src = await sources_svc.get_by_suffix(source_name)
+    _src = sources_svc.get_by_suffix(source_name)
     assert _src.source_suffix.lower() == source_name
 
-    _feature = await feature_repo.get_one_or_none(
+    _feature = feature_repo.get_one_or_none(
         FeatureSourceModel.identifier == identifier,
         FeatureSourceModel.crawler_source_id == _src.crawler_source_id,
     )
@@ -91,17 +91,17 @@ async def test_feature_repo_get_notfound(dbsession_containerized) -> None:
 
 @pytest.mark.order(60)
 @pytest.mark.unittest
-async def test_feature_repo_get_all(dbsession_containerized) -> None:
+def test_feature_repo_get_all(dbsession_containerized) -> None:
     feature_repo = repos.FeatureRepository(session=dbsession_containerized)
     sources_svc = services.CrawlerSourceService(session=dbsession_containerized)
 
     source_name = "wqp"
 
     # Invalid source name is tested elsewhere. 40_crawler_sources_test.py
-    _src = await sources_svc.get_by_suffix(source_name)
+    _src = sources_svc.get_by_suffix(source_name)
     assert _src.source_suffix.lower() == source_name
 
-    _features = await feature_repo.list(FeatureSourceModel.crawler_source_id == _src.crawler_source_id)
+    _features = feature_repo.list(FeatureSourceModel.crawler_source_id == _src.crawler_source_id)
 
     assert isinstance(_features, list)
     assert len(_features) > 1
@@ -110,57 +110,57 @@ async def test_feature_repo_get_all(dbsession_containerized) -> None:
 # region: services
 @pytest.mark.order(62)
 @pytest.mark.integration
-async def test_feature_svc_get(dbsession_containerized) -> None:
+def test_feature_svc_get(dbsession_containerized) -> None:
     feature_svc = services.FeatureService(session=dbsession_containerized)
 
     identifier = "USGS-05427930"  # < this ID and source must be in the containerized DB.
     source_name = "wqp"
 
-    feature_lower = await feature_svc.feature_lookup(source_name.lower(), identifier)
+    feature_lower = feature_svc.feature_lookup(source_name.lower(), identifier)
     assert feature_lower.comid == 13294176
 
-    feature_upper = await feature_svc.feature_lookup(source_name.upper(), identifier)
+    feature_upper = feature_svc.feature_lookup(source_name.upper(), identifier)
     assert feature_upper.comid == 13294176
 
 
 @pytest.mark.order(62)
 @pytest.mark.integration
-async def test_feature_svc_get_nonesuch_id(dbsession_containerized) -> None:
+def test_feature_svc_get_nonesuch_id(dbsession_containerized) -> None:
     feature_svc = services.FeatureService(session=dbsession_containerized)
 
     # If the ID is bogus, but source is good:
     identifier = "USGS-00000000"
     source_name = "wqp"
     with pytest.raises(NotFoundError):
-        _feature = await feature_svc.feature_lookup(source_name, identifier)
+        _feature = feature_svc.feature_lookup(source_name, identifier)
 
     # if the ID is good, but the source is not:
     identifier = "USGS-05427930"
     source_name = "nonesuch"
     with pytest.raises(NotFoundError):
-        _feature = await feature_svc.feature_lookup(source_name, identifier)
+        _feature = feature_svc.feature_lookup(source_name, identifier)
 
 
 @pytest.mark.order(62)
 @pytest.mark.integration
-async def test_feature_svc_list_all(dbsession_containerized) -> None:
+def test_feature_svc_list_all(dbsession_containerized) -> None:
     feature_svc = services.FeatureService(session=dbsession_containerized)
     source_name = "wqp"
-    _all_features = await feature_svc.list_by_src(source_name)
+    _all_features = feature_svc.list_by_src(source_name)
     assert isinstance(_all_features, list)
     assert len(_all_features) > 1
 
-    _all_features = await feature_svc.list_by_src(source_name.upper())
+    _all_features = feature_svc.list_by_src(source_name.upper())
     assert isinstance(_all_features, list)
     assert len(_all_features) > 1
 
 
 @pytest.mark.order(62)
 @pytest.mark.integration
-async def test_feature_svc_list_all_bad_src(dbsession_containerized) -> None:
+def test_feature_svc_list_all_bad_src(dbsession_containerized) -> None:
     feature_svc = services.FeatureService(session=dbsession_containerized)
     source_name = "nonesuch"
-    _all_features = await feature_svc.list_by_src(source_name)
+    _all_features = feature_svc.list_by_src(source_name)
     assert isinstance(_all_features, list)
     assert len(_all_features) == 0
 
@@ -168,13 +168,13 @@ async def test_feature_svc_list_all_bad_src(dbsession_containerized) -> None:
 # The stream response of feature is a litestar thing... we're using Flask. Disable for now.
 # @pytest.mark.order(62)
 # @pytest.mark.integration
-# async def test_feature_svc_get_features_get_stream(dbsession_containerized) -> None:
+# def test_feature_svc_get_features_get_stream(dbsession_containerized) -> None:
 #     feature_svc = services.FeatureService(session=dbsession_containerized)
 #     source_name = "wqp"
 #     identifier = "USGS-05427930"
 #     # feature_collection_stream is a generator... need to exhaust it in order to get the full result.
 #     streamed_str = ""
-#     async for chunk in feature_svc.feature_collection_stream(source_name, identifier):
+#     for chunk in feature_svc.feature_collection_stream(source_name, identifier):
 #         streamed_str += chunk.decode("utf-8")
 
 #     actual = json.loads(streamed_str)
@@ -185,39 +185,39 @@ async def test_feature_svc_list_all_bad_src(dbsession_containerized) -> None:
 
 # @pytest.mark.order(62)
 # @pytest.mark.integration
-# async def test_feature_svc_get_features_get_nonesuch_stream(dbsession_containerized) -> None:
+# def test_feature_svc_get_features_get_nonesuch_stream(dbsession_containerized) -> None:
 #     feature_svc = services.FeatureService(session=dbsession_containerized)
 #     source_name = "wqp"
 #     identifier = "USGS-0542793x"
 #     with pytest.raises(NotFoundError):
 #         streamed_str = ""
-#         async for chunk in feature_svc.feature_collection_stream(source_name, identifier):
+#         for chunk in feature_svc.feature_collection_stream(source_name, identifier):
 #             streamed_str += chunk.decode("utf-8")
 
 
 # @pytest.mark.order(62)
 # @pytest.mark.integration
-# async def test_feature_svc_get_features_list_stream(dbsession_containerized) -> None:
+# def test_feature_svc_get_features_list_stream(dbsession_containerized) -> None:
 #     feature_svc = services.FeatureService(session=dbsession_containerized)
 #     source_name = "wqp"
 #     streamed_str = ""
-#     async for chunk in feature_svc.feature_collection_stream(source_name.lower()):
+#     for chunk in feature_svc.feature_collection_stream(source_name.lower()):
 #         streamed_str += chunk.decode("utf-8")
 
-    # actual = json.loads(streamed_str)
-    # features = actual["features"]
-    # assert isinstance(features, list)
-    # assert len(features) >= 1
+# actual = json.loads(streamed_str)
+# features = actual["features"]
+# assert isinstance(features, list)
+# assert len(features) >= 1
 
-    # ## Do it all again with the upcase version of the source name... result should be the same.
-    # streamed_str = ""
-    # async for chunk in feature_svc.feature_collection_stream(source_name.upper()):
-    #     streamed_str += chunk.decode("utf-8")
+# ## Do it all again with the upcase version of the source name... result should be the same.
+# streamed_str = ""
+# for chunk in feature_svc.feature_collection_stream(source_name.upper()):
+#     streamed_str += chunk.decode("utf-8")
 
-    # actual = json.loads(streamed_str)
-    # features = actual["features"]
-    # assert isinstance(features, list)
-    # assert len(features) >= 1
+# actual = json.loads(streamed_str)
+# features = actual["features"]
+# assert isinstance(features, list)
+# assert len(features) >= 1
 
 
 # region: endpoints
@@ -278,4 +278,3 @@ def test_api_list_features_by_source(f_client_containerized) -> None:
     features_upcase = actual["features"]
     assert isinstance(features_upcase, list)
     assert len(features_upcase) == len(features_lowcase)
-

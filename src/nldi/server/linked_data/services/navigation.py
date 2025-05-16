@@ -6,17 +6,15 @@
 #
 """Navigation business logic service layer"""
 
-from collections.abc import AsyncGenerator
-from contextlib import asynccontextmanager
+from contextlib import contextmanager
 from enum import StrEnum
-from typing import Any, AsyncIterator, Self
+from typing import Any, Generator, Self
 
 import geoalchemy2
 import sqlalchemy
 from advanced_alchemy.exceptions import NotFoundError
 from sqlalchemy import and_, case, func, or_, select, text
-from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
-from sqlalchemy.orm import aliased
+from sqlalchemy.orm import Session, aliased
 from sqlalchemy.sql.expression import Select
 
 from nldi.db.schemas.nhdplus import CatchmentModel, FlowlineModel, FlowlineVAAModel
@@ -49,18 +47,18 @@ NavModesDesc = {
 
 
 class NavigationService:
-    def __init__(self, session: AsyncSession):
+    def __init__(self, session: Session):
         self._session = session
         self.feature_svc = FeatureService(session=self._session)
         self.source_svc = CrawlerSourceService(session=self._session)
         self.flowline_svc = FlowlineService(session=self._session)
 
     @classmethod
-    @asynccontextmanager
-    async def new(
+    @contextmanager
+    def new(
         cls,
-        session: AsyncSession | None = None,
-    ) -> AsyncIterator[Self]:
+        session: Session | None = None,
+    ) -> Generator[Self, None, None]:
         if not session:
             raise AdvancedAlchemyError(detail="Please supply an optional configuration or session to use.")
         if session:
@@ -295,7 +293,7 @@ class NavigationService:
             )
         return query.params(comid=comid)
 
-    async def estimate_measure(self, feature_id: str, feature_source: str):
+    def estimate_measure(self, feature_id: str, feature_source: str):
         """Build a SQL query for estimating meaure on a feature/source."""
         query = (
             select(
@@ -321,11 +319,11 @@ class NavigationService:
             )
         )
         q = query.params(feature_id=feature_id, feature_source=feature_source.lower())
-        hits = await self.flowline_svc.repository._execute(q)
+        hits = self.flowline_svc.repository._execute(q)
         _r = hits.fetchone()[0]
         return _r
 
-    async def walk_flowlines(
+    def walk_flowlines(
         self,
         source_name: str,
         identifier: str,
@@ -337,12 +335,12 @@ class NavigationService:
         if source_name == "comid":
             if trim_start:
                 raise ValueError("Cannot use 'trim_start' with 'comid' source features.")
-            starting_flowline = await self.flowline_svc.get(identifier)
+            starting_flowline = self.flowline_svc.get(identifier)
             if not starting_flowline:
                 raise NotFoundError
             start_comid = int(starting_flowline.nhdplus_comid)
         else:
-            starting_feature = await self.feature_svc.feature_lookup(source_name, identifier)
+            starting_feature = self.feature_svc.feature_lookup(source_name, identifier)
             if not starting_feature:
                 raise NotFoundError
             start_comid = int(starting_feature.comid)
@@ -352,16 +350,16 @@ class NavigationService:
         if trim_start is True:
             measure = starting_feature.measure
             if not measure:  # only happens if measure is supplied as zero
-                measure = await self.estimate_measure(identifier, source_name)
+                measure = self.estimate_measure(identifier, source_name)
             measure = float(measure)
             trim_nav_q = self.trim_nav_query(nav_mode, start_comid, trim_tolerance, measure)
-            features = await self.flowline_svc.trimed_features_from_nav_query(nav_results_query, trim_nav_q)
+            features = self.flowline_svc.trimed_features_from_nav_query(nav_results_query, trim_nav_q)
         else:
-            features = await self.flowline_svc.features_from_nav_query(nav_results_query)
+            features = self.flowline_svc.features_from_nav_query(nav_results_query)
 
         return features
 
-    async def walk_features(
+    def walk_features(
         self,
         source_name: str,
         identifier: str,
@@ -370,23 +368,23 @@ class NavigationService:
         distance: float,
     ):
         if source_name == "comid":
-            starting_flowline = await self.flowline_svc.get(identifier)
+            starting_flowline = self.flowline_svc.get(identifier)
             if not starting_flowline:
                 raise NotFoundError
             start_comid = int(starting_flowline.nhdplus_comid)
         else:
-            starting_feature = await self.feature_svc.feature_lookup(source_name, identifier)
+            starting_feature = self.feature_svc.feature_lookup(source_name, identifier)
             if not starting_feature:
                 raise NotFoundError
             start_comid = int(starting_feature.comid)
 
         nav_results_query = self.navigation(nav_mode, start_comid, distance)
 
-        features = await self.feature_svc.features_from_nav_query(return_source, nav_results_query)
+        features = self.feature_svc.features_from_nav_query(return_source, nav_results_query)
         return features
 
 
-async def navigation_svc(db_session: AsyncSession) -> AsyncGenerator[NavigationService, None]:
+def navigation_svc(db_session: Session) -> Generator[NavigationService, None, None]:
     """Provider function as part of the dependency-injection mechanism."""
-    async with NavigationService.new(session=db_session) as service:
+    with NavigationService.new(session=db_session) as service:
         yield service

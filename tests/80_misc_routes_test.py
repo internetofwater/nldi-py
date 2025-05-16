@@ -37,9 +37,9 @@ def test_pygeoapi_service_instantiates(dbsession_containerized):
 
 @pytest.mark.order(82)
 @pytest.mark.integration
-async def test_pygeoapi_service_hydrolocation(dbsession_containerized):
+def test_pygeoapi_service_hydrolocation(dbsession_containerized):
     svc = pygeoapi.PyGeoAPIService(session=dbsession_containerized)
-    actual = await svc.hydrolocation_by_coords("POINT(-89.22401470690966 42.82769689708948)")
+    actual = svc.hydrolocation_by_coords("POINT(-89.22401470690966 42.82769689708948)")
     expected = {  ## according to https://labs.waterdata.usgs.gov/api/nldi/linked-data/hydrolocation?f=json&coords=POINT%28-89.22401470690966%2042.82769689708948%29
         "type": "FeatureCollection",
         "features": [
@@ -91,9 +91,9 @@ async def test_pygeoapi_service_hydrolocation(dbsession_containerized):
 
 @pytest.mark.order(82)
 @pytest.mark.integration
-async def test_pygeoapi_service_splitcatchment(dbsession_containerized):
+def test_pygeoapi_service_splitcatchment(dbsession_containerized):
     svc = pygeoapi.PyGeoAPIService(session=dbsession_containerized)
-    actual = await svc.splitcatchment_at_coords("POINT(-89.22401470690966 42.82769689708948)")
+    actual = svc.splitcatchment_at_coords("POINT(-89.22401470690966 42.82769689708948)")
     assert actual["type"] == "Feature"
     assert actual["geometry"]["type"].endswith("Polygon")  ## could be Polygon or MultiPolygon
     ## TODO:  Verify the computed values are correct.
@@ -101,18 +101,18 @@ async def test_pygeoapi_service_splitcatchment(dbsession_containerized):
 
 @pytest.mark.order(83)
 @pytest.mark.integration
-async def test_catchment_by_comid(dbsession_containerized):
+def test_catchment_by_comid(dbsession_containerized):
     svc = catchment.CatchmentService(session=dbsession_containerized)
-    actual = await svc.get_drainage_basin_by_comid(13297166, simplified=False)
+    actual = svc.get_drainage_basin_by_comid(13297166, simplified=False)
     assert actual is not None
 
 
 @pytest.mark.order(83)
 @pytest.mark.integration
-async def test_basin_get_from_id(dbsession_containerized):
+def test_basin_get_from_id(dbsession_containerized):
     svc = basin.BasinService(session=dbsession_containerized, pygeoapi_url="https://api.water.usgs.gov/nldi/pygeoapi")
     assert svc is not None
-    features = await svc.get_by_id(identifier="USGS-05427930", source_name="wqp", simplified=False, split=False)
+    features = svc.get_by_id(identifier="USGS-05427930", source_name="wqp", simplified=False, split=False)
     assert isinstance(features, list)
     assert len(features) == 1
     f = features[0]
@@ -146,6 +146,6 @@ def test_api_get_hydrolocation(f_client_containerized) -> None:
 def test_api_get_basin_by_id(f_client_containerized) -> None:
     source_name = "wqp"
     identifier = "USGS-05427930"
-    url =f"{API_PREFIX}/linked-data/{source_name}/{identifier}/basin?f=json"
+    url = f"{API_PREFIX}/linked-data/{source_name}/{identifier}/basin?f=json"
     r = f_client_containerized.get(url)
     assert r.status_code == 200
