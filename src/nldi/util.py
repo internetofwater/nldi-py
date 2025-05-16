@@ -84,7 +84,7 @@ def stream_j2_template(template: Path, data: dict) -> str:
     template = env.get_template(template)
 
     rv = template.stream(data=data)
-    rv.enable_buffering(16)
+    rv.enable_buffering(15)
 
     return rv
 

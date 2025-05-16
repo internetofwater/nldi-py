@@ -24,7 +24,6 @@ from advanced_alchemy.extensions.flask import FlaskServiceMixin
 from advanced_alchemy.service import SQLAlchemySyncRepositoryService
 from geomet import wkt
 from sqlalchemy.orm import Session
-
 from sqlalchemy.sql.expression import Select
 
 from nldi.db.schemas.nhdplus import CatchmentModel, FlowlineModel, FlowlineVAAModel

@@ -70,27 +70,30 @@ class FeatureService(FlaskServiceMixin, SQLAlchemySyncRepositoryService[FeatureS
         return list(_l)
 
     def iter_by_src(
-        self, source_suffix: str, base_url: str = "", offset: int = 0, limit: int = 1000, sync_session=None
+        self,
+        source_suffix: str,
+        base_url: str = "",
+        offset: int = 0,
+        limit: int = 1000,
     ):
         """Provides a streaming response for the feature collection."""
         stmt = (
             sqlalchemy.select(FeatureSourceModel)
             .where(sqlalchemy.func.lower(CrawlerSourceModel.source_suffix) == source_suffix.lower())
-            .execution_options(yield_per=5)
+            .execution_options(yield_per=15)
             .join(CrawlerSourceModel, FeatureSourceModel.crawler_source_id == CrawlerSourceModel.crawler_source_id)
             .offset(offset)
             .limit(limit)
         )
 
-        if sync_session:
-            query_result = self.repository.session.stream(stmt)
-            while f := query_result.fetchone():
-                logging.warning(f"Yielding {f[0].identifier}")
-                nav_url = util.url_join(base_url, "linked-data", source_suffix, f[0].identifier, "navigation")
-                yield msgspec.to_builtins(
-                    f[0].as_feature(excl_props=["crawler_source_id"], xtra_props={"navigation": nav_url})
-                )
-            logging.warning("DONE")
+        query_result = self.repository.session.execute(stmt)
+        while f := query_result.fetchone():
+            # logging.debug(f"Yielding {f[0].identifier}")
+            nav_url = util.url_join(base_url, "linked-data", source_suffix, f[0].identifier, "navigation")
+            yield msgspec.to_builtins(
+                f[0].as_feature(excl_props=["crawler_source_id"], xtra_props={"navigation": nav_url})
+            )
+        # logging.debug("DONE")
 
     def features_from_nav_query(self, source_suffix: str, nav_query: Select) -> list[FeatureSourceModel]:
         subq = nav_query.subquery()

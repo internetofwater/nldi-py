@@ -8,7 +8,7 @@
 import json
 import logging
 from contextlib import contextmanager
-from typing import Any, Dict, Iterator, List, Self, Generator
+from typing import Any, Dict, Generator, Iterator, List, Self
 
 import httpx
 import shapely

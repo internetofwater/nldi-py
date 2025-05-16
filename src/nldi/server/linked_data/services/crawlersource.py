@@ -14,7 +14,6 @@ object as being an implementation of a unit-of-work pattern.
 """
 
 import logging
-
 from collections.abc import Generator
 
 import geoalchemy2
@@ -24,7 +23,6 @@ from advanced_alchemy.extensions.flask import FlaskServiceMixin
 from advanced_alchemy.service import SQLAlchemySyncRepositoryService
 from geomet import wkt
 from sqlalchemy.orm import Session
-
 from sqlalchemy.sql.expression import Select
 
 from nldi.db.schemas.nhdplus import CatchmentModel, FlowlineModel
