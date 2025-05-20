@@ -90,11 +90,21 @@ def ld_update_headers(r: flask.Response) -> flask.Response:
 
 @LINKED_DATA.route("/")
 def list_sources():
+    base_url = flask.current_app.NLDI_CONFIG.server.base_url
     with flask.current_app.alchemy.with_session() as db_session:
         sources_svc = services.CrawlerSourceService(session=db_session)
         src_list = sources_svc.list()
         _r = list(src_list)
-    return [f._as_dict for f in _r]
+    _rv = []
+    for f in _r:
+        _rv.append(
+            dict(
+                features=f"{base_url}/linked-data/{f.source_suffix}",
+                source=f.source_suffix,
+                sourceName=f.source_name,
+            )
+        )
+    return _rv
 
 
 @LINKED_DATA.route("/hydrolocation")
@@ -142,7 +152,7 @@ def get_all_flowlines():
         _featurecount = flowline_svc.count()
         _limit = _limit or _featurecount
         _link_hdr = link_header(flask.request, offset=_offset, limit=_limit, maxcount=_featurecount)
-        #_link_hdr.update({"Content-Type": "application/json"})
+        # _link_hdr.update({"Content-Type": "application/json"})
         _r = flask.Response(
             headers=_link_hdr,
             status=http.HTTPStatus.OK,
@@ -239,7 +249,11 @@ def get_feature_by_identifier(source_name: str, identifier: str = ""):
                 limit=_limit,
                 offset=_offset,
             )
-            _link_hdr = link_header(flask.request, offset=_offset, limit=_limit, maxcount=_featurecount)
+            if _limit:
+                _link_hdr = link_header(flask.request, offset=_offset, limit=_limit, maxcount=_featurecount)
+            else:
+                _link_hdr = dict()
+
             _r = flask.Response(
                 headers=_link_hdr,
                 response=util.stream_j2_template(_template, feature_iterator),
