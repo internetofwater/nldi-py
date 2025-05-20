@@ -131,10 +131,10 @@ def test_flowline_get_by_comid_notfound(f_client_testdb) -> None:
 @pytest.mark.order(55)
 @pytest.mark.unittest
 def test_flowline_get_by_comid_bad_id(f_client_testdb) -> None:
-    comid = "x13293396"  # << incorrect type
+    comid = "x13293396"  # << incorrect type; not an integer
     r = f_client_testdb.get(f"{API_PREFIX}/linked-data/comid/{comid}?f=json")
     # NOTE: The router/parser will recognize this comid as an invalid type and return NOTFOUND before our handler is called.
-    assert r.status_code == 400
+    assert r.status_code == 404
 
 
 @pytest.mark.order(55)

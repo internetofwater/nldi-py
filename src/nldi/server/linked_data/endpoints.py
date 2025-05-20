@@ -152,7 +152,7 @@ def get_all_flowlines():
     return _r
 
 
-@LINKED_DATA.route("/comid/<path:comid>")
+@LINKED_DATA.route("/comid/<int:comid>")
 def get_flowline_by_comid(comid: int | None = None):
     base_url = flask.current_app.NLDI_CONFIG.server.base_url
     try:

@@ -295,3 +295,20 @@ def test_api_get_navigated_features_trimmed_system(f_client_testdb, nav_mode) ->
 
     assert actual["type"] == expected["type"]
     assert len(actual["features"]) == len(expected["features"])
+
+
+
+@pytest.mark.order(78)
+@pytest.mark.system
+def test_api_get_navigated_flowlines_specialcase(f_client_testdb) -> None:
+    # This data offered by @dblodgett-usgs as a test case; see issue #76
+    r = httpx.get(
+        f"{AUTH_PREFIX}/linked-data/comid/19487554/navigation/DM?f=json",
+        verify=False,
+    )
+    expected = r.json()  # < is a function from httpx response
+
+    r = f_client_testdb.get(
+        f"{API_PREFIX}/linked-data/comid/19487554/navigation/DM?f=json"
+    )
+    actual = r.json  # < is a property from flask client response
