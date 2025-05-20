@@ -82,6 +82,14 @@ class FlowlineModel(NHDBaseModel, GeoJSONMixin):
     # dnhydroseq: Mapped[int] = mapped_column(Integer, nullable=True)
     # closed_loop: Mapped[str] = mapped_column(String, nullable=True)
 
+    def __properties__(self, exclude: set) -> dict[str, str]:
+        _props = super().__properties__(exclude)
+        ## Extend the properties dict with the AssociationProxy(s) of iterest; these are not dumped with columns by default.
+        _props.update(
+            {"sourceName": "NHDPlus comid", "source": "comid"}
+        )
+        return _props
+
 
 class FlowlineVAAModel(NHDBaseModel):
     """ORM mapping to "nhdplus.plusflowlinevaa_np21" table."""
