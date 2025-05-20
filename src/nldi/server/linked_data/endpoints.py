@@ -30,7 +30,7 @@ class HTML_JSON_Exception(Exception):
 
 
 def link_header(r: flask.Request, offset: int, limit: int, maxcount: int) -> dict:
-    if limit<=0:
+    if limit <= 0:
         return dict()
 
     next_offset = offset + limit
@@ -99,10 +99,12 @@ def list_sources():
         src_list = sources_svc.list()
         _r = list(src_list)
     _rv = [
-        {"source": "comid",
-        "sourceName": "NHDPlus comid",
-        "features": f"{base_url}/linked-data/comid"}
-        ]
+        {
+            "source": "comid",
+            "sourceName": "NHDPlus comid",
+            "features": f"{base_url}/linked-data/comid",
+        }
+    ]
     for f in _r:
         _rv.append(
             dict(
