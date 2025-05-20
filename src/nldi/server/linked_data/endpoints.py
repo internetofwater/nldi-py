@@ -231,16 +231,15 @@ def get_feature_by_identifier(source_name: str, identifier: str = ""):
         feature_svc = services.FeatureService(session=db_session)
         if not identifier:
             # List all features in the named source
+            _featurecount = feature_svc.featurecount(source_name)
+            _limit = _limit or _featurecount
             feature_iterator = feature_svc.iter_by_src(
                 source_name,
                 base_url=base_url,
                 limit=_limit,
                 offset=_offset,
             )
-            _featurecount = feature_svc.featurecount(source_name)
-            _limit = _limit or _featurecount
             _link_hdr = link_header(flask.request, offset=_offset, limit=_limit, maxcount=_featurecount)
-#            _link_hdr.update({"Content-Type": "application/json"})
             _r = flask.Response(
                 headers=_link_hdr,
                 response=util.stream_j2_template(_template, feature_iterator),
