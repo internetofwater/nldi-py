@@ -30,6 +30,9 @@ class HTML_JSON_Exception(Exception):
 
 
 def link_header(r: flask.Request, offset: int, limit: int, maxcount: int) -> dict:
+    if limit<=0:
+        return dict()
+
     next_offset = offset + limit
     last_offset = maxcount - (maxcount % limit)
 
@@ -249,11 +252,7 @@ def get_feature_by_identifier(source_name: str, identifier: str = ""):
                 limit=_limit,
                 offset=_offset,
             )
-            if _limit:
-                _link_hdr = link_header(flask.request, offset=_offset, limit=_limit, maxcount=_featurecount)
-            else:
-                _link_hdr = dict()
-
+            _link_hdr = link_header(flask.request, offset=_offset, limit=_limit, maxcount=_featurecount)
             _r = flask.Response(
                 headers=_link_hdr,
                 response=util.stream_j2_template(_template, feature_iterator),
