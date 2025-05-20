@@ -98,7 +98,11 @@ def list_sources():
         sources_svc = services.CrawlerSourceService(session=db_session)
         src_list = sources_svc.list()
         _r = list(src_list)
-    _rv = []
+    _rv = [
+        {"source": "comid",
+        "sourceName": "NHDPlus comid",
+        "features": f"{base_url}/linked-data/comid"}
+        ]
     for f in _r:
         _rv.append(
             dict(
