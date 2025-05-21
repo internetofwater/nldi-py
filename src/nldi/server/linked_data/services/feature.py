@@ -106,7 +106,7 @@ class FeatureService(FlaskServiceMixin, SQLAlchemySyncRepositoryService[FeatureS
         hits = self.repository._execute(stmt)
         r = hits.fetchall()
         # NOTE: we're returning a generator comprehension here -- so this function is used as an iterator.
-        return (f[0].as_feature(excl_props=["reachcode"]) for f in r)
+        return (f[0].as_feature() for f in r)
 
 
 def feature_svc(db_session: Session) -> Generator[FeatureSourceModel, None, None]:
