@@ -58,7 +58,7 @@ class DatabaseConfig:
     user: str
     password: str
 
-    @cached_property
+    @property
     def URL(self) -> DB_URL:  # noqa: N802
         return DB_URL.create(
             "postgresql+psycopg",
