@@ -5,6 +5,7 @@
 FROM python:3.12-slim-bookworm
 
 LABEL maintainer="Benjamin Webb <bwebb@lincolninst.edu>"
+LABEL maintainer="Gene Trantham <gtrantham@usgs.gov>"
 LABEL description="Docker image for the NLDI API"
 # ENV settings
 # ENV TZ=${TZ} \

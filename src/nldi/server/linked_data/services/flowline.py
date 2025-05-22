@@ -231,7 +231,7 @@ class FlowlineService(FlaskServiceMixin, SQLAlchemySyncRepositoryService[Flowlin
 
         query_result = self.repository.session.execute(stmt)
         while f := query_result.fetchone():
-            nav_url = util.url_join(base_url, "linked-data", "comid", f[0].nhdplus_comid, "navigation")
+            nav_url = util.url_join(base_url, "linked-data/comid", f[0].nhdplus_comid, "navigation")
             yield (
                 msgspec.to_builtins(
                     f[0].as_feature(
