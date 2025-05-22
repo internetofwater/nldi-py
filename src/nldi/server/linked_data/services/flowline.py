@@ -229,7 +229,7 @@ class FlowlineService(FlaskServiceMixin, SQLAlchemySyncRepositoryService[Flowlin
         """Provides a streaming response for the feature collection."""
         stmt = sqlalchemy.select(FlowlineModel).execution_options(yield_per=15).offset(offset).limit(limit)
 
-        query_result = self.repository.session.stream(stmt)
+        query_result = self.repository.session.execute(stmt)
         while f := query_result.fetchone():
             nav_url = util.url_join(base_url, "linked-data", "comid", f[0].nhdplus_comid, "navigation")
             yield (
