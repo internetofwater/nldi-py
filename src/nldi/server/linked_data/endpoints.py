@@ -9,6 +9,7 @@
 import http
 import json
 import logging
+import traceback
 from copy import deepcopy
 from typing import Any, Literal, TypeVar
 
@@ -298,6 +299,7 @@ def get_basin_by_id(source_name: str, identifier: str) -> dict[str, Any]:
         try:
             featurelist = basin_svc.get_by_id(identifier, source_name, simplified, split)
         except Exception as e:
+            logging.exception("Unable to get/split basin")
             raise ServiceUnavailable("Unable to get/split basin") from e
 
         _r = flask.Response(
