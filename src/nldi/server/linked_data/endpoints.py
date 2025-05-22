@@ -87,7 +87,8 @@ def parse_incoming_request() -> None:
 @LINKED_DATA.after_request
 def ld_update_headers(r: flask.Response) -> flask.Response:
     """Implement simple middlware function to update response headers."""
-    r.headers.update({"X-Powered-By": f"nldi {__version__} and FLASK"})
+    r.headers.update({"X-Powered-By": f"nldi-py {__version__}"})
+    r.headers.update({"X-NLDI-Version": f"nldi-py {__version__}"})  ## extra header -- to see if the proxy strips it
     return r
 
 
@@ -294,7 +295,10 @@ def get_basin_by_id(source_name: str, identifier: str) -> dict[str, Any]:
             session=db_session,
             pygeoapi_url=flask.current_app.NLDI_CONFIG.server.pygeoapi_url,
         )
-        featurelist = basin_svc.get_by_id(identifier, source_name, simplified, split)
+        try:
+            featurelist = basin_svc.get_by_id(identifier, source_name, simplified, split)
+        except Exception as e:
+            raise ServiceUnavailable("Unable to get/split basin") from e
 
         _r = flask.Response(
             headers={"Content-Type": "application/json"},

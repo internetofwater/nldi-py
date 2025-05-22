@@ -5,11 +5,9 @@
 #
 """Network Linked Data Index (NLDI) Python package."""
 
-__version__ = "2.0.3"
+__version__ = "2.0.4"
 
 import logging
-
-# from . import log
 
 NAD83_SRID = 4269
 
