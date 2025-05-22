@@ -8,7 +8,6 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -23,15 +22,21 @@ jobs:
           curl -sSL https://install.python-poetry.org | python3 -
           echo "$HOME/.local/bin" >> $GITHUB_PATH
 
-      - name: Configure Poetry
-        run: |
-          poetry config virtualenvs.create false
-
       - name: Install dependencies
         run: |
+          poetry config virtualenvs.create false
           poetry sync
           poetry install --no-interaction
 
       - name: Run tests
+        env:
+          NLDI_PATH: /api/nldi
+          NLDI_URL: https://localhost/
+          NLDI_DB_HOST: localhost
+          NLDI_DB_PORT: 5432
+          NLDI_DB_NAME: nldi
+          NLDI_DB_USERNAME: nldi
+          NLDI_DB_PASSWORD: changeMe
+          PYGEOAPI_URL: https://api.water.usgs.gov/nldi/pygeoapi/
         run: |
-          poetry run pytest tests/
+          pytest --cov --sparse-ordering ./tests
