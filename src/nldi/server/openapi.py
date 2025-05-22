@@ -65,11 +65,6 @@ def generate_openapi_json():
         },
         "servers": [
             {"url": _CFG.server.base_url, "description": _CFG.metadata.title},
-            {"url": "https://labs.waterdata.usgs.gov/api/nldi", "description": "Network Linked Data Index API"},
-            {
-                "url": "https://labs-beta.waterdata.usgs.gov/api/nldi/",
-                "description": "Network Linked Data Index API - Beta",
-            },
         ],
         "components": {
             "schemas": OAS_SCHEMAS,
