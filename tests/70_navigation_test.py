@@ -269,10 +269,13 @@ def test_api_get_navigated_flowlines_trimmed_system(f_client_testdb, nav_mode) -
     for c in expected_comids:
         assert c in actual_comids
 
+    ## NOTE: Per request from @dblodgett, we want the source and sourceName properties added to this response.
+    #  The Java implementation does not do this, so properties will be different.
+
     # same properties?
-    assert len(expected["features"][0]["properties"]) == len(actual["features"][0]["properties"])
-    for k in expected["features"][0]["properties"]:
-        assert k in actual["features"][0]["properties"]
+    # assert len(expected["features"][0]["properties"]) == len(actual["features"][0]["properties"])
+    # for k in expected["features"][0]["properties"]:
+    #     assert k in actual["features"][0]["properties"]
 
 
 @pytest.mark.order(78)
