@@ -99,7 +99,7 @@ class PyGeoAPIService:
             raise KeyError("Catchment not found.")
         nhdplus_comid = _catchment.featureid
 
-        nav_url = util.url_join(base_url, "linked-data", "comid", nhdplus_comid, "navigation")
+        nav_url = util.url_join(base_url, "linked-data/comid", nhdplus_comid, "navigation")
 
         measure = (
             FlowlineModel.fmeasure

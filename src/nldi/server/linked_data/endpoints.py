@@ -186,7 +186,7 @@ def get_flowline_by_comid(comid: int | None = None):
         try:
             flowline_feature = flowline_svc.get_feature(
                 comid,
-                xtra_props={"navigation": util.url_join(base_url, "comid", comid, "navigation")},
+                xtra_props={"navigation": util.url_join(base_url, "linked-data/comid", comid, "navigation")},
             )
         except NotFoundError:
             raise NotFound(description=f"COMID {comid} not found.")
@@ -222,7 +222,7 @@ def flowline_by_position():
         flowline_svc = services.FlowlineService(session=db_session)
         flowline_feature = flowline_svc.get_feature(
             comid,
-            xtra_props={"navigation": util.url_join(base_url, "comid", comid, "navigation")},
+            xtra_props={"navigation": util.url_join(base_url, "linked-data/comid", comid, "navigation")},
         )
         _r = flask.Response(
             headers={"Content-Type": "application/json"},
