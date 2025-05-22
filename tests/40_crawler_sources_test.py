@@ -135,4 +135,4 @@ def test_source_list_endpoint(f_client_containerized) -> None:
 
     actual = r.json
     assert isinstance(actual, list)
-    assert len(actual) == 3  # < true for containerized db
+    assert len(actual) == 4  # < true for containerized db
