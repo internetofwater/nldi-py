@@ -2,8 +2,8 @@ name: test nldi-py
 
 on:
   # push:
-  pull_request:
-    branches: [main]
+  # pull_request:
+  #   branches: [main]
 
 jobs:
   test:
