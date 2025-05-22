@@ -87,7 +87,8 @@ def parse_incoming_request() -> None:
 @LINKED_DATA.after_request
 def ld_update_headers(r: flask.Response) -> flask.Response:
     """Implement simple middlware function to update response headers."""
-    r.headers.update({"X-Powered-By": f"nldi {__version__} and FLASK"})
+    r.headers.update({"X-Powered-By": f"nldi-py {__version__}"})
+    r.headers.update({"X-NLDI-Version": f"nldi-py {__version__}"})  ## extra header -- to see if the proxy strips it
     return r
 
 
