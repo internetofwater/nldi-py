@@ -151,7 +151,7 @@ def get_all_flowlines():
         _template = "FeatureCollection.j2"
 
     try:
-        _limit = int(flask.request.args.get("limit", 10))
+        _limit = int(flask.request.args.get("limit", 0))
         _offset = int(flask.request.args.get("offset", 0))
     except ValueError:
         raise BadRequest(f"limit and offset must be integers") from None
@@ -243,7 +243,7 @@ def get_feature_by_identifier(source_name: str, identifier: str = ""):
         _template = "FeatureCollection.j2"
 
     try:
-        _limit = int(flask.request.args.get("limit", 10))
+        _limit = int(flask.request.args.get("limit", 0))
         _offset = int(flask.request.args.get("offset", 0))
     except ValueError:
         raise BadRequest(f"limit and offset must be integers") from None
