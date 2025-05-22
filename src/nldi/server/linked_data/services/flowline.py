@@ -198,7 +198,7 @@ class FlowlineService(FlaskServiceMixin, SQLAlchemySyncRepositoryService[Flowlin
         )
 
         stmt = (
-            sqlalchemy.select([sqlalchemy.func.ST_X(point).label("lon"), sqlalchemy.func.ST_Y(point).label("lat")])
+            sqlalchemy.select(sqlalchemy.func.ST_X(point).label("lon"), sqlalchemy.func.ST_Y(point).label("lat"))
             .join(
                 FeatureSourceModel,
                 sqlalchemy.and_(
@@ -216,7 +216,7 @@ class FlowlineService(FlaskServiceMixin, SQLAlchemySyncRepositoryService[Flowlin
         ).params(feature_id=feature_id, feature_source=feature_source)
 
         logging.debug(stmt.compile())
-        hits = self.repository.execute(stmt)
+        hits = self.repository._execute(stmt)
 
         pt = hits.fetchone()
         if pt is None or None in pt:
