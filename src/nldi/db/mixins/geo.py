@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
-# SPDX-License-Identifier: CC0
+# SPDX-License-Identifier: CC0-1.0
 # SPDX-FileCopyrightText: 2024-present USGS
 # See the full copyright notice in LICENSE.md
 #
@@ -11,10 +11,11 @@ from typing import Any
 
 import geoalchemy2
 from geomet import wkb, wkt
-from nldi.db.schemas import struct_geojson
 from sqlalchemy import inspect
 from sqlalchemy.ext.associationproxy import AssociationProxyExtensionType
 from sqlalchemy.orm import declarative_mixin, declared_attr
+
+from nldi.db.schemas import struct_geojson
 
 
 @declarative_mixin

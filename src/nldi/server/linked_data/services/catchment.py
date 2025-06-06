@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
-# SPDX-License-Identifier: CC0
+# SPDX-License-Identifier: CC0-1.0
 # SPDX-FileCopyrightText: 2024-present USGS
 # See the full copyright notice in LICENSE.md
 #
@@ -78,7 +78,6 @@ class CatchmentService(FlaskServiceMixin, SQLAlchemySyncRepositoryService[Catchm
             .cte("nav", recursive=True)
         )
 
-        # vaa = sqlalchemy.alias(FlowlineVAAModel, name="vaa")
         nav_basin = nav.union(
             sqlalchemy.select(FlowlineVAAModel.comid, FlowlineVAAModel.hydroseq, FlowlineVAAModel.startflag).where(
                 sqlalchemy.and_(

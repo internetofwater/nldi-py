@@ -1,4 +1,4 @@
-# SPDX-License-Identifier: CC0
+# SPDX-License-Identifier: CC0-1.0
 # See the full copyright notice in LICENSE.md
 #
 

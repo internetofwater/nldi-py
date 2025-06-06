@@ -1,5 +1,5 @@
 #!/bin/sh
-# SPDX-License-Identifier: CC0
+# SPDX-License-Identifier: CC0-1.0
 # See the full copyright notice in LICENSE.md
 #
 # This script is the entrypoint for the NLDI server container.
