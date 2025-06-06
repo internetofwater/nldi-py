@@ -1,6 +1,6 @@
 [project]
 name = "nldi-py"
-version = "2.0.6"
+version = "2.0.7"
 description = "The Hydro Network Linked Data Index (NLDI) puts a restful application programming interface (API) in front of the National Hydrolography dataset (NHD). Now, instead of needing to be a GIS professional, any web developer can build tools against the core data in the NHD in a scalable, workable way."
 authors = [{ name = "Internet of Water" }]
 requires-python = "~=3.11"
@@ -82,7 +82,7 @@ line-length = 120
 quote-style = "double"
 
 [tool.ruff.lint]
-select = ["N",  "I", "E", "W", "S"]
+select = ["N", "I", "E", "W", "S"]
 extend-safe-fixes = ["D200"]
 pydocstyle = { convention = "pep257" }
 ignore = [
