@@ -1,16 +1,16 @@
 #!/usr/bin/env python
 # coding: utf-8
-# SPDX-License-Identifier: CC0
+# SPDX-License-Identifier: CC0-1.0
 # SPDX-FileCopyrightText: 2024-present USGS
 # See the full copyright notice in LICENSE.md
 #
 """Configurator."""
 
+import logging
 import os
 import pathlib
 from functools import lru_cache
 
-from .. import LOGGER
 from ._yaml import load_yaml
 from .base import MasterConfig
 
@@ -21,7 +21,7 @@ def get_config() -> MasterConfig:
     else:
         __configfile = pathlib.Path("./nldi.yml").resolve()
 
-    LOGGER.info(f"Attempting to read config file from {__configfile}")
+    logging.info(f"Attempting to read config file from {__configfile}")
     if __configfile.exists():
         _config = MasterConfig.from_yaml(__configfile)
     else:

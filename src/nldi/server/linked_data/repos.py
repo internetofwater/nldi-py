@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
-# SPDX-License-Identifier: CC0
+# SPDX-License-Identifier: CC0-1.0
 # SPDX-FileCopyrightText: 2024-present USGS
 # See the full copyright notice in LICENSE.md
 #
@@ -16,7 +16,6 @@ The repository exposes CRUD (and CRUD-like) methods to the caller.
 from advanced_alchemy.repository import SQLAlchemySyncRepository
 
 from nldi.db.schemas import struct_geojson
-from nldi.db.schemas.characteristics import DivergenceCharacteristics, LocalCharacteristics, TotalAccCharacteristics
 from nldi.db.schemas.nhdplus import CatchmentModel, FlowlineModel
 from nldi.db.schemas.nldi_data import CrawlerSourceModel, FeatureSourceModel
 
@@ -47,9 +46,3 @@ class CatchmentRepository(SQLAlchemySyncRepository[CatchmentModel]):
 class FeatureRepository(SQLAlchemySyncRepository[FeatureSourceModel]):
     model_type = FeatureSourceModel
     id_attribute = "identifier"
-
-
-# DEPRECATED
-# class CharacteristicsDataRepository(SQLAlchemySyncRepository[CharacteristicMetaData]):
-#     model_type = CharacteristicMetaData
-#     id_attribute = "characteristic_id"

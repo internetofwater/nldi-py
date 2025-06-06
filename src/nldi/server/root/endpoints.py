@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
-# SPDX-License-Identifier: CC0
+# SPDX-License-Identifier: CC0-1.0
 # SPDX-FileCopyrightText: 2024-present USGS
 # See the full copyright notice in LICENSE.md
 #
@@ -30,16 +30,9 @@ def root_incoming_request() -> None:
         return flask.redirect(rp[:-1])
 
 
-## Sets up a callback to update headers after the request is processed.
-@ROOT.after_request
-def update_headers(r: flask.Response) -> flask.Response:
-    """Implement simple middlware function to update response headers."""
-    r.headers.update({"X-Powered-By": f"nldi {__version__} and FLASK"})
-    return r
-
-
 @ROOT.route("/")
 def home():
+    """Landing Page"""
     _cfg = flask.current_app.NLDI_CONFIG
     return {
         "title": _cfg.metadata.title,
@@ -68,17 +61,16 @@ def home():
 
 
 # region ABOUT
-@ROOT.route("/about")
-def app_info() -> dict[str, Any]:
-    _ = flask.request
-    return {
-        "name": "nldi-py",
-        "version": __version__,
-    }
 
 
 @ROOT.route("/about/config")
 def app_configuration():
+    """
+    Config info for the app.
+
+    Note that we're not including this endpoint in the openapi.json. It is used
+    only for debugging purposes. Not intended for users.
+    """
     _app = flask.current_app
     _sanitized_config = deepcopy(_app.NLDI_CONFIG)
     _sanitized_config.db.password = "***"  # noqa: S105

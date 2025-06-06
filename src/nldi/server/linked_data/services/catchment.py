@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
-# SPDX-License-Identifier: CC0
+# SPDX-License-Identifier: CC0-1.0
 # SPDX-FileCopyrightText: 2024-present USGS
 # See the full copyright notice in LICENSE.md
 #
@@ -38,10 +38,9 @@ class CatchmentService(FlaskServiceMixin, SQLAlchemySyncRepositoryService[Catchm
     repository_type = repos.CatchmentRepository
 
     def get_by_wkt_point(self, coord_string: str) -> CatchmentModel:
-        NAD83_SRID = 4269
         try:
             _ = wkt.loads(coord_string)  # using geomet just to validate the WKT.
-            point = geoalchemy2.WKTElement(coord_string, srid=NAD83_SRID)
+            point = geoalchemy2.WKTElement(coord_string, srid=4269)  # NAD83 SRID
         except Exception as e:
             raise ValueError(f"Could not parse {coord_string} to valid geometry: {e}")
         catchment = self.get_by_geom(point)
@@ -78,7 +77,6 @@ class CatchmentService(FlaskServiceMixin, SQLAlchemySyncRepositoryService[Catchm
             .cte("nav", recursive=True)
         )
 
-        # vaa = sqlalchemy.alias(FlowlineVAAModel, name="vaa")
         nav_basin = nav.union(
             sqlalchemy.select(FlowlineVAAModel.comid, FlowlineVAAModel.hydroseq, FlowlineVAAModel.startflag).where(
                 sqlalchemy.and_(

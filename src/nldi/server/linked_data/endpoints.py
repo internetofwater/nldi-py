@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
-# SPDX-License-Identifier: CC0
+# SPDX-License-Identifier: CC0-1.0
 # SPDX-FileCopyrightText: 2024-present USGS
 # See the full copyright notice in LICENSE.md
 #
@@ -26,7 +26,7 @@ from . import services
 LINKED_DATA = flask.Blueprint("linked-data", __name__)
 
 
-class HTML_JSON_Exception(Exception):
+class HtmlJsonException(Exception):  # noqa: N818
     pass
 
 
@@ -47,7 +47,7 @@ def link_header(r: flask.Request, offset: int, limit: int, maxcount: int) -> dic
     return hdr
 
 
-@LINKED_DATA.errorhandler(HTML_JSON_Exception)
+@LINKED_DATA.errorhandler(HtmlJsonException)
 def html_to_json_redirect(e) -> flask.Response:
     logging.debug("Redirection HTML")
     return flask.Response(
@@ -81,16 +81,8 @@ def parse_incoming_request() -> None:
         _qstring = "&".join([f"{k}={v}" for k, v in _q.items()])
         logging.debug(f"REDIRECT from HTML")
         new_url = f"{rp}?{_qstring}"
-        raise HTML_JSON_Exception(new_url)
+        raise HtmlJsonException(new_url)
     flask.request.format = "json"
-
-
-@LINKED_DATA.after_request
-def ld_update_headers(r: flask.Response) -> flask.Response:
-    """Implement simple middlware function to update response headers."""
-    r.headers.update({"X-Powered-By": f"nldi-py {__version__}"})
-    r.headers.update({"X-NLDI-Version": f"nldi-py {__version__}"})  ## extra header -- to see if the proxy strips it
-    return r
 
 
 @LINKED_DATA.route("/")
@@ -204,7 +196,7 @@ def flowline_by_position():
     db = flask.current_app.NLDI_CONFIG.db
     base_url = flask.current_app.NLDI_CONFIG.server.base_url
     if (coords := flask.request.args.get("coords")) is None:
-        LOGGER.error("No coordinates provided")
+        logging.error("No coordinates provided")
         return flask.Response(status=http.HTTPStatus.BAD_REQUEST, response="No coordinates provided")
 
     with flask.current_app.alchemy.with_session() as db_session:

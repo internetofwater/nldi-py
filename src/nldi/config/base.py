@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 # coding: utf-8
-# SPDX-License-Identifier: CC0
+# SPDX-License-Identifier: CC0-1.0
 # SPDX-FileCopyrightText: 2024-present USGS
 # See the full copyright notice in LICENSE.md
 #
 """Base data structures to read in config information."""
 
+import logging
 from dataclasses import dataclass
 from functools import cached_property
 from typing import Any, Self
@@ -14,7 +15,7 @@ import httpx
 import sqlalchemy as sa
 from sqlalchemy.engine import URL as DB_URL
 
-from .. import LOGGER, util
+from .. import __version__, util
 from . import default, status
 from ._yaml import load_yaml
 
@@ -32,7 +33,7 @@ class ServerConfig:
     def ping(self, subservice: str | None = None) -> bool:
         if subservice == "pygeoapi":
             _uri = util.url_join(self.pygeoapi_url, "processes?f=json")
-            r = httpx.get(_uri, timeout=5, verify=False)
+            r = httpx.get(_uri, timeout=5, verify=False)  # noqa: S501
             return r.status_code == 200
         return True
 
@@ -44,7 +45,7 @@ class ServerConfig:
                 status="online" if self.ping("pygeoapi") else "offline",
             )
         return status.ServiceHealth(
-            name="server",
+            name=f"NLDI {__version__}",
             cfg=str(self.base_url),
             status="online",
         )
@@ -83,15 +84,15 @@ class DatabaseConfig:
                 raise sa.exc.SQLAlchemyError
             _private_engine.dispose()
         except (ModuleNotFoundError, sa.exc.NoSuchModuleError) as e:
-            LOGGER.warning(f"Cannot load the dialect/driver module: {e}")
+            logging.warning(f"Cannot load the dialect/driver module: {e}")
         except sa.exc.DBAPIError as e:
-            LOGGER.warning(f"Error Connecting to the Database: {e}.")
+            logging.warning(f"Error Connecting to the Database: {e}.")
         except sa.exc.SQLAlchemyError as e:
-            LOGGER.warning(f"Couldn't run SELECT: {e}")
+            logging.warning(f"Couldn't run SELECT: {e}")
         else:
             healthy = True
         finally:
-            LOGGER.info("Database is %s", "alive" if healthy else "dead")
+            logging.info("Database is %s", "alive" if healthy else "dead")
         return healthy
 
     def healthstatus(self) -> status.ServiceHealth:
@@ -136,7 +137,7 @@ class MasterConfig:
         try:
             cfg = load_yaml(input)
         except OSError as e:
-            LOGGER.error("Unable to load configuration: %s", e)
+            logging.error("Unable to load configuration: %s", e)
             raise
         serv_section = cls.clean_dict(cfg["server"])
         if serv_section.get("data") is None:
