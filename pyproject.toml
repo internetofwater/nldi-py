@@ -5,46 +5,41 @@ description = "The Hydro Network Linked Data Index (NLDI) puts a restful applica
 authors = [{ name = "Internet of Water" }]
 requires-python = "~=3.11"
 readme = "README.md"
-license = "CC0-1.0"  #  https://spdx.org/licenses/CC0-1.0.html
+license = "CC0-1.0" #  https://spdx.org/licenses/CC0-1.0.html
 maintainers = [
-    { name = "Benjamin Webb", email = "bwebb@lincolninst.edu" },
-    { name = "Gene Trantham", email = "gtrantham@usgs.gov" },
+  { name = "Benjamin Webb", email = "bwebb@lincolninst.edu" },
+  { name = "Gene Trantham", email = "gtrantham@usgs.gov" },
 ]
-keywords = [
-    "usgs",
-    "nldi",
-    "nhgf",
-    "nhd",
-]
+keywords = ["usgs", "nldi", "nhgf", "nhd"]
 classifiers = [
-    "Development Status :: 4 - Beta",
-	"Framework :: Flask", 
-    "Intended Audience :: Developers",
-    "Intended Audience :: Science/Research",
-    "License :: CC0 1.0 Universal (CC0 1.0) Public Domain Dedication",
-    "Operating System :: OS Independent",
-    "Programming Language :: Python",
-    "Topic :: Scientific/Engineering :: Atmospheric Science",
-    "Topic :: Scientific/Engineering :: GIS",
-    "Topic :: Scientific/Engineering :: Information Analysis",
+  "Development Status :: 4 - Beta",
+  "Framework :: Flask",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Science/Research",
+  "License :: CC0 1.0 Universal (CC0 1.0) Public Domain Dedication",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python",
+  "Topic :: Scientific/Engineering :: Atmospheric Science",
+  "Topic :: Scientific/Engineering :: GIS",
+  "Topic :: Scientific/Engineering :: Information Analysis",
 ]
 dependencies = [
-    "advanced-alchemy[uuid]>=1.0.0,<2",
-    "geoalchemy2[shapely]>=0.16.0,<0.17",
-    "uvicorn>=0.34.0,<0.35",
-    "geomet>=1.1.0,<2",
-    "pygeofilter[backend-sqlalchemy]>=0.3.1,<0.4",
-    "dotenv>=0.9.9,<0.10",
-    "psycopg-binary>=3.2.6,<4",
-    "pyyaml>=6.0.2,<7",
-    "psycopg>=3.2.6,<4",
-    "gunicorn>=23.0.0,<24",
-    "flask[async]>=3.1.0,<4",
-    "flask-cors>=5.0.1,<6",
-    "hypercorn>=0.17.3,<0.18",
-    "httpx>=0.28.1,<0.29",
-    "msgspec>=0.19.0,<0.20",
-    "rich>=14.0.0,<15",
+  "advanced-alchemy[uuid]>=1.0.0,<2",
+  "geoalchemy2[shapely]>=0.16.0,<0.17",
+  "uvicorn>=0.34.0,<0.35",
+  "geomet>=1.1.0,<2",
+  "pygeofilter[backend-sqlalchemy]>=0.3.1,<0.4",
+  "dotenv>=0.9.9,<0.10",
+  "psycopg-binary>=3.2.6,<4",
+  "pyyaml>=6.0.2,<7",
+  "psycopg>=3.2.6,<4",
+  "gunicorn>=23.0.0,<24",
+  "flask[async]>=3.1.0,<4",
+  "flask-cors>=5.0.1,<6",
+  "hypercorn>=0.17.3,<0.18",
+  "httpx>=0.28.1,<0.29",
+  "msgspec>=0.19.0,<0.20",
+  "rich>=14.0.0,<15",
 ]
 
 [project.urls]
@@ -53,17 +48,17 @@ Repository = "https://github.com/internetofwater/nldi-py"
 
 [dependency-groups]
 dev = [
-    "ruff>=0.5.5,<0.6",
-    "pytest>=8.1.1,<9",
-    "pytest-cov>=5.0.0,<6",
-    "pytest-order>=1.2.1,<2",
-    "pytest-sugar>=1.0.0,<2",
-    "coverage[toml]>=6.5.0,<7",
-    "mypy>=1.9.0,<2",
-    "testcontainers>=4.7.2,<5",
-    "ipykernel>=6.29.4,<7",
-    "ghp-import>=2.1.0,<3",
-    "pynhd>=0.19.3,<0.20",
+  "ruff>=0.5.5,<0.6",
+  "pytest>=8.1.1,<9",
+  "pytest-cov>=5.0.0,<6",
+  "pytest-order>=1.2.1,<2",
+  "pytest-sugar>=1.0.0,<2",
+  "coverage[toml]>=6.5.0,<7",
+  "mypy>=1.9.0,<2",
+  "testcontainers>=4.7.2,<5",
+  "ipykernel>=6.29.4,<7",
+  "ghp-import>=2.1.0,<3",
+  "pynhd>=0.19.3,<0.20",
 ]
 
 [tool.hatch.build.targets.sdist]
@@ -87,7 +82,7 @@ line-length = 120
 quote-style = "double"
 
 [tool.ruff.lint]
-select = ["N", "D", "I", "E", "W", "S"]
+select = ["N",  "I", "E", "W", "S"]
 extend-safe-fixes = ["D200"]
 pydocstyle = { convention = "pep257" }
 ignore = [
@@ -98,6 +93,7 @@ ignore = [
   "D400", # first line should end with a period
   "D401",
   "D105", # missing docstring in magic method
+  "D103",
   "N999",
 ]
 

@@ -11,11 +11,10 @@ from typing import Any
 
 import geoalchemy2
 from geomet import wkb, wkt
+from nldi.db.schemas import struct_geojson
 from sqlalchemy import inspect
 from sqlalchemy.ext.associationproxy import AssociationProxyExtensionType
 from sqlalchemy.orm import declarative_mixin, declared_attr
-
-from nldi.db.schemas import struct_geojson
 
 
 @declarative_mixin

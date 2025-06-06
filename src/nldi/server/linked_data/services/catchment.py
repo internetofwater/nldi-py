@@ -38,10 +38,9 @@ class CatchmentService(FlaskServiceMixin, SQLAlchemySyncRepositoryService[Catchm
     repository_type = repos.CatchmentRepository
 
     def get_by_wkt_point(self, coord_string: str) -> CatchmentModel:
-        NAD83_SRID = 4269
         try:
             _ = wkt.loads(coord_string)  # using geomet just to validate the WKT.
-            point = geoalchemy2.WKTElement(coord_string, srid=NAD83_SRID)
+            point = geoalchemy2.WKTElement(coord_string, srid=4269)  # NAD83 SRID
         except Exception as e:
             raise ValueError(f"Could not parse {coord_string} to valid geometry: {e}")
         catchment = self.get_by_geom(point)

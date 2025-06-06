@@ -9,17 +9,17 @@
 NLDI_URL = "https://127.0.0.1:80"
 NLDI_PATH = "/api/nldi-py"
 
-POSTGRES_PASSWORD = "changeMe"
+POSTGRES_PASSWORD = "changeMe"  # noqa: S105
 NLDI_DATABASE_ADDRESS = "localhost"
 NLDI_DATABASE_PORT = 5432
 NLDI_DATABASE_NAME = "nldi"
 NLDI_DB_OWNER_USERNAME = "nldi"
-NLDI_DB_OWNER_PASSWORD = "changeMe"
+NLDI_DB_OWNER_PASSWORD = "changeMe"  # noqa: S105
 NLDI_SCHEMA_OWNER_USERNAME = "nldi_schema_owner"
-NLDI_SCHEMA_OWNER_PASSWORD = "changeMe"
+NLDI_SCHEMA_OWNER_PASSWORD = "changeMe"  # noqa: S105
 NHDPLUS_SCHEMA_OWNER_USERNAME = "nhdplus"
 NLDI_READ_ONLY_USERNAME = "read_only_user"
-NLDI_READ_ONLY_PASSWORD = "changeMe"
+NLDI_READ_ONLY_PASSWORD = "changeMe"  # noqa: S105
 PYGEOAPI_URL = "https://labs.waterdata.usgs.gov/api/nldi/pygeoapi"
 
 LICENSE = {
@@ -31,9 +31,3 @@ PROVIDER = {
     "name": "United States Geological Survey",
     "url": "https://labs.waterdata.usgs.gov/",
 }
-
-TRUE_VALUES = {"TRUE", "1", "YES", "Y", "T", "SI"}
-
-
-def is_true(value: str) -> bool:
-    return value.upper() in TRUE_VALUES

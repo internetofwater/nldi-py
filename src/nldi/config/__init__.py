@@ -6,11 +6,11 @@
 #
 """Configurator."""
 
+import logging
 import os
 import pathlib
 from functools import lru_cache
 
-from .. import LOGGER
 from ._yaml import load_yaml
 from .base import MasterConfig
 
@@ -21,7 +21,7 @@ def get_config() -> MasterConfig:
     else:
         __configfile = pathlib.Path("./nldi.yml").resolve()
 
-    LOGGER.info(f"Attempting to read config file from {__configfile}")
+    logging.info(f"Attempting to read config file from {__configfile}")
     if __configfile.exists():
         _config = MasterConfig.from_yaml(__configfile)
     else:

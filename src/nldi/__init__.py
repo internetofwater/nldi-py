@@ -5,10 +5,4 @@
 #
 """Network Linked Data Index (NLDI) Python package."""
 
-__version__ = "2.0.6"
-
-import logging
-
-NAD83_SRID = 4269
-
-LOGGER = logging.getLogger(__name__)
+__version__ = "2.0.7"

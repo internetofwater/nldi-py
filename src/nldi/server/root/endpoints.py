@@ -32,6 +32,7 @@ def root_incoming_request() -> None:
 
 @ROOT.route("/")
 def home():
+    """Landing Page"""
     _cfg = flask.current_app.NLDI_CONFIG
     return {
         "title": _cfg.metadata.title,
@@ -60,17 +61,16 @@ def home():
 
 
 # region ABOUT
-@ROOT.route("/about")
-def app_info() -> dict[str, Any]:
-    _ = flask.request
-    return {
-        "name": "nldi-py",
-        "version": __version__,
-    }
 
 
 @ROOT.route("/about/config")
 def app_configuration():
+    """
+    Config info for the app.
+
+    Note that we're not including this endpoint in the openapi.json. It is used
+    only for debugging purposes. Not intended for users.
+    """
     _app = flask.current_app
     _sanitized_config = deepcopy(_app.NLDI_CONFIG)
     _sanitized_config.db.password = "***"  # noqa: S105

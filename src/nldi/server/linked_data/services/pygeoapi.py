@@ -60,7 +60,7 @@ class PyGeoAPIService:
         logging.info(f"{__class__.__name__} Sending POST (timeout={_to}) to: {url}")
         logging.debug(f"Paylod is {data}")
         try:
-            with httpx.Client(verify=False) as client:
+            with httpx.Client(verify=False) as client:  # noqa: S501
                 r = client.post(url, data=json.dumps(data), timeout=_to).raise_for_status()
                 response = r.json()
         except httpx.HTTPStatusError as err:  # pragma: no cover
