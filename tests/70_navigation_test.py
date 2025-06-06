@@ -300,7 +300,6 @@ def test_api_get_navigated_features_trimmed_system(f_client_testdb, nav_mode) ->
     assert len(actual["features"]) == len(expected["features"])
 
 
-
 @pytest.mark.order(78)
 @pytest.mark.system
 def test_api_get_navigated_flowlines_specialcase(f_client_testdb) -> None:
@@ -311,7 +310,5 @@ def test_api_get_navigated_flowlines_specialcase(f_client_testdb) -> None:
     )
     expected = r.json()  # < is a function from httpx response
 
-    r = f_client_testdb.get(
-        f"{API_PREFIX}/linked-data/comid/19487554/navigation/DM?f=json"
-    )
+    r = f_client_testdb.get(f"{API_PREFIX}/linked-data/comid/19487554/navigation/DM?f=json")
     actual = r.json  # < is a property from flask client response

@@ -85,9 +85,7 @@ class FlowlineModel(NHDBaseModel, GeoJSONMixin):
     def __properties__(self, exclude: set) -> dict[str, str]:
         _props = super().__properties__(exclude)
         ## Extend the properties dict with the AssociationProxy(s) of iterest; these are not dumped with columns by default.
-        _props.update(
-            {"sourceName": "NHDPlus comid", "source": "comid"}
-        )
+        _props.update({"sourceName": "NHDPlus comid", "source": "comid"})
         return _props
 
 

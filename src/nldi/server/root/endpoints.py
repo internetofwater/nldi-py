@@ -30,14 +30,6 @@ def root_incoming_request() -> None:
         return flask.redirect(rp[:-1])
 
 
-## Sets up a callback to update headers after the request is processed.
-@ROOT.after_request
-def update_headers(r: flask.Response) -> flask.Response:
-    """Implement simple middlware function to update response headers."""
-    r.headers.update({"X-Powered-By": f"nldi {__version__} and FLASK"})
-    return r
-
-
 @ROOT.route("/")
 def home():
     _cfg = flask.current_app.NLDI_CONFIG

@@ -14,7 +14,7 @@ import httpx
 import sqlalchemy as sa
 from sqlalchemy.engine import URL as DB_URL
 
-from .. import LOGGER, util
+from .. import LOGGER, __version__, util
 from . import default, status
 from ._yaml import load_yaml
 
@@ -44,7 +44,7 @@ class ServerConfig:
                 status="online" if self.ping("pygeoapi") else "offline",
             )
         return status.ServiceHealth(
-            name="server",
+            name=f"NLDI {__version__}",
             cfg=str(self.base_url),
             status="online",
         )
