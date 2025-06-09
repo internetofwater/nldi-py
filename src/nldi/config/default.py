@@ -20,7 +20,7 @@ NLDI_SCHEMA_OWNER_PASSWORD = "changeMe"  # noqa: S105
 NHDPLUS_SCHEMA_OWNER_USERNAME = "nhdplus"
 NLDI_READ_ONLY_USERNAME = "read_only_user"
 NLDI_READ_ONLY_PASSWORD = "changeMe"  # noqa: S105
-PYGEOAPI_URL = "https://labs.waterdata.usgs.gov/api/nldi/pygeoapi"
+PYGEOAPI_URL = "https://api.water.usgs.gov/nldi/pygeoapi"
 
 LICENSE = {
     "name": "CC-BY 1.0 license",
