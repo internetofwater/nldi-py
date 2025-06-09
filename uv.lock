@@ -1490,7 +1490,7 @@ wheels = [
 
 [[package]]
 name = "nldi-py"
-version = "2.0.6"
+version = "2.0.7"
 source = { editable = "." }
 dependencies = [
     { name = "advanced-alchemy", extra = ["uuid"] },
