@@ -146,15 +146,16 @@ class MasterConfig:
         md_id_section = cls.clean_dict(cfg["metadata"]["identification"])
         try:
             pygeoapi_cfg = cfg.get("pygeoapi")
-            pygeoapi_url = pygeoapi_cfg.get("gdp_url",  default.PYGEOAPI_URL)
+            pygeoapi_url = pygeoapi_cfg.get("gdp_url",  default.PYGEOAPI_URL) or default.PYGEOAPI_URL
         except (AttributeError, KeyError):
+            logging.warning(f"Unable to determine pygeoapi url.  Using default: {default.PYGEOAPI_URL}")
             pygeoapi_url = default.PYGEOAPI_URL
 
         return cls(
             server=ServerConfig(
                 url=serv_section.get("url", default.NLDI_URL),
                 prefix=serv_section.get("prefix", default.NLDI_PATH),
-                pygeoapi_url=pygeoapi_url,
+                pygeoapi_url=pygeoapi_url.rstrip("/"),
             ),
             db=DatabaseConfig(
                 host=serv_section["data"].get("host", default.NLDI_DATABASE_ADDRESS),

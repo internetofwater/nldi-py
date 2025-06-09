@@ -12,9 +12,6 @@ logging:
   level: DEBUG
 
 
-
-#pygeoapi_url: https://api.water.usgs.gov/nldi/pygeoapi
-
 pygeoapi:
   enabled: true
   gdp_url: ${PYGEOAPI_URL}
