@@ -76,12 +76,13 @@ class FeatureService(FlaskServiceMixin, SQLAlchemySyncRepositoryService[FeatureS
         offset: int = 0,
         limit: int = 1000,
     ):
-        """Provides a streaming response for the feature collection."""
+        """Provides a paginated response for the feature collection."""
         stmt = (
             sqlalchemy.select(FeatureSourceModel)
             .where(sqlalchemy.func.lower(CrawlerSourceModel.source_suffix) == source_suffix.lower())
             .execution_options(yield_per=15)
             .join(CrawlerSourceModel, FeatureSourceModel.crawler_source_id == CrawlerSourceModel.crawler_source_id)
+            .order_by(FeatureSourceModel.identifier)
             .offset(offset)
             .limit(limit)
         )

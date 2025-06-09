@@ -227,7 +227,13 @@ class FlowlineService(FlaskServiceMixin, SQLAlchemySyncRepositoryService[Flowlin
 
     def feature_iterator(self, base_url: str = "", offset: int = 0, limit: int = 1000) -> Generator[bytes, None, None]:
         """Provides a streaming response for the feature collection."""
-        stmt = sqlalchemy.select(FlowlineModel).execution_options(yield_per=15).offset(offset).limit(limit)
+        stmt = (
+            sqlalchemy.select(FlowlineModel)
+            .execution_options(yield_per=15)
+            .order_by(FlowlineModel.nhdplus_comid)
+            .offset(offset)
+            .limit(limit)
+        )
 
         query_result = self.repository.session.execute(stmt)
         while f := query_result.fetchone():
