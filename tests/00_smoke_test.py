@@ -43,7 +43,7 @@ def test_runner_fixture_present(runner) -> None:
 
 
 @pytest.mark.order(2)
-@pytest.mark.unittest
+@pytest.mark.integration
 def test_container_fixture_present(containerized_db_env_info) -> None:
     assert isinstance(containerized_db_env_info, dict)
 

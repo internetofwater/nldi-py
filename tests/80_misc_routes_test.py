@@ -119,11 +119,9 @@ def test_basin_get_from_id(dbsession_containerized):
     assert isinstance(f, struct_geojson.Feature)
 
 
-# region Endpoints
-
 
 @pytest.mark.order(85)
-@pytest.mark.integraion
+@pytest.mark.integration
 def test_api_get_root(f_client_containerized) -> None:
     r = f_client_containerized.get(f"{API_PREFIX}?f=json")
     assert r.status_code == 200

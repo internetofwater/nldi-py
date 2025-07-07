@@ -18,7 +18,7 @@ from . import API_PREFIX
 
 
 @pytest.mark.order(21)
-@pytest.mark.integraion
+@pytest.mark.integration
 def test_server_config_form(f_client_containerized) -> None:
     """We're not checking for valid data -- just that the path returns JSON of the right form."""
     r = f_client_containerized.get(f"{API_PREFIX}/about/config")
@@ -49,7 +49,7 @@ def test_server_healthcheck_form(f_client_containerized) -> None:
 
 
 @pytest.mark.order(21)
-@pytest.mark.integraion
+@pytest.mark.integration
 def test_server_openapi_docs(f_client_containerized) -> None:
     """
     Health endpoint returns a list of status objects (one for each dependent subsystem).
@@ -66,7 +66,7 @@ def test_server_openapi_docs(f_client_containerized) -> None:
 # region containerized
 ## Here, we're checking that config matches expected values and that we have function to the database
 @pytest.mark.order(22)
-@pytest.mark.integraion
+@pytest.mark.integration
 def test_server_db_config_container(f_client_containerized) -> None:
     r = f_client_containerized.get(f"{API_PREFIX}/about/config")
     assert r.status_code == 200

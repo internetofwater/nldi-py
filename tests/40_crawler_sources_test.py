@@ -127,7 +127,7 @@ def test_source_service_suffix_exists(dbsession_containerized) -> None:
 
 
 @pytest.mark.order(45)
-@pytest.mark.integraion
+@pytest.mark.integration
 def test_source_list_endpoint(f_client_containerized) -> None:
     r = f_client_containerized.get(f"{API_PREFIX}/linked-data?f=json")
     assert r.status_code == 200

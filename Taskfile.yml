@@ -1,9 +1,8 @@
 # Taskfile to ease the use of dev tooling...
-# note that task should be run in the virtual environment you set up with poetry.
+# note that task should be run in the virtual environment you set up with uv.
 #
-#  >  poetry shell           # this is analagous to `conda activate` or activating a venv.
-#  poetry>  task reformat    # runs the 'reformat' task, defined below to use ruff
-#  poetry>  task fixme       # this will run both the reformat and lint tasks
+#  uv run  task reformat    # runs the 'reformat' task, defined below to use ruff
+#  uv run  task fixme       # this will run both the reformat and lint tasks
 
 version: '3'
 
@@ -34,9 +33,18 @@ tasks:
 
   tests:
     summary: |
-      Runs all tests configured in pytest.
+      Runs all tests configured in pytest, regardless of marking.
     cmds:
       - pytest --cov --sparse-ordering ./tests
+
+  ## NOTE: for the following test-like tasks, I have an implied hierarchy of tests.
+  # tests.unittest are small and fast, with no out-of-process dependencies.
+  # tests.integration have out-of-process dependencies, namely a connection to the containerized
+  #     database running in a local docker service.  Integration implies (to me) that unittests
+  #     should also run.
+  # tests.system require connection to cloud-hosted database.  system implies integration and
+  #     also unittest.  In theory, tests.system is the same as the run-all-tests task  above.
+  #     The main difference is that the `tests` target will also cover unmarked tests.
 
   tests.unittest:
     summary: |
@@ -46,27 +54,15 @@ tasks:
 
   tests.integration:
     summary: |
-      Run only tests marked as 'integration'
+      Run tests marked as 'integration' (unittests are also included)
     cmds:
-      - pytest  -m 'integration' --cov --sparse-ordering ./tests
+      - pytest  -m 'integration' -m 'unittest' --cov --sparse-ordering ./tests
 
-
-
-  build:
+  test.system:
     summary: |
-      Builds the docs and a wheel for ease of installation.
-    cmds:
-      - task: doc
-      - task: wheel
-      - task: docker
+      Run all tests marked as 'system', as well as integration and unittest
+      - pytest  -m 'integration' -m 'unittest' -m 'system' --cov --sparse-ordering ./tests
 
-  doc:
-    cmds:
-      - sphinx-build -a -b html ./docs ./public
-
-  wheel:
-    cmds:
-      - poetry build
 
   docker:
     cmds:

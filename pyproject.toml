@@ -110,7 +110,8 @@ addopts = "--tb=short -p no:warnings"
 markers = [
   "order: sets the order of the tests",
   "unittest: unit tests",
-  "integration: integration tests which have out-of-process dependencies",
+  "integration: requires connection to containerized database running in local docker.",
+  "system: requires connection to cloud-hosted database.",
 ]
 
 [tool.coverage.report]
