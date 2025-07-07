@@ -33,7 +33,7 @@ from . import API_PREFIX
 
 # region: repository
 @pytest.mark.order(50)
-@pytest.mark.unittest
+@pytest.mark.integration
 def test_flowline_repo_get(dbsession_containerized) -> None:
     comid = 13293396  # < NOTE: at the repo level, we expect the search param to be an int, as that is the dtype of the primary-key column.
     flowline_repo = repos.FlowlineRepository(session=dbsession_containerized)
@@ -46,7 +46,7 @@ def test_flowline_repo_get(dbsession_containerized) -> None:
 
 # region: service layer
 @pytest.mark.order(50)
-@pytest.mark.unittest
+@pytest.mark.integration
 def test_flowline_svc_get(dbsession_containerized) -> None:
     comid = "13293396"  # The *SERVICE* will try to cast the search value to an int before calling the repo.
     flowline_svc = services.FlowlineService(session=dbsession_containerized)
@@ -60,7 +60,7 @@ def test_flowline_svc_get(dbsession_containerized) -> None:
 
 
 @pytest.mark.order(51)
-@pytest.mark.unittest
+@pytest.mark.integration
 def test_flowline_svc_get_bad_id(dbsession_containerized) -> None:
     comid = "x13293396"  # ID can't be cast to int.
     flowline_svc = services.FlowlineService(session=dbsession_containerized)
@@ -69,7 +69,7 @@ def test_flowline_svc_get_bad_id(dbsession_containerized) -> None:
 
 
 @pytest.mark.order(51)
-@pytest.mark.unittest
+@pytest.mark.integration
 def test_flowline_svc_get_feature(dbsession_containerized) -> None:
     comid = "13293396"  # ID can't be cast to int.
     flowline_svc = services.FlowlineService(session=dbsession_containerized)
@@ -78,7 +78,7 @@ def test_flowline_svc_get_feature(dbsession_containerized) -> None:
 
 
 @pytest.mark.order(52)
-@pytest.mark.unittest
+@pytest.mark.integration
 def test_catchment_svc_by_geom(dbsession_containerized) -> None:
     catch_svc = services.CatchmentService(session=dbsession_containerized)
     point = geoalchemy2.WKTElement("POINT(-89.22401470690966 42.82769689708948)", srid=4269)
@@ -88,7 +88,7 @@ def test_catchment_svc_by_geom(dbsession_containerized) -> None:
 
 
 @pytest.mark.order(52)
-@pytest.mark.unittest
+@pytest.mark.integration
 def test_catchment_svc_by_coords(dbsession_containerized) -> None:
     catch_svc = services.CatchmentService(session=dbsession_containerized)
     catchment = catch_svc.get_by_wkt_point("POINT(-89.22401470690966 42.82769689708948)")
@@ -97,7 +97,7 @@ def test_catchment_svc_by_coords(dbsession_containerized) -> None:
 
 
 @pytest.mark.order(52)
-@pytest.mark.unittest
+@pytest.mark.integration
 def test_catchment_svc_by_coords_mangled(dbsession_containerized) -> None:
     catch_svc = services.CatchmentService(session=dbsession_containerized)
     with pytest.raises(ValueError):
@@ -106,7 +106,7 @@ def test_catchment_svc_by_coords_mangled(dbsession_containerized) -> None:
 
 # region: flask endpoints
 @pytest.mark.order(55)
-@pytest.mark.unittest
+@pytest.mark.system
 def test_flowline_get_by_comid(f_client_testdb) -> None:
     comid = "13293396"  # << This COMID is known to be in the test database
     r = f_client_testdb.get(f"{API_PREFIX}/linked-data/comid/{comid}?f=json")
@@ -121,7 +121,7 @@ def test_flowline_get_by_comid(f_client_testdb) -> None:
 
 
 @pytest.mark.order(55)
-@pytest.mark.unittest
+@pytest.mark.system
 def test_flowline_get_by_comid_notfound(f_client_testdb) -> None:
     comid = "00000000"  # << bogus comid
     r = f_client_testdb.get(f"{API_PREFIX}/linked-data/comid/{comid}?f=json")
@@ -129,7 +129,7 @@ def test_flowline_get_by_comid_notfound(f_client_testdb) -> None:
 
 
 @pytest.mark.order(55)
-@pytest.mark.unittest
+@pytest.mark.system
 def test_flowline_get_by_comid_bad_id(f_client_testdb) -> None:
     comid = "x13293396"  # << incorrect type; not an integer
     r = f_client_testdb.get(f"{API_PREFIX}/linked-data/comid/{comid}?f=json")
@@ -138,7 +138,7 @@ def test_flowline_get_by_comid_bad_id(f_client_testdb) -> None:
 
 
 @pytest.mark.order(55)
-@pytest.mark.unittest
+@pytest.mark.system
 def test_flowline_get_by_coords(f_client_testdb) -> None:
     coords = "POINT(-89.22401470690966 42.82769689708948)"
     r = f_client_testdb.get(f"{API_PREFIX}/linked-data/comid/position?f=json&coords={coords}")
@@ -148,7 +148,7 @@ def test_flowline_get_by_coords(f_client_testdb) -> None:
 
 
 @pytest.mark.order(55)
-@pytest.mark.unittest
+@pytest.mark.system
 def test_flowline_get_by_coords_bad_geom(f_client_testdb) -> None:
     coords = "PT(-89.22401470690966 42.82769689708948)"
     r = f_client_testdb.get(f"{API_PREFIX}/linked-data/comid/position?f=json&coords={coords}")

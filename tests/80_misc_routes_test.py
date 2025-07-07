@@ -29,7 +29,7 @@ from . import API_PREFIX
 
 # region Services
 @pytest.mark.order(82)
-@pytest.mark.unittest
+@pytest.mark.integration
 def test_pygeoapi_service_instantiates(dbsession_containerized):
     svc = pygeoapi.PyGeoAPIService(session=dbsession_containerized)
     assert svc.flowtrace_service_endpoint is not None
@@ -119,11 +119,9 @@ def test_basin_get_from_id(dbsession_containerized):
     assert isinstance(f, struct_geojson.Feature)
 
 
-# region Endpoints
-
 
 @pytest.mark.order(85)
-@pytest.mark.unittest
+@pytest.mark.integration
 def test_api_get_root(f_client_containerized) -> None:
     r = f_client_containerized.get(f"{API_PREFIX}?f=json")
     assert r.status_code == 200
@@ -143,6 +141,7 @@ def test_api_get_hydrolocation(f_client_containerized) -> None:
 
 
 @pytest.mark.order(69)
+@pytest.mark.integration
 def test_api_get_basin_by_id(f_client_containerized) -> None:
     source_name = "wqp"
     identifier = "USGS-05427930"

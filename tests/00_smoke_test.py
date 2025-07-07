@@ -43,7 +43,7 @@ def test_runner_fixture_present(runner) -> None:
 
 
 @pytest.mark.order(2)
-@pytest.mark.unittest
+@pytest.mark.integration
 def test_container_fixture_present(containerized_db_env_info) -> None:
     assert isinstance(containerized_db_env_info, dict)
 
@@ -61,9 +61,8 @@ def test_container_fixture_present(containerized_db_env_info) -> None:
     assert success
 
 
-# region: integration tests
 @pytest.mark.order(2)
-@pytest.mark.integration
+@pytest.mark.system
 def test_testdb_fixture_present(testdb_env_info) -> None:
     assert isinstance(testdb_env_info, dict)
     with psycopg.connect(  # << See note above about psycopg vs sqlalchemy

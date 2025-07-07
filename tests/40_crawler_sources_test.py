@@ -37,7 +37,7 @@ from . import API_PREFIX
 
 # region: respository
 @pytest.mark.order(40)
-@pytest.mark.unittest
+@pytest.mark.integration
 def test_source_repo_get_by_id(dbsession_containerized) -> None:
     src_repo = repos.CrawlerSourceRepository(session=dbsession_containerized)
     healthy = src_repo.check_health(src_repo.session)
@@ -48,7 +48,7 @@ def test_source_repo_get_by_id(dbsession_containerized) -> None:
 
 
 @pytest.mark.order(40)
-@pytest.mark.unittest
+@pytest.mark.integration
 def test_source_repo_lookup_by_suffix(dbsession_containerized) -> None:
     src_repo = repos.CrawlerSourceRepository(session=dbsession_containerized)
 
@@ -59,7 +59,7 @@ def test_source_repo_lookup_by_suffix(dbsession_containerized) -> None:
 
 
 @pytest.mark.order(40)
-@pytest.mark.unittest
+@pytest.mark.integration
 def test_source_repo_lookup_by_suffix_nonesuch(dbsession_containerized) -> None:
     src_repo = repos.CrawlerSourceRepository(session=dbsession_containerized)
 
@@ -68,7 +68,7 @@ def test_source_repo_lookup_by_suffix_nonesuch(dbsession_containerized) -> None:
 
 
 @pytest.mark.order(40)
-@pytest.mark.unittest
+@pytest.mark.integration
 def test_source_repo_listall(dbsession_containerized) -> None:
     src_repo = repos.CrawlerSourceRepository(session=dbsession_containerized)
     features, count = src_repo.list_and_count()
@@ -76,7 +76,8 @@ def test_source_repo_listall(dbsession_containerized) -> None:
     assert isinstance(features, list)
     assert isinstance(features[0], CrawlerSourceModel)
 
-
+@pytest.mark.order(40)
+@pytest.mark.integration
 def test_source_svc_listall(dbsession_containerized) -> None:
     src_svc = services.CrawlerSourceService(session=dbsession_containerized)
     features = src_svc.list()
@@ -86,7 +87,7 @@ def test_source_svc_listall(dbsession_containerized) -> None:
 
 # region: service layer
 @pytest.mark.order(42)
-@pytest.mark.unittest
+@pytest.mark.integration
 def test_source_service_search_by_suffix(dbsession_containerized) -> None:
     src_svc = services.CrawlerSourceService(session=dbsession_containerized)
 
@@ -103,7 +104,7 @@ def test_source_service_search_by_suffix(dbsession_containerized) -> None:
 
 
 @pytest.mark.order(42)
-@pytest.mark.unittest
+@pytest.mark.integration
 def test_source_service_search_by_suffix_nonesuch(dbsession_containerized) -> None:
     src_svc = services.CrawlerSourceService(session=dbsession_containerized)
 
@@ -112,7 +113,7 @@ def test_source_service_search_by_suffix_nonesuch(dbsession_containerized) -> No
 
 
 @pytest.mark.order(43)
-@pytest.mark.unittest
+@pytest.mark.integration
 def test_source_service_suffix_exists(dbsession_containerized) -> None:
     src_svc = services.CrawlerSourceService(session=dbsession_containerized)
 
@@ -127,7 +128,7 @@ def test_source_service_suffix_exists(dbsession_containerized) -> None:
 
 
 @pytest.mark.order(45)
-@pytest.mark.unittest
+@pytest.mark.integration
 def test_source_list_endpoint(f_client_containerized) -> None:
     r = f_client_containerized.get(f"{API_PREFIX}/linked-data?f=json")
     assert r.status_code == 200
@@ -136,3 +137,15 @@ def test_source_list_endpoint(f_client_containerized) -> None:
     actual = r.json
     assert isinstance(actual, list)
     assert len(actual) == 4  # < true for containerized db
+
+
+@pytest.mark.order(46)
+@pytest.mark.system
+def test_source_list_endpoint(f_client_testdb) -> None:
+    r = f_client_testdb.get(f"{API_PREFIX}/linked-data?f=json")
+    assert r.status_code == 200
+    assert r.headers["content-type"].startswith("application/json")
+
+    actual = r.json
+    assert isinstance(actual, list)
+    assert len(actual) >= 4 # unknown number.. .but several.
