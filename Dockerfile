@@ -20,7 +20,6 @@ RUN chmod 644 /usr/local/share/ca-certificates/*.crt && update-ca-certificates
 ADD . /nldi
 WORKDIR /nldi
 
-#RUN pip install --prefer-binary --trusted-host pypi.org --trusted-host files.pythonhosted.org --no-cache-dir .  && rm -rf /root/.cache/pip
 RUN pip install --prefer-binary --no-cache-dir .  && rm -rf /root/.cache/pip
 
 RUN mv /nldi/tests/data/nldi_server_config.yml /nldi/local.source.yml
