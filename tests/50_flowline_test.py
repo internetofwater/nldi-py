@@ -106,7 +106,7 @@ def test_catchment_svc_by_coords_mangled(dbsession_containerized) -> None:
 
 # region: flask endpoints
 @pytest.mark.order(55)
-@pytest.mark.unittest
+@pytest.mark.system
 def test_flowline_get_by_comid(f_client_testdb) -> None:
     comid = "13293396"  # << This COMID is known to be in the test database
     r = f_client_testdb.get(f"{API_PREFIX}/linked-data/comid/{comid}?f=json")
@@ -121,7 +121,7 @@ def test_flowline_get_by_comid(f_client_testdb) -> None:
 
 
 @pytest.mark.order(55)
-@pytest.mark.unittest
+@pytest.mark.system
 def test_flowline_get_by_comid_notfound(f_client_testdb) -> None:
     comid = "00000000"  # << bogus comid
     r = f_client_testdb.get(f"{API_PREFIX}/linked-data/comid/{comid}?f=json")
@@ -129,7 +129,7 @@ def test_flowline_get_by_comid_notfound(f_client_testdb) -> None:
 
 
 @pytest.mark.order(55)
-@pytest.mark.unittest
+@pytest.mark.system
 def test_flowline_get_by_comid_bad_id(f_client_testdb) -> None:
     comid = "x13293396"  # << incorrect type; not an integer
     r = f_client_testdb.get(f"{API_PREFIX}/linked-data/comid/{comid}?f=json")
@@ -138,7 +138,7 @@ def test_flowline_get_by_comid_bad_id(f_client_testdb) -> None:
 
 
 @pytest.mark.order(55)
-@pytest.mark.unittest
+@pytest.mark.system
 def test_flowline_get_by_coords(f_client_testdb) -> None:
     coords = "POINT(-89.22401470690966 42.82769689708948)"
     r = f_client_testdb.get(f"{API_PREFIX}/linked-data/comid/position?f=json&coords={coords}")
@@ -148,7 +148,7 @@ def test_flowline_get_by_coords(f_client_testdb) -> None:
 
 
 @pytest.mark.order(55)
-@pytest.mark.unittest
+@pytest.mark.system
 def test_flowline_get_by_coords_bad_geom(f_client_testdb) -> None:
     coords = "PT(-89.22401470690966 42.82769689708948)"
     r = f_client_testdb.get(f"{API_PREFIX}/linked-data/comid/position?f=json&coords={coords}")

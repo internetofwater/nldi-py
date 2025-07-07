@@ -82,7 +82,7 @@ def test_server_db_config_container(f_client_containerized) -> None:
 # region testdb
 # Testing aginst the in-the-cloud test database
 @pytest.mark.order(22)
-@pytest.mark.integration
+@pytest.mark.system
 def test_server_db_config_testdb(f_client_testdb) -> None:
     r = f_client_testdb.get(f"{API_PREFIX}/about/config")
     assert r.status_code == 200
