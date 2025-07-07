@@ -256,7 +256,6 @@ def test_api_get_feature_by_id_notfound(f_client_containerized) -> None:
     assert r.status_code == 404
 
 
-@pytest.mark.skip(reason="Feature list endpoint not implemented.")
 @pytest.mark.order(65)
 @pytest.mark.integration
 def test_api_list_features_by_source(f_client_containerized) -> None:

@@ -123,7 +123,7 @@ def test_basin_get_from_id(dbsession_containerized):
 
 
 @pytest.mark.order(85)
-@pytest.mark.unittest
+@pytest.mark.integraion
 def test_api_get_root(f_client_containerized) -> None:
     r = f_client_containerized.get(f"{API_PREFIX}?f=json")
     assert r.status_code == 200
@@ -143,6 +143,7 @@ def test_api_get_hydrolocation(f_client_containerized) -> None:
 
 
 @pytest.mark.order(69)
+@pytest.mark.integration
 def test_api_get_basin_by_id(f_client_containerized) -> None:
     source_name = "wqp"
     identifier = "USGS-05427930"
