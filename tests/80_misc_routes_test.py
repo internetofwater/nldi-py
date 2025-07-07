@@ -29,7 +29,7 @@ from . import API_PREFIX
 
 # region Services
 @pytest.mark.order(82)
-@pytest.mark.unittest
+@pytest.mark.integration
 def test_pygeoapi_service_instantiates(dbsession_containerized):
     svc = pygeoapi.PyGeoAPIService(session=dbsession_containerized)
     assert svc.flowtrace_service_endpoint is not None
