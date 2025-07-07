@@ -128,35 +128,6 @@ coords:
     type: string
     example: POINT(-89.509 43.087)
 
-characteristicType:
-  name: characteristicType
-  in: path
-  required: true
-  schema:
-    pattern: local|div|tot
-    type: string
-    example: local
-    enum:
-      - local
-      - div
-      - tot
-  example: local
-
-characteristicId:
-  name: characteristicId
-  in: query
-  required: false
-  schema:
-    type: string
-    example:
-      - TOT_BFI
-      - TOT_PET
-      - TOT_CONTACT
-  example:
-    - TOT_BFI
-    - TOT_PET
-    - TOT_CONTACT
-
 
 limit:
   name: limit
@@ -171,4 +142,3 @@ offset:
   required: false
   schema:
     type: integer
- 
