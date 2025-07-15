@@ -16,7 +16,7 @@ from typing import Any, Literal, TypeVar
 import flask
 import msgspec
 from advanced_alchemy.exceptions import NotFoundError
-from werkzeug.exceptions import BadRequest, NotFound, ServiceUnavailable, UnprocessableEntity
+from werkzeug.exceptions import BadRequest, HTTPException, NotFound, ServiceUnavailable, UnprocessableEntity
 
 from ... import __version__, util
 from ...config import MasterConfig, status
@@ -59,6 +59,19 @@ def html_to_json_redirect(e) -> flask.Response:
                 </html>
         """
     )
+
+
+@LINKED_DATA.errorhandler(HTTPException)
+def jsonify_exception_message(e) -> flask.Response:
+    response = e.get_response()
+    response.data = json.dumps(
+        {
+            "type": "error",
+            "detail": e.description,
+        }
+    )
+    response.content_type = "application/json"
+    return response
 
 
 @LINKED_DATA.before_request
@@ -263,7 +276,7 @@ def get_feature_by_identifier(source_name: str, identifier: str = ""):
             try:
                 feature = feature_svc.feature_lookup(source_name, identifier)
             except NotFoundError:
-                raise NotFound(description=f"Not Found: {source_name}/{identifier}")
+                raise NotFound(description=f"Feature ID {identifier} does not exist in source {source_name}.")
             nav_url = util.url_join(
                 flask.current_app.NLDI_CONFIG.server.base_url, "linked-data", source_name, identifier, "navigation"
             )
