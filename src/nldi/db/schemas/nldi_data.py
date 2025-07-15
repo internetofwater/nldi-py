@@ -69,8 +69,12 @@ class FeatureSourceModel(NLDIBaseModel, GeoJSONMixin):
     def __properties__(self, exclude: set) -> dict[str, str]:
         _props = super().__properties__(exclude)
         ## Extend the properties dict with the AssociationProxy(s) of iterest; these are not dumped with columns by default.
+        if self.mainstem == "NA":
+            _mainstem = None
+        else:
+            _mainstem = self.mainstem
         _props.update(
-            {"mainstem": self.mainstem, "sourceName": self.sourceName, "source": self.source, "type": self.type}
+            {"mainstem": _mainstem, "sourceName": self.sourceName, "source": self.source, "type": self.type}
         )
         return _props
 
