@@ -1,7 +1,8 @@
-name: Publish Docker Image
+name: Create alpha image for dev deployment.
 on:
-  release:
-    types: [created]
+  push:
+    branches:
+      - main
 
 env:
   IMAGE_NAME: ${{ github.repository }}
@@ -37,8 +38,7 @@ jobs:
         with:
           images: ghcr.io/${{ env.IMAGE_NAME }}
           tags: |
-            type=raw,value=latest,enable={{is_default_branch}}
-            type=semver,pattern={{version}}
+            type=raw,value=alpha 
 
       - name: Build and push
         uses: docker/build-push-action@v4
@@ -53,8 +53,3 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
-      - name: Print release info
-        run: |
-          echo "A new release has been created!"
-          echo "Tag: ${{ github.event.release.tag_name }}"
-          echo "Release name: ${{ github.event.release.name }}"
