@@ -5,4 +5,4 @@
 #
 """Network Linked Data Index (NLDI) Python package."""
 
-__version__ = "2.0.10"
+__version__ = "2.1.1"
