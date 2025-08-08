@@ -22,6 +22,7 @@ from ... import __version__, util
 from ...config import MasterConfig, status
 from ...db.schemas import struct_geojson
 from . import services
+from .services.navigation import NAV_DIST_DEFAULTS
 
 LINKED_DATA = flask.Blueprint("linked-data", __name__)
 
@@ -375,9 +376,12 @@ def get_flowline_navigation(
 ):
     try:
         _d = flask.request.args["distance"]
-        distance = float(_d)
+        if _d:
+            distance = float(_d)
+        else:
+            distance = NAV_DIST_DEFAULTS.get(nav_mode, 100)
     except KeyError as e:
-        return flask.Response(status=http.HTTPStatus.BAD_REQUEST, response="No distance provided")
+        distance = NAV_DIST_DEFAULTS.get(nav_mode, 100)
     except (TypeError, ValueError) as e:
         return flask.Response(status=http.HTTPStatus.BAD_REQUEST, response="Invalid distance provided")
     trim_start = False
@@ -421,9 +425,12 @@ def get_feature_navigation(
 
     try:
         _d = flask.request.args["distance"]
-        distance = float(_d)
+        if _d:
+            distance = float(_d)
+        else:
+            distance = NAV_DIST_DEFAULTS.get(nav_mode, 100)
     except KeyError as e:
-        return flask.Response(status=http.HTTPStatus.BAD_REQUEST, response="No distance provided")
+        distance = NAV_DIST_DEFAULTS.get(nav_mode, 100)
     except (TypeError, ValueError) as e:
         return flask.Response(status=http.HTTPStatus.BAD_REQUEST, response="Invalid distance provided")
 
