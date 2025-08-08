@@ -37,6 +37,12 @@ class NavigationModes(StrEnum):  ## StrEnum requires python 3.11 or better
     UT = "UT"
     # PP = "PP"
 
+NAV_DIST_DEFAULTS = { # see https://github.com/internetofwater/nldi-py/issues/107
+    NavigationModes.DM : 100_000,  # picking a very large number here to be effectively infinite.
+    NavigationModes.UM : 100_000,
+    NavigationModes.UT: 100,
+    NavigationModes.DD: 100,
+}
 
 ## Convenience dictionary to map the mode enum to a human-readable description
 NavModesDesc = {
