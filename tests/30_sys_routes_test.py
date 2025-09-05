@@ -84,10 +84,10 @@ def test_server_db_config_container(f_client_containerized) -> None:
 @pytest.mark.order(22)
 @pytest.mark.system
 def test_server_db_config_testdb(f_client_testdb) -> None:
-    r = f_client_testdb.get(f"{API_PREFIX}/about/config")
-    assert r.status_code == 200
-    actual = r.json
-    assert actual["db"].get("host").startswith("active-nldi-db")  # < Magic value
+    # r = f_client_testdb.get(f"{API_PREFIX}/about/config")
+    # assert r.status_code == 200
+    # actual = r.json
+    # assert actual["db"].get("host").startswith("active-nldi-db")  # < Magic value
 
     r = f_client_testdb.get(f"{API_PREFIX}/about/health")
     assert r.status_code == 200

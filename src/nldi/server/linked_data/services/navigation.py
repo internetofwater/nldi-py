@@ -351,7 +351,11 @@ class NavigationService:
             starting_feature = self.feature_svc.feature_lookup(source_name, identifier)
             if not starting_feature:
                 raise NotFoundError
-            start_comid = int(starting_feature.comid)
+
+            start_comid = starting_feature.comid
+            if not start_comid:
+                raise NotFoundError(f"The comid for features source {source_name} and feature ID {identifier} does not exist")
+            start_comid = int(start_comid)
 
         nav_results_query = self.navigation(nav_mode, start_comid, distance)
 
@@ -384,7 +388,11 @@ class NavigationService:
             starting_feature = self.feature_svc.feature_lookup(source_name, identifier)
             if not starting_feature:
                 raise NotFoundError
-            start_comid = int(starting_feature.comid)
+
+            start_comid = starting_feature.comid
+            if not start_comid:
+                raise NotFoundError(f"The comid for features source {source_name} and feature ID {identifier} does not exist")
+            start_comid = int(start_comid)
 
         nav_results_query = self.navigation(nav_mode, start_comid, distance)
 
