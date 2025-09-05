@@ -3,7 +3,7 @@ name = "nldi-py"
 version = "2.1.1"
 description = "The Hydro Network Linked Data Index (NLDI) puts a restful application programming interface (API) in front of the National Hydrolography dataset (NHD). Now, instead of needing to be a GIS professional, any web developer can build tools against the core data in the NHD in a scalable, workable way."
 authors = [{ name = "Internet of Water" }]
-requires-python = "~=3.11"
+requires-python = ">=3.11,<4.0"
 readme = "README.md"
 license = "CC0-1.0" #  https://spdx.org/licenses/CC0-1.0.html
 maintainers = [
@@ -57,8 +57,6 @@ dev = [
   "mypy>=1.9.0,<2",
   "testcontainers>=4.7.2,<5",
   "ipykernel>=6.29.4,<7",
-  "ghp-import>=2.1.0,<3",
-  "pynhd>=0.19.3,<0.20",
 ]
 
 [tool.hatch.build.targets.sdist]
