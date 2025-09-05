@@ -218,6 +218,8 @@ def flowline_by_position():
         catchment_svc = services.CatchmentService(session=db_session)
         try:
             catchment = catchment_svc.get_by_wkt_point(coords)
+            if not catchment:
+                raise NotFound(description=f"No catchment found at coords {coords}")
             comid = int(catchment.featureid)
         except ValueError as e:
             raise UnprocessableEntity(description=str(e))
