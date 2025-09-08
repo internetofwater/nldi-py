@@ -28,7 +28,7 @@ class BasinService:
     def _get_start_comid(self, identifier: str, source_name: str) -> tuple[int, bool]:
         try:
             if source_name.lower() == "comid":
-                _ = self.flowline_svc.get(identifier)  # just making sure it exists.
+                _ = self.flowline_svc.get(identifier)  # just making sure it exists. Will raise KeyError if not.
                 start_comid = int(identifier)
                 is_point = False
                 feature = None  # sentinal; indicates not a feature lookup.
@@ -37,9 +37,14 @@ class BasinService:
                 feature = hit.as_feature()
                 start_comid = int(feature.properties["comid"])
                 is_point = feature.geometry["type"] == "Point"
+        except (ValueError, TypeError):
+            msg = f"Unexpected error getting comid from {identifier} / {source_name}"
+            logging.debug(msg)
+            raise LookupError(msg)
         except KeyError:
             msg = f"The feature {identifier} does not exist for '{source_name}'."  # noqa
-            raise KeyError(msg)
+            logging.debug(msg)
+            raise LookupError(msg)
         return (start_comid, is_point, feature)
 
     def get_by_id(
@@ -62,7 +67,11 @@ class BasinService:
         feature.
         """
         source_name = source_name.lower() if source_name else "comid"
-        (start_comid, is_point, feature) = self._get_start_comid(identifier, source_name)
+        try:
+            (start_comid, is_point, feature) = self._get_start_comid(identifier, source_name)
+        except LookupError:
+            logging.debug(f"Cannot get starting COMID for {identifier} / {source_name}")
+            raise # this is not our problem. Let the caller sort it out.
 
         if is_point and split:
             # Plan A: the point is on a FlowLine
@@ -71,31 +80,37 @@ class BasinService:
             if point is None:
                 ## Plan B:
                 ## No point on flowline found.... trying to find nearest point
-                distance = self.flowline_svc.feat_get_distance_from_flowline(identifier, source_name)
-                if distance <= self.SPLIT_CATCHMENT_THRESHOLD:
-                    point = self.flowline_svc.feat_get_nearest_point_on_flowline(identifier, source_name)
+                try:
+                    distance = self.flowline_svc.feat_get_distance_from_flowline(identifier, source_name)
+                    if distance <= self.SPLIT_CATCHMENT_THRESHOLD:
+                        point = self.flowline_svc.feat_get_nearest_point_on_flowline(identifier, source_name)
+                except (LookupError, TypeError, ValueError):
+                    raise LookupError(f"Unexpected error finding point on flowline: {identifier} / {source_name}")
 
             if point is None:  # Still
                 ## Plan C:
                 # assert feature is not None
-                [lon, lat] = feature["geometry"]["coordinates"]
-                wkt_geom = f"POINT({lon} {lat})"
-                response = self.pygeoapi_svc.hydrolocation_by_coords(wkt_geom)
-                point = response["features"][0]["geometry"]["coordinates"]
+                try:
+                    [lon, lat] = feature["geometry"]["coordinates"]
+                    wkt_geom = f"POINT({lon} {lat})"
+                    response = self.pygeoapi_svc.hydrolocation_by_coords(wkt_geom)
+                    point = response["features"][0]["geometry"]["coordinates"]
+                except (LookupError, TypeError, ValueError):
+                    raise LookupError(f"Unexpected error decoding hydrolocation for {wkt_geom}")
 
-            if point is None:  ## still no point
-                raise ValueError("Unable to retrieve point on flowline for catchment splitting.")  # noqa
+            if point is None:  ## still no point; not much we can do here.
+                raise LookupError("Unable to retrieve point on flowline for catchment splitting.")
 
             [lon, lat] = point
             wkt_geom = f"POINT({lon} {lat})"
             features = [self.pygeoapi_svc.splitcatchment_at_coords(wkt_geom)]
         else:
-            feature = self.catchment_svc.get_drainage_basin_by_comid(start_comid, simplified)
+            # The feature in question is not a point, and should be associated with a basin by COMID.
+            try:
+                feature = self.catchment_svc.get_drainage_basin_by_comid(start_comid, simplified)
+            except KeyError as e:
+                raise LookupError(f"Cannot get drainage basin by comid. {start_comid=}") from e
             features = [feature]
         return features
 
 
-#  def basin_svc(db_session: Session) :
-#     """Provider function as part of the dependency-injection mechanism."""
-#     with BasinService(session=db_session) as service:
-#         yield service
