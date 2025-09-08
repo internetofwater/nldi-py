@@ -306,6 +306,12 @@ def get_basin_by_id(source_name: str, identifier: str) -> dict[str, Any]:
         )
         try:
             featurelist = basin_svc.get_by_id(identifier, source_name, simplified, split)
+        except (NotFoundError, LookupError) as e:
+            return flask.Response(
+                headers={"Content-Type": "application/json"},
+                status=http.HTTPStatus.NOT_FOUND
+            )
+
         except Exception as e:
             logging.exception("Unable to get/split basin")
             raise ServiceUnavailable("Unable to get/split basin") from e

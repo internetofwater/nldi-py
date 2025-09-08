@@ -62,7 +62,10 @@ class BasinService:
         feature.
         """
         source_name = source_name.lower() if source_name else "comid"
-        (start_comid, is_point, feature) = self._get_start_comid(identifier, source_name)
+        try:
+            (start_comid, is_point, feature) = self._get_start_comid(identifier, source_name)
+        except (ValueError, LookupError, TypeError) as e:
+            raise LookupError(f"Cannot get starting COMID for {identifier} / {source_name}")
 
         if is_point and split:
             # Plan A: the point is on a FlowLine
