@@ -63,22 +63,24 @@ def home():
 # region ABOUT
 
 
-@ROOT.route("/about/config")
-def app_configuration():
-    """
-    Config info for the app.
+# @ROOT.route("/about/config")
+# def app_configuration():
+#     """
+#     Config info for the app.
 
-    Note that we're not including this endpoint in the openapi.json. It is used
-    only for debugging purposes. Not intended for users.
-    """
-    _app = flask.current_app
-    _sanitized_config = deepcopy(_app.NLDI_CONFIG)
-    _sanitized_config.db.password = "***"  # noqa: S105
-    return {
-        "server": vars(_sanitized_config.server),
-        "db": vars(_sanitized_config.db),
-        "metadata": vars(_sanitized_config.metadata),
-    }
+#     Note that we're not including this endpoint in the openapi.json. It is used
+#     only for debugging purposes. Not intended for users.
+#     """
+#     _app = flask.current_app
+#     _sanitized_config = deepcopy(_app.NLDI_CONFIG)
+#     _sanitized_config.db.password = "*p*a*s*s*"  # noqa: S105
+#     _sanitized_config.db.user = "USERNAME"
+#     _sanitized_config.db.host = ".".join(_sanitized_config.db.host.split(".")[1:])
+#     return {
+#         "server": vars(_sanitized_config.server),
+#         "db": vars(_sanitized_config.db),
+#         "metadata": vars(_sanitized_config.metadata),
+#     }
 
 
 @ROOT.route("/about/health")

@@ -96,9 +96,17 @@ class DatabaseConfig:
         return healthy
 
     def healthstatus(self) -> status.ServiceHealth:
+        _sanitized = DB_URL.create(
+            "postgresql+psycopg",
+            username="USERNAME",
+            password="*p*a*s*s*",
+            host=".".join(self.host.split(".")[1:]),
+            port=self.port,
+            database=self.dbname,
+        )
         return status.ServiceHealth(
             name="db",
-            cfg=str(self.URL),
+            cfg=str(_sanitized),
             status="online" if self.ping() else "offline",
         )
 
