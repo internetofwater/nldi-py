@@ -36,20 +36,27 @@
             ]
         },
         {
-            "name": "WSGI - GUNICORN",
+            "name": "GUNICORN",
             "type": "debugpy",
             "justMyCode": false,
             "envFile": "${workspaceFolder}/tests/data/secret.env",
+            "env": {
+                "GEVENT_SUPPORT": "True"
+            },
             "request": "launch",
             "program": "${workspaceFolder}/.venv/bin/gunicorn",
             "args": [
                 "--bind",
                 "0.0.0.0:8001",
                 "--workers",
-                "1",
+                "4",
                 "--timeout",
                 "6000",
-                "nldi.wsgi:APP",
+                "-k",
+                "uvicorn.workers.UvicornWorker",
+                "nldi.asgi:APP",
+                "--worker-connections",
+                "100"
             ]
         },
         {
@@ -62,7 +69,8 @@
             "args": [
                 "--bind",
                 "0.0.0.0:8001",
-                "-w", "1",
+                "-w",
+                "1",
                 "nldi.asgi:APP",
             ]
         }

@@ -36,7 +36,6 @@ dependencies = [
   "gunicorn>=23.0.0,<24",
   "flask[async]>=3.1.0,<4",
   "flask-cors>=5.0.1,<6",
-  "hypercorn>=0.17.3,<0.18",
   "httpx>=0.28.1,<0.29",
   "msgspec>=0.19.0,<0.20",
   "rich>=14.0.0,<15",
