@@ -16,14 +16,14 @@ CONTAINER_HOST=${CONTAINER_HOST:=0.0.0.0}
 CONTAINER_PORT=${CONTAINER_PORT:=8080}
 WSGI_WORKERS=${WSGI_WORKERS:=4}
 WSGI_WORKER_TIMEOUT=${WSGI_WORKER_TIMEOUT:=6000}
-WSGI_WORKER_CLASS=${WSGI_WORKER_CLASS:=gevent}
 
 
 # Workdir
 cd ${NLDI_HOME}
 echo "name=${CONTAINER_NAME} ; bind=${CONTAINER_HOST}:${CONTAINER_PORT}"
-exec hypercorn -w ${WSGI_WORKERS} \
-        --read-timeout ${WSGI_WORKER_TIMEOUT} \
+exec gunicorn -w ${WSGI_WORKERS} \
         --bind ${CONTAINER_HOST}:${CONTAINER_PORT} \
-        nldi.asgi:APP
-
+        --timeout ${WSGI_WORKER_TIMEOUT} \
+        -k uvicorn.workers.UvicornWorker \
+        nldi.asgi:APP \
+        --worker-connections 100

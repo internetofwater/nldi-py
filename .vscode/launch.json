@@ -2,41 +2,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "WSGI - uvicorn",
-            "type": "debugpy",
-            "justMyCode": false,
-            "envFile": "${workspaceFolder}/tests/data/secret.env",
-            "request": "launch",
-            "program": "${workspaceFolder}/.venv/bin/uvicorn",
-            "args": [
-                "nldi.wsgi:APP",
-                "--reload",
-                "--host",
-                "0.0.0.0",
-                "--port",
-                "8001",
-                "--interface",
-                "wsgi"
-            ]
-        },
-        {
-            "name": "ASGI - uvicorn",
-            "type": "debugpy",
-            "justMyCode": false,
-            "envFile": "${workspaceFolder}/tests/data/secret.env",
-            "request": "launch",
-            "program": "${workspaceFolder}/.venv/bin/uvicorn",
-            "args": [
-                "nldi.asgi:APP",
-                "--reload",
-                "--host",
-                "0.0.0.0",
-                "--port",
-                "8001",
-            ]
-        },
-        {
-            "name": "WSGI - GUNICORN",
+            "name": "GUNICORN",
             "type": "debugpy",
             "justMyCode": false,
             "envFile": "${workspaceFolder}/tests/data/secret.env",
@@ -46,10 +12,14 @@
                 "--bind",
                 "0.0.0.0:8001",
                 "--workers",
-                "1",
+                "4",
                 "--timeout",
                 "6000",
-                "nldi.wsgi:APP",
+                "-k",
+                "uvicorn.workers.UvicornWorker",
+                "nldi.asgi:APP",
+                "--worker-connections",
+                "100"
             ]
         },
         {
@@ -62,7 +32,8 @@
             "args": [
                 "--bind",
                 "0.0.0.0:8001",
-                "-w", "1",
+                "-w",
+                "1",
                 "nldi.asgi:APP",
             ]
         }
