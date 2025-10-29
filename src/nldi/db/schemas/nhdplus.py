@@ -13,6 +13,7 @@ from typing import Any
 
 import geoalchemy2
 from sqlalchemy import Column, DateTime, Float, Integer, MetaData, SmallInteger, String
+from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 from ..mixins import GeoJSONMixin
@@ -55,10 +56,23 @@ class FlowlineModel(NHDBaseModel, GeoJSONMixin):
     tmeasure: Mapped[float] = mapped_column(Float)
     reachcode: Mapped[str] = mapped_column(String)
 
+    mainstem_lookup = relationship(
+        MainstemLookupModel,
+        primaryjoin=nhdplus_comid == MainstemLookupModel.nhdpv2_comid,  # noqa
+        foreign_keys=[nhdplus_comid],
+        lazy="immediate",
+    )
+    mainstem: AssociationProxy[str] = association_proxy("mainstem_lookup", "uri")
+
     def __properties__(self, exclude: set) -> dict[str, str]:
         _props = super().__properties__(exclude)
         ## Extend the properties dict with the AssociationProxy(s) of iterest; these are not dumped with columns by default.
-        _props.update({"sourceName": "NHDPlus comid", "source": "comid"})
+        ## Extend the properties dict with the AssociationProxy(s) of iterest; these are not dumped with columns by default.
+        if self.mainstem == "NA" or self.mainstem == "":  # possible strings to interpret as NoData for the mainstem URI.
+            _mainstem = None
+        else:
+            _mainstem = self.mainstem
+        _props.update({"mainstem": _mainstem, "sourceName": "NHDPlus comid", "source": "comid"})
         return _props
 
 
@@ -113,11 +127,3 @@ class FlowlineVAAModel(NHDBaseModel):
     # reachsmdate: Mapped[datetime] = mapped_column(DateTime)
     # fmeasure: Mapped[float] = mapped_column(Float)
     # tmeasure: Mapped[float] = mapped_column(Float)
-
-
-FlowlineModel.mainstem_lookup = relationship(
-    MainstemLookupModel,
-    primaryjoin=FlowlineModel.nhdplus_comid == MainstemLookupModel.nhdpv2_comid,  # noqa
-    foreign_keys=[FlowlineModel.nhdplus_comid],
-    uselist=False,
-)
