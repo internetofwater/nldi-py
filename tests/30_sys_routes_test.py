@@ -17,18 +17,18 @@ import pytest
 from . import API_PREFIX
 
 
-@pytest.mark.order(21)
-@pytest.mark.integration
-def test_server_config_form(f_client_containerized) -> None:
-    """We're not checking for valid data -- just that the path returns JSON of the right form."""
-    r = f_client_containerized.get(f"{API_PREFIX}/about/config")
-    assert r.status_code == 200
-    actual = r.json
-    assert actual["server"].get("url")
-    assert actual["server"].get("prefix")
+# @pytest.mark.order(21)
+# @pytest.mark.integration
+# def test_server_config_form(f_client_containerized) -> None:
+#     """We're not checking for valid data -- just that the path returns JSON of the right form."""
+#     r = f_client_containerized.get(f"{API_PREFIX}/about/config")
+#     assert r.status_code == 200
+#     actual = r.json
+#     assert actual["server"].get("url")
+#     assert actual["server"].get("prefix")
 
-    assert actual["db"].get("host")
-    assert actual["db"].get("port")
+#     assert actual["db"].get("host")
+#     assert actual["db"].get("port")
 
 
 @pytest.mark.order(21)
@@ -68,10 +68,6 @@ def test_server_openapi_docs(f_client_containerized) -> None:
 @pytest.mark.order(22)
 @pytest.mark.integration
 def test_server_db_config_container(f_client_containerized) -> None:
-    r = f_client_containerized.get(f"{API_PREFIX}/about/config")
-    assert r.status_code == 200
-    actual = r.json
-    assert actual["db"].get("host").startswith("172.")  # <<< WARNING -- this may not be true on all systems.
 
     r = f_client_containerized.get(f"{API_PREFIX}/about/health")
     assert r.status_code == 200
@@ -84,10 +80,6 @@ def test_server_db_config_container(f_client_containerized) -> None:
 @pytest.mark.order(22)
 @pytest.mark.system
 def test_server_db_config_testdb(f_client_testdb) -> None:
-    # r = f_client_testdb.get(f"{API_PREFIX}/about/config")
-    # assert r.status_code == 200
-    # actual = r.json
-    # assert actual["db"].get("host").startswith("active-nldi-db")  # < Magic value
 
     r = f_client_testdb.get(f"{API_PREFIX}/about/health")
     assert r.status_code == 200

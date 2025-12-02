@@ -393,6 +393,7 @@ def get_flowline_navigation(
         distance = NAV_DIST_DEFAULTS.get(nav_mode, 100)
     except (TypeError, ValueError) as e:
         return flask.Response(status=http.HTTPStatus.BAD_REQUEST, response="Invalid distance provided")
+
     trim_start = False
     try:
         _t = flask.request.args["trimStart"]
@@ -401,6 +402,16 @@ def get_flowline_navigation(
         trim_start = False
     except (TypeError, ValueError) as e:
         return flask.Response(status=http.HTTPStatus.BAD_REQUEST, response="Invalid trimStart provided")
+
+    xclude_geom = False
+    try:
+        _x = flask.request.args["excludeGeometry"]
+        xclude_geom = _x.lower() == "true"
+    except KeyError as e:
+        xclude_geom = False
+    except (TypeError, ValueError) as e:
+        return flask.Response(status=http.HTTPStatus.BAD_REQUEST, response="Invalid value for excludeGeometry")
+
 
     with flask.current_app.alchemy.with_session() as db_session:
         navigation_svc = services.NavigationService(session=db_session)
@@ -411,6 +422,13 @@ def get_flowline_navigation(
             raise NotFound(description=str(e))
         except ValueError as e:
             raise BadRequest(description=str(e))
+
+    ## NOTE:  This is a brute-force way to do this.  It zeros out the feature geometry before delivering to
+    ## the client.  But the SQL request and interactions with the db include feature geometries.  By doing it
+    ## this way, we save on message size via HTTP, but don't economize on data from the db itself. TODO: alter the sql.
+    if xclude_geom:
+        for f in features:
+            f.geometry={}
 
     _r = flask.Response(
         headers={"Content-Type": "application/json"},
@@ -443,6 +461,17 @@ def get_feature_navigation(
     except (TypeError, ValueError) as e:
         return flask.Response(status=http.HTTPStatus.BAD_REQUEST, response="Invalid distance provided")
 
+
+    xclude_geom = False
+    try:
+        _x = flask.request.args["excludeGeometry"]
+        xclude_geom = _x.lower() == "true"
+    except KeyError as e:
+        xclude_geom = False
+    except (TypeError, ValueError) as e:
+        return flask.Response(status=http.HTTPStatus.BAD_REQUEST, response="Invalid value for excludeGeometry")
+
+
     with flask.current_app.alchemy.with_session() as db_session:
         navigation_svc = services.NavigationService(session=db_session)
         try:
@@ -451,6 +480,11 @@ def get_feature_navigation(
             raise NotFound(description=str(e))
         except ValueError as e:
             raise BadRequest(description=str(e))
+
+    ## NOTE:  See note above re: zeroing geometries here vs not even requesting from the DB
+    if xclude_geom:
+        for f in features:
+            f.geometry={}
 
     _r = flask.Response(
         headers={"Content-Type": "application/json"},
