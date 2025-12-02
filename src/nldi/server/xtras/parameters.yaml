@@ -111,6 +111,14 @@ trimTolerance:
     type: number
     example: 0.1
 
+excludeGeometry:
+  name: excludeGeometry
+  in: query
+  required: false
+  schema:
+    type: boolean
+
+    
 legacy:
   name: legacy
   in: query

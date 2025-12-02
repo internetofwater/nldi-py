@@ -440,6 +440,7 @@ def generate_openapi_json():
             if src == "{sourceid}"
             else {"$ref": "#/components/parameters/comid"},
             {"$ref": "#/components/parameters/navigationMode"},
+            {"$ref": "#/components/parameters/excludeGeometry"},
         ]
         if src == "comid":
             params.extend(
