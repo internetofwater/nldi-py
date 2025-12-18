@@ -19,7 +19,7 @@ comid:
   name: comid
   in: path
   description: NHDPlus common identifier
-  required: True,
+  required: true
   schema:
     type: integer
     example: 13294314
@@ -118,7 +118,7 @@ excludeGeometry:
   schema:
     type: boolean
 
-    
+
 legacy:
   name: legacy
   in: query
