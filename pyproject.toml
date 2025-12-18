@@ -24,7 +24,7 @@ classifiers = [
   "Topic :: Scientific/Engineering :: Information Analysis",
 ]
 dependencies = [
-  "advanced-alchemy[uuid]>=1.0.0,<2",
+  "advanced-alchemy[uuid]==1.8.0",
   "geoalchemy2[shapely]>=0.16.0,<0.17",
   "uvicorn>=0.34.0,<0.35",
   "geomet>=1.1.0,<2",
