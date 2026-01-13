@@ -14,8 +14,8 @@ export NLDI_CONFIG="${NLDI_HOME}/local.source.yml"
 CONTAINER_NAME=${CONTAINER_NAME:=nldi}
 CONTAINER_HOST=${CONTAINER_HOST:=0.0.0.0}
 CONTAINER_PORT=${CONTAINER_PORT:=8080}
-WSGI_WORKERS=${WSGI_WORKERS:=4}
-WSGI_WORKER_TIMEOUT=${WSGI_WORKER_TIMEOUT:=6000}
+WSGI_WORKERS=${WSGI_WORKERS:=4}                    # https://docs.gunicorn.org/en/stable/settings.html#workers
+WSGI_WORKER_TIMEOUT=${WSGI_WORKER_TIMEOUT:=120}    # https://docs.gunicorn.org/en/stable/settings.html#timeout
 
 
 # Workdir
@@ -26,4 +26,4 @@ exec gunicorn -w ${WSGI_WORKERS} \
         --timeout ${WSGI_WORKER_TIMEOUT} \
         -k uvicorn.workers.UvicornWorker \
         nldi.asgi:APP \
-        --worker-connections 100
+        --worker-connections 100  ## Per https://docs.gunicorn.org/en/stable/settings.html#worker-class, this has no effect on custom worker classes.
