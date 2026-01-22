@@ -8,7 +8,7 @@ resolution-markers = [
 
 [[package]]
 name = "advanced-alchemy"
-version = "1.1.1"
+version = "1.8.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "alembic" },
@@ -16,9 +16,9 @@ dependencies = [
     { name = "sqlalchemy" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/ba/8b/e7d02cb695f2ae64bae19fd592b290e3e8d12b98966424de40e71a289352/advanced_alchemy-1.1.1.tar.gz", hash = "sha256:d5876586259f9173a6fed74cbeab5ecd5ba71725cd8d36e5d0b73ef887f2cd79", size = 636110, upload-time = "2025-04-07T03:20:53.639Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/3f/c6/6b3b3abfaec99d4a803842591ca796f7b194bfe1e966e749e79fcc26f3b3/advanced_alchemy-1.8.0.tar.gz", hash = "sha256:2a4ff20e8f09c15472196623ab99870e99085466a7ca95aecea3b113f571e67b", size = 909668, upload-time = "2025-10-28T21:01:30.998Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/a7/3a/aa56db9f7d7325fd9d4520a673147eec7bc86956902996432c5041bb9e1c/advanced_alchemy-1.1.1-py3-none-any.whl", hash = "sha256:da96ce25892c3895cc5d98a038044ca35480badbb8f238e04ec45a0b9303e276", size = 212595, upload-time = "2025-04-07T03:20:51.879Z" },
+    { url = "https://files.pythonhosted.org/packages/c9/a3/9c1ffd384f8ed517d0961a230b92dc235b4be45027c57a5290f615358a2f/advanced_alchemy-1.8.0-py3-none-any.whl", hash = "sha256:df3fc0794f3b2288ac84f537e5d2918c70658116de4e2c2e2294778b179cfa70", size = 258817, upload-time = "2025-10-28T21:01:29.163Z" },
 ]
 
 [package.optional-dependencies]
@@ -837,7 +837,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "advanced-alchemy", extras = ["uuid"], specifier = ">=1.0.0,<2" },
+    { name = "advanced-alchemy", extras = ["uuid"], specifier = "==1.8.0" },
     { name = "dotenv", specifier = ">=0.9.9,<0.10" },
     { name = "flask", extras = ["async"], specifier = ">=3.1.0,<4" },
     { name = "flask-cors", specifier = ">=5.0.1,<6" },

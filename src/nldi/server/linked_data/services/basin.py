@@ -6,6 +6,9 @@
 #
 """ """
 
+import logging
+
+from advanced_alchemy.exceptions import NotFoundError
 from sqlalchemy.orm import Session
 
 from .catchment import CatchmentService
@@ -37,11 +40,11 @@ class BasinService:
                 feature = hit.as_feature()
                 start_comid = int(feature.properties["comid"])
                 is_point = feature.geometry["type"] == "Point"
-        except (ValueError, TypeError):
+        except (ValueError, TypeError) as e:
             msg = f"Unexpected error getting comid from {identifier} / {source_name}"
-            logging.debug(msg)
+            logging.debug(msg + f"Error is {str(e)} ; feature is {feature}")
             raise LookupError(msg)
-        except KeyError:
+        except (NotFoundError, KeyError) as e:
             msg = f"The feature {identifier} does not exist for '{source_name}'."  # noqa
             logging.debug(msg)
             raise LookupError(msg)
@@ -71,7 +74,7 @@ class BasinService:
             (start_comid, is_point, feature) = self._get_start_comid(identifier, source_name)
         except LookupError:
             logging.debug(f"Cannot get starting COMID for {identifier} / {source_name}")
-            raise # this is not our problem. Let the caller sort it out.
+            raise  # this is not our problem. Let the caller sort it out.
 
         if is_point and split:
             # Plan A: the point is on a FlowLine
@@ -112,5 +115,3 @@ class BasinService:
                 raise LookupError(f"Cannot get drainage basin by comid. {start_comid=}") from e
             features = [feature]
         return features
-
-
