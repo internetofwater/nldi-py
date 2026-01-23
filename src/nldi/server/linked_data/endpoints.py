@@ -227,16 +227,22 @@ def flowline_by_position():
             raise NotFound(description=str(e))
 
         # Step2: use that catchment's COMID to lookup flowline
-        flowline_svc = services.FlowlineService(session=db_session)
-        flowline_feature = flowline_svc.get_feature(
-            comid,
-            xtra_props={"navigation": util.url_join(base_url, "linked-data/comid", comid, "navigation")},
-        )
+        try:
+            flowline_svc = services.FlowlineService(session=db_session)
+            flowline_feature = flowline_svc.get_feature(
+                comid,
+                xtra_props={"navigation": util.url_join(base_url, "linked-data/comid", comid, "navigation")},
+            )
+        except (KeyError, NotFoundError) as e:
+            ## Not all catchments have flowlines attached.
+            raise NotFound(f"No Flowline for COMID {comid} at {coords}") from None
+
         _r = flask.Response(
             headers={"Content-Type": "application/json"},
             status=http.HTTPStatus.OK,
             response=util.stream_j2_template("FeatureCollection.j2", [msgspec.structs.asdict(flowline_feature)]),
         )
+
     return _r
 
 
@@ -311,7 +317,7 @@ def get_basin_by_id(source_name: str, identifier: str) -> dict[str, Any]:
             return flask.Response(
                 headers={"Content-Type": "application/json"},
                 status=http.HTTPStatus.NOT_FOUND,
-                response = str(e),
+                response=str(e),
             )
         except Exception as e:
             logging.exception("Unable to get/split basin")
@@ -412,7 +418,6 @@ def get_flowline_navigation(
     except (TypeError, ValueError) as e:
         return flask.Response(status=http.HTTPStatus.BAD_REQUEST, response="Invalid value for excludeGeometry")
 
-
     with flask.current_app.alchemy.with_session() as db_session:
         navigation_svc = services.NavigationService(session=db_session)
 
@@ -428,7 +433,7 @@ def get_flowline_navigation(
     ## this way, we save on message size via HTTP, but don't economize on data from the db itself. TODO: alter the sql.
     if xclude_geom:
         for f in features:
-            f.geometry={}
+            f.geometry = {}
 
     _r = flask.Response(
         headers={"Content-Type": "application/json"},
@@ -461,7 +466,6 @@ def get_feature_navigation(
     except (TypeError, ValueError) as e:
         return flask.Response(status=http.HTTPStatus.BAD_REQUEST, response="Invalid distance provided")
 
-
     xclude_geom = False
     try:
         _x = flask.request.args["excludeGeometry"]
@@ -470,7 +474,6 @@ def get_feature_navigation(
         xclude_geom = False
     except (TypeError, ValueError) as e:
         return flask.Response(status=http.HTTPStatus.BAD_REQUEST, response="Invalid value for excludeGeometry")
-
 
     with flask.current_app.alchemy.with_session() as db_session:
         navigation_svc = services.NavigationService(session=db_session)
@@ -484,7 +487,7 @@ def get_feature_navigation(
     ## NOTE:  See note above re: zeroing geometries here vs not even requesting from the DB
     if xclude_geom:
         for f in features:
-            f.geometry={}
+            f.geometry = {}
 
     _r = flask.Response(
         headers={"Content-Type": "application/json"},
