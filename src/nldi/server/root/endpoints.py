@@ -23,12 +23,16 @@ ROOT = flask.Blueprint("nldi", __name__)
 
 @ROOT.before_request
 def root_incoming_request() -> None:
-    logging.debug(f"{flask.request.method} {flask.request.url}")
-
     rp = flask.request.path
     if rp != "/" and rp.endswith("/"):
         return flask.redirect(rp[:-1])
+    logging.info(f"{flask.request.method} {flask.request.url}")
 
+@ROOT.after_request
+def root_post_request_actions(r: flask.Response) -> None:
+    rp = flask.request.path
+    logging.info(f"RETURN from {rp}")
+    return r
 
 @ROOT.route("/")
 def home():
@@ -61,26 +65,6 @@ def home():
 
 
 # region ABOUT
-
-
-# @ROOT.route("/about/config")
-# def app_configuration():
-#     """
-#     Config info for the app.
-
-#     Note that we're not including this endpoint in the openapi.json. It is used
-#     only for debugging purposes. Not intended for users.
-#     """
-#     _app = flask.current_app
-#     _sanitized_config = deepcopy(_app.NLDI_CONFIG)
-#     _sanitized_config.db.password = "*p*a*s*s*"  # noqa: S105
-#     _sanitized_config.db.user = "USERNAME"
-#     _sanitized_config.db.host = ".".join(_sanitized_config.db.host.split(".")[1:])
-#     return {
-#         "server": vars(_sanitized_config.server),
-#         "db": vars(_sanitized_config.db),
-#         "metadata": vars(_sanitized_config.metadata),
-#     }
 
 
 @ROOT.route("/about/health")
