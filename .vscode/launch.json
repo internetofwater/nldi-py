@@ -19,7 +19,9 @@
                 "uvicorn.workers.UvicornWorker",
                 "nldi.asgi:APP",
                 "--worker-connections",
-                "100"
+                "100",
+                "--access-logfile",
+                "-"
             ]
         },
         {

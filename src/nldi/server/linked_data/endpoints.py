@@ -99,7 +99,7 @@ def parse_incoming_request() -> None:
     flask.request.format = "json"
 
 
-@LINKED_DATA.after_request
+@LINKED_DATA.after_app_request
 def root_post_request_actions(r: flask.Response) -> None:
     rp = flask.request.path
     logging.info(f"RETURN from {rp}")
@@ -177,13 +177,13 @@ def get_all_flowlines():
         _featurecount = flowline_svc.count()
         _limit = _limit or _featurecount
         _link_hdr = link_header(flask.request, offset=_offset, limit=_limit, maxcount=_featurecount)
-        logging.info(f"Streaming {_limit} flowlines.")
         _r = flask.Response(
             headers=_link_hdr,
             status=http.HTTPStatus.OK,
             mimetype="application/json",
             response=util.stream_j2_template(_template, feature_iterator),
         )
+        logging.info(f"Streamed {_limit} flowlines.")
     return _r
 
 
