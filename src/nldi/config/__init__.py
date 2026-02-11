@@ -28,3 +28,9 @@ def get_config() -> MasterConfig:
         raise RuntimeError(f"Config file {__configfile} does not exist.")
 
     return _config
+
+
+def log_level() -> int:
+    _level_name = os.getenv("springFrameworkLogLevel", "WARN").upper()
+    level = logging.getLevelNamesMapping().get(_level_name, logging.WARNING)
+    return level

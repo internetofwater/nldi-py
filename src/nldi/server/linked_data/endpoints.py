@@ -81,8 +81,8 @@ def parse_incoming_request() -> None:
     if rp != "/" and rp.endswith("/"):
         return flask.redirect(rp[:-1])
 
+    logging.info(f"GET {rp}")
     if flask.request.args.get("f") in ["json", "jsonld"]:
-        logging.debug(f"JSON specifically requested")
         flask.request.format = flask.request.args.get("f")
         return
     # NOTE: This is a special request for the interface:  If the requesting client specifically calls out
@@ -97,6 +97,13 @@ def parse_incoming_request() -> None:
         new_url = f"{rp}?{_qstring}"
         raise HtmlJsonException(new_url)
     flask.request.format = "json"
+
+
+@LINKED_DATA.after_app_request
+def root_post_request_actions(r: flask.Response) -> None:
+    rp = flask.request.path
+    logging.info(f"RETURN from {rp}")
+    return r
 
 
 @LINKED_DATA.route("/")
@@ -135,6 +142,7 @@ def get_hydrolocation():
         pygeoapi_svc = services.PyGeoAPIService(session=db_session)
         try:
             features = pygeoapi_svc.hydrolocation_by_coords(coords, base_url=base_url)
+            logging.info(f"Hydrolocation by {coords} returns {len(features)} features.")
         except RuntimeError as e:
             raise ServiceUnavailable(description=str(e))
         except KeyError as e:
@@ -169,13 +177,13 @@ def get_all_flowlines():
         _featurecount = flowline_svc.count()
         _limit = _limit or _featurecount
         _link_hdr = link_header(flask.request, offset=_offset, limit=_limit, maxcount=_featurecount)
-        # _link_hdr.update({"Content-Type": "application/json"})
         _r = flask.Response(
             headers=_link_hdr,
             status=http.HTTPStatus.OK,
             mimetype="application/json",
             response=util.stream_j2_template(_template, feature_iterator),
         )
+        logging.info(f"Streamed {_limit} flowlines.")
     return _r
 
 
@@ -194,7 +202,9 @@ def get_flowline_by_comid(comid: int | None = None):
                 comid,
                 xtra_props={"navigation": util.url_join(base_url, "linked-data/comid", comid, "navigation")},
             )
+            logging.info(f"Flowline by {comid=} success.")
         except NotFoundError:
+            logging.info(f"Flowline by {comid=} returned no hits.")
             raise NotFound(description=f"COMID {comid} not found.")
         _r = flask.Response(
             headers={"Content-Type": "application/json"},
@@ -221,6 +231,7 @@ def flowline_by_position():
             if not catchment:
                 raise NotFound(description=f"No catchment found at coords {coords}")
             comid = int(catchment.featureid)
+            logging.info(f"Find catchment by position at {coords} returns {comid=}")
         except ValueError as e:
             raise UnprocessableEntity(description=str(e))
         except NotFoundError as e:
@@ -233,8 +244,10 @@ def flowline_by_position():
                 comid,
                 xtra_props={"navigation": util.url_join(base_url, "linked-data/comid", comid, "navigation")},
             )
+            logging.info(f"Flowline associated with {comid=} Found.")
         except (KeyError, NotFoundError) as e:
             ## Not all catchments have flowlines attached.
+            logging.info(f"No flowline associated with {comid=}.")
             raise NotFound(f"No Flowline for COMID {comid} at {coords}") from None
 
         _r = flask.Response(
@@ -265,7 +278,7 @@ def get_feature_by_identifier(source_name: str, identifier: str = ""):
     with flask.current_app.alchemy.with_session() as db_session:
         feature_svc = services.FeatureService(session=db_session)
         if not identifier:
-            # List all features in the named source
+            logging.debug(f"Listing all features for source {source_name=}.")
             _featurecount = feature_svc.featurecount(source_name)
             _limit = _limit or _featurecount
             feature_iterator = feature_svc.iter_by_src(
@@ -274,6 +287,7 @@ def get_feature_by_identifier(source_name: str, identifier: str = ""):
                 limit=_limit,
                 offset=_offset,
             )
+            logging.info(f"Streaming {_limit} features from {source_name=}")
             _link_hdr = link_header(flask.request, offset=_offset, limit=_limit, maxcount=_featurecount)
             _r = flask.Response(
                 headers=_link_hdr,
@@ -284,7 +298,9 @@ def get_feature_by_identifier(source_name: str, identifier: str = ""):
         else:
             try:
                 feature = feature_svc.feature_lookup(source_name, identifier)
+                logging.info(f"{source_name=} / {identifier=} Found.")
             except NotFoundError:
+                logging.info(f"Feature ID {identifier} does not exist in source {source_name}.")
                 raise NotFound(description=f"Feature ID {identifier} does not exist in source {source_name}.")
             nav_url = util.url_join(
                 flask.current_app.NLDI_CONFIG.server.base_url, "linked-data", source_name, identifier, "navigation"
@@ -313,6 +329,9 @@ def get_basin_by_id(source_name: str, identifier: str) -> dict[str, Any]:
 
         try:
             featurelist = basin_svc.get_by_id(identifier, source_name, simplified, split)
+            logging.info(
+                f"basin.get_by_id({identifier=}, {source_name=}, {simplified=}, {split=}) found {len(featurelist)} items."
+            )
         except LookupError as e:
             return flask.Response(
                 headers={"Content-Type": "application/json"},
@@ -362,6 +381,7 @@ def get_navigation_info(source_name: str, identifier: str, nav_mode: str) -> lis
         sources_svc = services.CrawlerSourceService(session=db_session)
         src_exists = sources_svc.suffix_exists(source_name)
         if not src_exists:
+            logging.warning(f"Attempt to nav on unknown source: {source_name}")
             raise NotFound(description == f"No such source: {source_name}")
 
     content = [
@@ -422,7 +442,10 @@ def get_flowline_navigation(
         navigation_svc = services.NavigationService(session=db_session)
 
         try:
+            logging.info(f"walk_flowlines({source_name=}, {identifier=}, {nav_mode=}, {distance=}, {trim_start=})")
             features = navigation_svc.walk_flowlines(source_name, identifier, nav_mode, distance, trim_start)
+            logging.info(f"walk_flowlines() returned {len(features)} features.")
+
         except NotFoundError as e:
             raise NotFound(description=str(e))
         except ValueError as e:
@@ -478,7 +501,9 @@ def get_feature_navigation(
     with flask.current_app.alchemy.with_session() as db_session:
         navigation_svc = services.NavigationService(session=db_session)
         try:
+            logging.info(f"walk_features({source_name=}, {identifier=}, {nav_mode=}, {data_source=}, {distance=})")
             features = navigation_svc.walk_features(source_name, identifier, nav_mode, data_source, distance)
+            logging.info(f"walk_features() returned {len(features)} features.")
         except NotFoundError as e:
             raise NotFound(description=str(e))
         except ValueError as e:

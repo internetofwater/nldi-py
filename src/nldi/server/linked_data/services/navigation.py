@@ -359,6 +359,7 @@ class NavigationService:
 
         nav_results_query = self.navigation(nav_mode, start_comid, distance)
 
+
         if trim_start is True:
             measure = starting_feature.measure
             if not measure:  # only happens if measure is supplied as zero

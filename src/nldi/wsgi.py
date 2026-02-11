@@ -7,6 +7,7 @@
 """Flask Endpoints and Routes"""
 
 import logging
+import os
 
 import flask
 from advanced_alchemy.config.engine import EngineConfig
@@ -14,13 +15,14 @@ from advanced_alchemy.extensions.flask import AdvancedAlchemy, SQLAlchemySyncCon
 from flask_cors import CORS
 from sqlalchemy.exc import OperationalError
 
-from .config import get_config
+from .config import get_config, log_level
 from .server.linked_data.endpoints import LINKED_DATA
 from .server.root.endpoints import ROOT
 
 
 def flask_nldi_app_factory() -> flask.Flask:
     _cfg = get_config()
+    logging.basicConfig(level=logging.DEBUG)  ## Debug for startup... will set to a more modest level later.
 
     app = flask.Flask(__name__)
     if not app:
@@ -43,6 +45,7 @@ def flask_nldi_app_factory() -> flask.Flask:
     )
     app.alchemy = AdvancedAlchemy(_alchemy_config, app)
     app.NLDI_CONFIG = _cfg
+    logging.getLogger().setLevel(log_level())
     return app
 
 
