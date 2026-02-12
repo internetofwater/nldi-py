@@ -71,7 +71,7 @@ class FlowlineService(FlaskServiceMixin, SQLAlchemySyncRepositoryService[Flowlin
         subq = nav_query.subquery()
         stmt = sqlalchemy.select(FlowlineModel).join(subq, FlowlineModel.nhdplus_comid == subq.c.comid)
         logging.debug("Feature Navigation SQL Query:")
-        _query_stmt = stmt.compile(compile_kwargs={"literal_binds": True})
+        _query_stmt = stmt.compile( )
         logging.debug(f"{_query_stmt}")
         hits = self.repository._execute(stmt)
         r = hits.fetchall()
@@ -90,7 +90,7 @@ class FlowlineService(FlaskServiceMixin, SQLAlchemySyncRepositoryService[Flowlin
         )
         r = []
         logging.debug("Feature Navigation (trimmed) SQL Query:")
-        _query_stmt = stmt.compile(compile_kwargs={"literal_binds": True})
+        _query_stmt = stmt.compile( )
         logging.debug(f"{_query_stmt}")
 
         hits = self.repository._execute(stmt)
@@ -223,7 +223,7 @@ class FlowlineService(FlaskServiceMixin, SQLAlchemySyncRepositoryService[Flowlin
         ).params(feature_id=feature_id, feature_source=feature_source)
 
         logging.debug("Feature Along Flowline SQL Query:")
-        _query_stmt = stmt.compile(compile_kwargs={"literal_binds": True})
+        _query_stmt = stmt.compile( )
         logging.debug(f"{_query_stmt}")
 
         hits = self.repository._execute(stmt)
@@ -246,7 +246,7 @@ class FlowlineService(FlaskServiceMixin, SQLAlchemySyncRepositoryService[Flowlin
         )
 
         logging.debug("Feature Iterator SQL Query:")
-        _query_stmt = stmt.compile(compile_kwargs={"literal_binds": True})
+        _query_stmt = stmt.compile( )
         logging.debug(f"{_query_stmt}")
 
         query_result = self.repository.session.execute(stmt)
