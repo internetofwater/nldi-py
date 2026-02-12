@@ -11,6 +11,7 @@ import json
 import logging
 import traceback
 from copy import deepcopy
+from time import perf_counter
 from typing import Any, Literal, TypeVar
 
 import flask
@@ -108,6 +109,7 @@ def root_post_request_actions(r: flask.Response) -> None:
 
 @LINKED_DATA.route("/")
 def list_sources():
+    _start = perf_counter()
     base_url = flask.current_app.NLDI_CONFIG.server.base_url
     with flask.current_app.alchemy.with_session() as db_session:
         sources_svc = services.CrawlerSourceService(session=db_session)
@@ -128,11 +130,14 @@ def list_sources():
                 sourceName=f.source_name,
             )
         )
+    _finish = perf_counter()
+    logging.info(f"list_sources() produced {len(_rv)} sources in {_finish - _start}")
     return _rv
 
 
 @LINKED_DATA.route("/hydrolocation")
 def get_hydrolocation():
+    _start = perf_counter()
     if (coords := flask.request.args.get("coords")) is None:
         return flask.Response(status=http.HTTPStatus.BAD_REQUEST, response="No coordinates provided")
     db = flask.current_app.NLDI_CONFIG.db
@@ -153,11 +158,15 @@ def get_hydrolocation():
         status=http.HTTPStatus.OK,
         response=util.stream_j2_template("FeatureCollection.j2", [msgspec.structs.asdict(f) for f in features]),
     )
+    _finish = perf_counter()
+    logging.info(f"get_hydrolocation() completed in {_finish - _start}")
+
     return _r
 
 
 @LINKED_DATA.route("/comid")
 def get_all_flowlines():
+    _start = perf_counter()
     base_url = flask.current_app.NLDI_CONFIG.server.base_url
     if flask.request.format == "jsonld":
         _template = "FeatureCollectionGraph.j2"
@@ -183,12 +192,14 @@ def get_all_flowlines():
             mimetype="application/json",
             response=util.stream_j2_template(_template, feature_iterator),
         )
-        logging.info(f"Streamed {_limit} flowlines.")
+    _finish = perf_counter()
+    logging.info(f"get_all_flowlines() produced {_limit} features in {_finish - _start}")
     return _r
 
 
 @LINKED_DATA.route("/comid/<int:comid>")
 def get_flowline_by_comid(comid: int | None = None):
+    _start = perf_counter()
     base_url = flask.current_app.NLDI_CONFIG.server.base_url
     try:
         _comid = int(comid)
@@ -211,12 +222,15 @@ def get_flowline_by_comid(comid: int | None = None):
             status=http.HTTPStatus.OK,
             response=util.stream_j2_template("FeatureCollection.j2", [msgspec.structs.asdict(flowline_feature)]),
         )
+    _finish = perf_counter()
+    logging.info(f"get_flowline_by_comid() completed in {_finish - _start}")
     return _r
 
 
 @LINKED_DATA.route("/comid/position")
 def flowline_by_position():
     """Find flowline by spatial search."""
+    _start = perf_counter()
     db = flask.current_app.NLDI_CONFIG.db
     base_url = flask.current_app.NLDI_CONFIG.server.base_url
     if (coords := flask.request.args.get("coords")) is None:
@@ -255,7 +269,8 @@ def flowline_by_position():
             status=http.HTTPStatus.OK,
             response=util.stream_j2_template("FeatureCollection.j2", [msgspec.structs.asdict(flowline_feature)]),
         )
-
+    _finish = perf_counter()
+    logging.info(f"flowline_by_position() completed in {_finish - _start}")
     return _r
 
 
@@ -263,6 +278,7 @@ def flowline_by_position():
 @LINKED_DATA.route("/<path:source_name>")
 @LINKED_DATA.route("/<path:source_name>/<path:identifier>")
 def get_feature_by_identifier(source_name: str, identifier: str = ""):
+    _start = perf_counter()
     base_url = flask.current_app.NLDI_CONFIG.server.base_url
     if flask.request.format == "jsonld":
         _template = "FeatureCollectionGraph.j2"
@@ -311,11 +327,14 @@ def get_feature_by_identifier(source_name: str, identifier: str = ""):
                 status=http.HTTPStatus.OK,
                 response=util.stream_j2_template(_template, [msgspec.to_builtins(_geojson)]),
             )
+    _finish = perf_counter()
+    logging.info(f"get_feature_by_identifier() completed in {_finish - _start}")
     return _r
 
 
 @LINKED_DATA.route("/<path:source_name>/<path:identifier>/basin")
 def get_basin_by_id(source_name: str, identifier: str) -> dict[str, Any]:
+    _start = perf_counter()
     db = flask.current_app.NLDI_CONFIG.db
     base_url = flask.current_app.NLDI_CONFIG.server.base_url
     simplified = flask.request.args.get("simplified", "True").lower() == "true"
@@ -347,11 +366,14 @@ def get_basin_by_id(source_name: str, identifier: str) -> dict[str, Any]:
             status=http.HTTPStatus.OK,
             response=util.stream_j2_template("FeatureCollection.j2", [msgspec.to_builtins(f) for f in featurelist]),
         )
+    _finish = perf_counter()
+    logging.info(f"get_basin_by_id() completed in {_finish - _start}")
     return _r
 
 
 @LINKED_DATA.route("/<path:source_name>/<path:identifier>/navigation")
 def get_navigation_modes(source_name: str, identifier: str):
+    _start = perf_counter()
     db = flask.current_app.NLDI_CONFIG.db
     base_url = flask.current_app.NLDI_CONFIG.server.base_url
 
@@ -368,11 +390,15 @@ def get_navigation_modes(source_name: str, identifier: str):
         "downstreamMain": util.url_join(nav_url, "DM"),
         "downstreamDiversions": util.url_join(nav_url, "DD"),
     }
+    _finish = perf_counter()
+    logging.info(f"get_navigation_modes() completed in {_finish - _start}")
+
     return content
 
 
 @LINKED_DATA.route("/<path:source_name>/<path:identifier>/navigation/<path:nav_mode>")
 def get_navigation_info(source_name: str, identifier: str, nav_mode: str) -> list[dict[str, str]]:
+    _start=perf_counter()
     db = flask.current_app.NLDI_CONFIG.db
     base_url = flask.current_app.NLDI_CONFIG.server.base_url
     nav_url = util.url_join(base_url, "linked-data", source_name, identifier, "navigation")
@@ -400,6 +426,9 @@ def get_navigation_info(source_name: str, identifier: str, nav_mode: str) -> lis
                 "features": util.url_join(nav_url, nav_mode, src_id.lower()),
             }
         )
+    _finish = perf_counter()
+    logging.info(f"get_navigation_info({source_name=}, {identifier=}, {nav_mode=}) completed in {_finish - _start}")
+
     return content
 
 
@@ -409,6 +438,7 @@ def get_flowline_navigation(
     identifier: str,
     nav_mode: str,
 ):
+    _start = perf_counter()
     try:
         _d = flask.request.args["distance"]
         if _d:
@@ -463,6 +493,9 @@ def get_flowline_navigation(
         status=http.HTTPStatus.OK,
         response=util.stream_j2_template("FeatureCollection.j2", [msgspec.to_builtins(f) for f in features]),
     )
+    _finish = perf_counter()
+    logging.info(f"get_flowline_navigation({source_name=}, {identifier=}, {nav_mode=}) produced {len(features)} features in {_finish - _start}")
+
     return _r
 
 
@@ -473,6 +506,7 @@ def get_feature_navigation(
     nav_mode: str,
     data_source: str,
 ) -> struct_geojson.FeatureCollection:
+    _start = perf_counter()
     if flask.request.format == "jsonld":
         _template = "FeatureCollectionGraph.j2"
     else:
@@ -519,4 +553,7 @@ def get_feature_navigation(
         status=http.HTTPStatus.OK,
         response=util.stream_j2_template(_template, [msgspec.to_builtins(f) for f in features]),
     )
+    _finish = perf_counter()
+    logging.info(f"get_feature_navigation({source_name=}, {identifier=}, {nav_mode=}, {data_source=}) produced {len(features)} in {_finish - _start}")
+
     return _r
