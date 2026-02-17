@@ -36,10 +36,10 @@ def flask_nldi_app_factory() -> flask.Flask:
         connection_string=_cfg.db.URL,
         create_all=False,
         engine_config=EngineConfig(
-            pool_size=100,
+            pool_size=50,
             pool_recycle=60,
             pool_pre_ping=True,
-            max_overflow=20,
+            max_overflow=100,
             pool_timeout=30,
         ),
     )
