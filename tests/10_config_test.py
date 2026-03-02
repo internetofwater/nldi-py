@@ -4,9 +4,6 @@
 #
 """Test ability to read/parse YAML config file."""
 
-import logging
-import os
-
 import pytest
 
 from nldi.config import MasterConfig, default, load_yaml

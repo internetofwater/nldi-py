@@ -14,13 +14,11 @@ ENV \
   LANG=${LANG} \
   PIP_NO_CACHE_DIR=1
 
-COPY ./docker/DOICert.crt /usr/local/share/ca-certificates/DOICert.crt
-RUN chmod 644 /usr/local/share/ca-certificates/*.crt && update-ca-certificates
 
 ADD . /nldi
 WORKDIR /nldi
 
-RUN pip install --prefer-binary --no-cache-dir .  && rm -rf /root/.cache/pip
+RUN pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org --prefer-binary --no-cache-dir /nldi  && rm -rf /root/.cache/pip
 
 RUN mv /nldi/tests/data/nldi_server_config.yml /nldi/local.source.yml
 

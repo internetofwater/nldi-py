@@ -8,21 +8,15 @@ import pathlib
 from collections.abc import Generator
 
 import pytest
-from click.testing import CliRunner
+import pytest_asyncio
 from dotenv import dotenv_values
+from litestar.testing import AsyncTestClient
 from sqlalchemy import Engine, create_engine
 from sqlalchemy.engine import URL as DB_URL
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import Session, sessionmaker
 from testcontainers.core.container import DockerContainer
 from testcontainers.core.waiting_utils import wait_for_logs
-
-
-@pytest.fixture
-def runner():
-    """Runner for cli-related tests."""
-    # TODO: We currently don't have any CLI functions or capabilities defined. A future enhancement is
-    # to put the crawler into this repo, which is a CLI.
-    return CliRunner()
 
 
 @pytest.fixture(scope="session")
@@ -130,7 +124,7 @@ def engine_testdb(testdb_env_info) -> Generator[Engine, None, None]:
         port=testdb_env_info["NLDI_DB_PORT"],
         database=testdb_env_info["NLDI_DB_NAME"],
     )
-    _private_engine = create_engine(_URL, echo=True)
+    _private_engine = create_async_engine(_URL, echo=True)
     try:
         yield _private_engine
     finally:
@@ -140,7 +134,7 @@ def engine_testdb(testdb_env_info) -> Generator[Engine, None, None]:
 @pytest.fixture()
 def dbsession_testdb(engine_testdb) -> Generator[Session, None, None]:
     """A sqlalchemy session, connecting to the containerized DB."""
-    session = sessionmaker(bind=engine_testdb, expire_on_commit=False)()
+    session = async_sessionmaker(bind=engine_testdb, expire_on_commit=False)()
     try:
         yield session
     finally:
@@ -158,7 +152,7 @@ def engine_containerized(containerized_db_env_info) -> Generator[Engine, None, N
         port=containerized_db_env_info["NLDI_DB_PORT"],
         database=containerized_db_env_info["NLDI_DB_NAME"],
     )
-    _private_engine = create_engine(_URL, echo=True)
+    _private_engine = create_async_engine(_URL, echo=True)
     try:
         yield _private_engine
     finally:
@@ -168,35 +162,35 @@ def engine_containerized(containerized_db_env_info) -> Generator[Engine, None, N
 @pytest.fixture()
 def dbsession_containerized(engine_containerized) -> Generator[Session, None, None]:
     """A sqlalchemy session, connecting to the containerized DB."""
-    session = sessionmaker(bind=engine_containerized, expire_on_commit=False)()
+    session = async_sessionmaker(bind=engine_containerized, expire_on_commit=False)()
     try:
         yield session
     finally:
         session.close()
 
 
-@pytest.fixture()
-def f_client_containerized(monkeypatch, yaml_config_file, containerized_db_env_info):
+@pytest_asyncio.fixture()
+async def f_client_containerized(monkeypatch, yaml_config_file, containerized_db_env_info):
     """
-    A Flask-connected client, configured to use the containerized testing database.
+    A Litestar test client, configured to use the containerized testing database.
 
     The containerized database is intended for integration testing: testing at the API endpoint
     level and all business logic that it invokes.
     """
     for k, v in containerized_db_env_info.items():
-        monkeypatch.setenv(k, v)
-    monkeypatch.setenv("NLDI_CONFIG", yaml_config_file)
-    from nldi.wsgi import flask_nldi_app_factory
+        monkeypatch.setenv(k, str(v))
+    monkeypatch.setenv("NLDI_CONFIG", str(yaml_config_file))
+    from nldi.asgi import create_app
 
-    _app = flask_nldi_app_factory()
-    with _app.test_client() as client:
+    _app = create_app()
+    async with AsyncTestClient(app=_app) as client:
         yield client
 
 
-@pytest.fixture()
-def f_client_testdb(monkeypatch, yaml_config_file, testdb_env_info):
+@pytest_asyncio.fixture()
+async def f_client_testdb(monkeypatch, yaml_config_file, testdb_env_info):
     """
-    A Flask-connected client, configured to use the cloud-hosted testing database.
+    A Litestar test client, configured to use the cloud-hosted testing database.
 
     This database connection is intended for system/end-to-end testing and performance
     testing. The main difference between this and the containerized database connection
@@ -204,10 +198,10 @@ def f_client_testdb(monkeypatch, yaml_config_file, testdb_env_info):
     to the AWS-hosted database (rather than a containerized extract of that database).
     """
     for k, v in testdb_env_info.items():
-        monkeypatch.setenv(k, v)
-    monkeypatch.setenv("NLDI_CONFIG", yaml_config_file)
-    from nldi.wsgi import flask_nldi_app_factory
+        monkeypatch.setenv(k, str(v))
+    monkeypatch.setenv("NLDI_CONFIG", str(yaml_config_file))
+    from nldi.asgi import create_app
 
-    _app = flask_nldi_app_factory()
-    with _app.test_client() as client:
+    _app = create_app()
+    async with AsyncTestClient(app=_app) as client:
         yield client

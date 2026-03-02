@@ -9,7 +9,7 @@
 import logging
 
 from advanced_alchemy.exceptions import NotFoundError
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from .catchment import CatchmentService
 from .feature import FeatureService
@@ -20,7 +20,7 @@ from .pygeoapi import PyGeoAPIService
 class BasinService:
     SPLIT_CATCHMENT_THRESHOLD = 200
 
-    def __init__(self, session: Session, pygeoapi_url: str):
+    def __init__(self, session: AsyncSession, pygeoapi_url: str):
         self._service_url = pygeoapi_url
         self._session = session
         self.flowline_svc = FlowlineService(session=self._session)
@@ -28,15 +28,15 @@ class BasinService:
         self.feature_svc = FeatureService(session=self._session)
         self.pygeoapi_svc = PyGeoAPIService(session=self._session, pygeoapi_url=pygeoapi_url)
 
-    def _get_start_comid(self, identifier: str, source_name: str) -> tuple[int, bool]:
+    async def _get_start_comid(self, identifier: str, source_name: str) -> tuple[int, bool]:
         try:
             if source_name.lower() == "comid":
-                _ = self.flowline_svc.get(identifier)  # just making sure it exists. Will raise KeyError if not.
+                _ = await self.flowline_svc.get(identifier)  # just making sure it exists. Will raise KeyError if not.
                 start_comid = int(identifier)
                 is_point = False
                 feature = None  # sentinal; indicates not a feature lookup.
             else:
-                hit = self.feature_svc.feature_lookup(source_name, identifier)
+                hit = await self.feature_svc.feature_lookup(source_name, identifier)
                 feature = hit.as_feature()
                 start_comid = int(feature.properties["comid"])
                 is_point = feature.geometry["type"] == "Point"
@@ -44,13 +44,13 @@ class BasinService:
             msg = f"Unexpected error getting comid from {identifier} / {source_name}"
             logging.debug(msg + f"Error is {str(e)} ; feature is {feature}")
             raise LookupError(msg)
-        except (NotFoundError, KeyError) as e:
+        except (NotFoundError, KeyError):
             msg = f"The feature {identifier} does not exist for '{source_name}'."  # noqa
             logging.debug(msg)
             raise LookupError(msg)
         return (start_comid, is_point, feature)
 
-    def get_by_id(
+    async def get_by_id(
         self,
         identifier: str,
         source_name: str | None = None,
@@ -71,22 +71,22 @@ class BasinService:
         """
         source_name = source_name.lower() if source_name else "comid"
         try:
-            (start_comid, is_point, feature) = self._get_start_comid(identifier, source_name)
+            (start_comid, is_point, feature) = await self._get_start_comid(identifier, source_name)
         except LookupError:
             logging.debug(f"Cannot get starting COMID for {identifier} / {source_name}")
             raise  # this is not our problem. Let the caller sort it out.
 
         if is_point and split:
             # Plan A: the point is on a FlowLine
-            point = self.flowline_svc.feat_get_point_along_flowline(identifier, source_name)
+            point = await self.flowline_svc.feat_get_point_along_flowline(identifier, source_name)
 
             if point is None:
                 ## Plan B:
                 ## No point on flowline found.... trying to find nearest point
                 try:
-                    distance = self.flowline_svc.feat_get_distance_from_flowline(identifier, source_name)
+                    distance = await self.flowline_svc.feat_get_distance_from_flowline(identifier, source_name)
                     if distance <= self.SPLIT_CATCHMENT_THRESHOLD:
-                        point = self.flowline_svc.feat_get_nearest_point_on_flowline(identifier, source_name)
+                        point = await self.flowline_svc.feat_get_nearest_point_on_flowline(identifier, source_name)
                 except (LookupError, TypeError, ValueError):
                     raise LookupError(f"Unexpected error finding point on flowline: {identifier} / {source_name}")
 
@@ -96,7 +96,7 @@ class BasinService:
                 try:
                     [lon, lat] = feature["geometry"]["coordinates"]
                     wkt_geom = f"POINT({lon} {lat})"
-                    response = self.pygeoapi_svc.hydrolocation_by_coords(wkt_geom)
+                    response = await self.pygeoapi_svc.hydrolocation_by_coords(wkt_geom)
                     point = response["features"][0]["geometry"]["coordinates"]
                 except (LookupError, TypeError, ValueError):
                     raise LookupError(f"Unexpected error decoding hydrolocation for {wkt_geom}")
@@ -106,11 +106,11 @@ class BasinService:
 
             [lon, lat] = point
             wkt_geom = f"POINT({lon} {lat})"
-            features = [self.pygeoapi_svc.splitcatchment_at_coords(wkt_geom)]
+            features = [await self.pygeoapi_svc.splitcatchment_at_coords(wkt_geom)]
         else:
             # The feature in question is not a point, and should be associated with a basin by COMID.
             try:
-                feature = self.catchment_svc.get_drainage_basin_by_comid(start_comid, simplified)
+                feature = await self.catchment_svc.get_drainage_basin_by_comid(start_comid, simplified)
             except KeyError as e:
                 raise LookupError(f"Cannot get drainage basin by comid. {start_comid=}") from e
             features = [feature]

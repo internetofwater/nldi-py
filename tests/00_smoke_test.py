@@ -11,8 +11,13 @@ later tests are up, these become largely unnecessary, as later
 function presumes successful import, fixtures, etc.
 """
 
+import json
+from collections.abc import AsyncGenerator
+
 import psycopg
 import pytest
+
+from nldi import util
 
 
 def _make_db_connection_string(host: str, port: int, user: str, password: str, database: str) -> str:
@@ -35,13 +40,6 @@ def test_successful_import() -> None:
 
 
 # region: unit tests
-@pytest.mark.order(1)
-@pytest.mark.unittest
-def test_runner_fixture_present(runner) -> None:
-    """Verify the CLI fixture is available."""
-    assert runner is not None
-
-
 @pytest.mark.order(2)
 @pytest.mark.integration
 def test_container_fixture_present(containerized_db_env_info) -> None:
@@ -77,3 +75,4 @@ def test_testdb_fixture_present(testdb_env_info) -> None:
         db_ping = conn.execute("SELECT 1").fetchone()
         success = bool(db_ping is not None and db_ping[0] == 1)
     assert success
+

@@ -8,14 +8,14 @@
 import json
 import logging
 from contextlib import contextmanager
-from typing import Any, Dict, Generator, Iterator, List, Self
+from typing import Generator, Iterator, Self
 
 import httpx
 import shapely
 import sqlalchemy
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from nldi.db.schemas.nhdplus import CatchmentModel, FlowlineModel
+from nldi.db.schemas.nhdplus import FlowlineModel
 
 from .... import util
 from ....db.schemas import struct_geojson
@@ -42,7 +42,7 @@ class PyGeoAPIService:
         "uri": "",
     }
 
-    def __init__(self, session: Session, pygeoapi_url: str = DEFAULT_PYGEOAPI_URL):
+    def __init__(self, session: AsyncSession, pygeoapi_url: str = DEFAULT_PYGEOAPI_URL):
         self._service_url = pygeoapi_url
         self._session = session
         self.flowline_svc = FlowlineService(session=self._session)
@@ -50,22 +50,23 @@ class PyGeoAPIService:
 
     @classmethod
     @contextmanager
-    def new(cls, session: Session) -> Iterator[Self]:
+    def new(cls, session: AsyncSession) -> Iterator[Self]:
         if session:
             yield cls(session=session)
 
     @classmethod
-    def _post_to_external_service(cls, url: str, data: dict = {}, timeout: int = 0) -> dict:
+    async def _post_to_external_service(cls, url: str, data: dict = {}, timeout: int = 0) -> dict:
         _to = timeout if timeout > 0 else cls.HTTP_TIMEOUT
         logging.info(f"{__class__.__name__} Sending POST (timeout={_to}) to: {url}")
         logging.debug(f"Paylod is {data}")
         try:
-            with httpx.Client(verify=False) as client:  # noqa: S501
-                r = client.post(url, data=json.dumps(data), timeout=_to).raise_for_status()
+            async with httpx.AsyncClient(verify=False) as client:  # noqa: S501
+                r = await client.post(url, data=json.dumps(data), timeout=_to)
+                r.raise_for_status()
                 response = r.json()
-        except httpx.HTTPStatusError as err:  # pragma: no cover
+        except httpx.HTTPStatusError:  # pragma: no cover
             raise RuntimeError(f"Error connecting to service {url}")
-        except json.JSONDecodeError as err:  # pragma: no cover
+        except json.JSONDecodeError:  # pragma: no cover
             raise RuntimeError(f"Error parsing JSON response from {url}")
         return response
 
@@ -79,7 +80,7 @@ class PyGeoAPIService:
         """Return the url for the split catchment service endpoint."""
         return util.url_join(self._service_url, "processes", "nldi-splitcatchment", "execution")
 
-    def hydrolocation_by_coords(self, coords: str, base_url: str = "/") -> list[struct_geojson.Feature]:
+    async def hydrolocation_by_coords(self, coords: str, base_url: str = "/") -> list[struct_geojson.Feature]:
         """Get a hydrolocation by coordinates."""
         point_shp = shapely.from_wkt(coords)
         request_payload = {
@@ -90,11 +91,11 @@ class PyGeoAPIService:
             ]
         }
 
-        response = self._post_to_external_service(self.flowtrace_service_endpoint, data=request_payload)
+        response = await self._post_to_external_service(self.flowtrace_service_endpoint, data=request_payload)
         (lon, lat) = response["features"][0]["properties"]["intersection_point"]  # noqa
         flowtrace_return_pt_wkt = f"POINT({lon} {lat})"
 
-        _catchment = self.catchment_svc.get_by_wkt_point(flowtrace_return_pt_wkt)
+        _catchment = await self.catchment_svc.get_by_wkt_point(flowtrace_return_pt_wkt)
         if not _catchment:
             raise KeyError("Catchment not found.")
         nhdplus_comid = _catchment.featureid
@@ -112,11 +113,11 @@ class PyGeoAPIService:
             * (FlowlineModel.tmeasure - FlowlineModel.fmeasure)
         ).label("measure")
 
-        computed_reach = self.flowline_svc.get_one_or_none(
+        computed_reach = await self.flowline_svc.get_one_or_none(
             FlowlineModel.nhdplus_comid == nhdplus_comid,
             statement=sqlalchemy.select(FlowlineModel.reachcode),
         )
-        computed_measure = self.flowline_svc.get_one_or_none(
+        computed_measure = await self.flowline_svc.get_one_or_none(
             FlowlineModel.nhdplus_comid == nhdplus_comid,
             statement=sqlalchemy.select(measure),
         )
@@ -147,7 +148,7 @@ class PyGeoAPIService:
 
         return _return_features
 
-    def splitcatchment_at_coords(self, coords: str) -> dict:
+    async def splitcatchment_at_coords(self, coords: str) -> dict:
         point_shp = shapely.from_wkt(coords)
 
         request_payload = {
@@ -158,7 +159,7 @@ class PyGeoAPIService:
             ]
         }
 
-        response = self._post_to_external_service(
+        response = await self._post_to_external_service(
             self.splitcatchment_service_endpoint,
             data=request_payload,
             timeout=2 * self.HTTP_TIMEOUT,  ## give the split algorithm a bit more time to work.
@@ -180,7 +181,7 @@ class PyGeoAPIService:
         # make their own list if they need this feature in that form.
 
 
-def pygeoapi_svc(db_session: Session) -> Generator[NavigationService, None, None]:
+def pygeoapi_svc(db_session: AsyncSession) -> Generator[NavigationService, None, None]:
     """Provider function as part of the dependency-injection mechanism."""
     with PyGeoAPIService.new(session=db_session) as service:
         yield service

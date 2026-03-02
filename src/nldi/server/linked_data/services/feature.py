@@ -13,33 +13,27 @@ but then applies its own logic/handling.  I think of the services
 object as being an implementation of a unit-of-work pattern.
 """
 
-import json
-import logging
-from collections.abc import Generator
+from collections.abc import AsyncGenerator, Generator
 
-import geoalchemy2
 import msgspec
 import sqlalchemy
+from advanced_alchemy import filters
 from advanced_alchemy.exceptions import NotFoundError
-from advanced_alchemy.extensions.flask import FlaskServiceMixin, filters
-from advanced_alchemy.service import SQLAlchemySyncRepositoryService
-from geomet import wkt
-from sqlalchemy.orm import Session, joinedload, load_only, selectinload
+from advanced_alchemy.service import SQLAlchemyAsyncRepositoryService
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.expression import Select
 
-from nldi.db.schemas.nhdplus import CatchmentModel, FlowlineModel
 from nldi.db.schemas.nldi_data import CrawlerSourceModel, FeatureSourceModel
 
 from .... import util
-from ....db.schemas import struct_geojson
 from .. import repos
 
 
-class FeatureService(FlaskServiceMixin, SQLAlchemySyncRepositoryService[FeatureSourceModel]):
+class FeatureService(SQLAlchemyAsyncRepositoryService[FeatureSourceModel]):
     repository_type = repos.FeatureRepository
 
-    def feature_lookup(self, source_suffix: str, identifier: str) -> FeatureSourceModel:
-        _f = self.repository.get_one_or_none(
+    async def feature_lookup(self, source_suffix: str, identifier: str) -> FeatureSourceModel:
+        _f = await self.repository.get_one_or_none(
             sqlalchemy.func.lower(CrawlerSourceModel.source_suffix) == source_suffix.lower(),
             FeatureSourceModel.identifier == identifier,
             statement=sqlalchemy.select(FeatureSourceModel).join(
@@ -50,8 +44,8 @@ class FeatureService(FlaskServiceMixin, SQLAlchemySyncRepositoryService[FeatureS
             raise NotFoundError(f"Feature {identifier} from source {source_suffix} not found.")
         return _f
 
-    def featurecount(self, source_suffix: str) -> int:
-        _count = self.count(
+    async def featurecount(self, source_suffix: str) -> int:
+        _count = await self.count(
             sqlalchemy.func.lower(CrawlerSourceModel.source_suffix) == source_suffix.lower(),
             statement=sqlalchemy.select(FeatureSourceModel.identifier).join(
                 CrawlerSourceModel, FeatureSourceModel.crawler_source_id == CrawlerSourceModel.crawler_source_id
@@ -59,8 +53,8 @@ class FeatureService(FlaskServiceMixin, SQLAlchemySyncRepositoryService[FeatureS
         )
         return _count
 
-    def list_by_src(self, source_suffix: str, offset: int = 0, limit: int = 1000) -> list[FeatureSourceModel]:
-        _l = self.repository.list(
+    async def list_by_src(self, source_suffix: str, offset: int = 0, limit: int = 1000) -> list[FeatureSourceModel]:
+        _l = await self.repository.list(
             sqlalchemy.func.lower(CrawlerSourceModel.source_suffix) == source_suffix.lower(),
             filters.LimitOffset(limit=limit, offset=offset),
             statement=sqlalchemy.select(FeatureSourceModel).join(
@@ -69,48 +63,43 @@ class FeatureService(FlaskServiceMixin, SQLAlchemySyncRepositoryService[FeatureS
         )
         return list(_l)
 
-    def iter_by_src(
+    async def iter_by_src(
         self,
         source_suffix: str,
         base_url: str = "",
         offset: int = 0,
         limit: int = 1000,
-    ):
-        """Provides a paginated response for the feature collection."""
+    ) -> AsyncGenerator[dict, None]:
+        """Provides a paginated async generator for the feature collection."""
         stmt = (
             sqlalchemy.select(FeatureSourceModel)
             .where(sqlalchemy.func.lower(CrawlerSourceModel.source_suffix) == source_suffix.lower())
-            .execution_options(yield_per=15)
             .join(CrawlerSourceModel, FeatureSourceModel.crawler_source_id == CrawlerSourceModel.crawler_source_id)
             .order_by(FeatureSourceModel.identifier)
             .offset(offset)
-            .limit(limit)
+            .limit(limit or None)
+            .execution_options(yield_per=100)
         )
-
-        query_result = self.repository.session.execute(stmt)
-        while f := query_result.fetchone():
-            # logging.debug(f"Yielding {f[0].identifier}")
-            nav_url = util.url_join(base_url, "linked-data", source_suffix, f[0].identifier, "navigation")
+        async for f in await self.repository.session.stream_scalars(stmt):
+            nav_url = util.url_join(base_url, "linked-data", source_suffix, f.identifier, "navigation")
             yield msgspec.to_builtins(
-                f[0].as_feature(excl_props=["crawler_source_id"], xtra_props={"navigation": nav_url})
+                f.as_feature(excl_props=["crawler_source_id"], xtra_props={"navigation": nav_url})
             )
-        # logging.debug("DONE")
 
-    def features_from_nav_query(self, source_suffix: str, nav_query: Select):
+    async def features_from_nav_query(self, source_suffix: str, nav_query: Select) -> AsyncGenerator:
         subq = nav_query.subquery()
         stmt = (
             sqlalchemy.select(FeatureSourceModel)
             .where(sqlalchemy.func.lower(CrawlerSourceModel.source_suffix) == source_suffix.lower())
             .join(CrawlerSourceModel, CrawlerSourceModel.crawler_source_id == FeatureSourceModel.crawler_source_id)
             .join(subq, FeatureSourceModel.comid == subq.c.comid)
+            .execution_options(yield_per=100)
         )
-        hits = self.repository._execute(stmt)
-        r = hits.fetchall()
-        # NOTE: we're returning a generator comprehension here -- so this function is used as an iterator.
-        return (f[0].as_feature() for f in r)
+        async for f in await self.repository.session.stream_scalars(stmt):
+            yield f.as_feature()
 
 
-def feature_svc(db_session: Session) -> Generator[FeatureSourceModel, None, None]:
+def feature_svc(db_session: AsyncSession) -> Generator[FeatureSourceModel, None, None]:
     """Provider function as part of the dependency-injection mechanism."""
     with FeatureService.new(session=db_session) as service:
         yield service
