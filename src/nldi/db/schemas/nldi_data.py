@@ -69,13 +69,13 @@ class FeatureSourceModel(NLDIBaseModel, GeoJSONMixin):
     def __properties__(self, exclude: set) -> dict[str, str]:
         _props = super().__properties__(exclude)
         ## Extend the properties dict with the AssociationProxy(s) of interest; these are not dumped with columns by default.
-        if self.mainstem == "NA" or self.mainstem == "":  # possible strings to interpret as NoData for the mainstem URI.
+        if (
+            self.mainstem == "NA" or self.mainstem == ""
+        ):  # possible strings to interpret as NoData for the mainstem URI.
             _mainstem = None
         else:
             _mainstem = self.mainstem
-        _props.update(
-            {"mainstem": _mainstem, "sourceName": self.sourceName, "source": self.source, "type": self.type}
-        )
+        _props.update({"mainstem": _mainstem, "sourceName": self.sourceName, "source": self.source, "type": self.type})
         return _props
 
 

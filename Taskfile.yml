@@ -19,7 +19,7 @@ tasks:
 #      - task: typecheck
 #      TODO: type checking....
 
-  reformat:
+  format:
     cmds:
       - ruff format $SRCS
 

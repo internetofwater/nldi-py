@@ -25,7 +25,6 @@ import json
 import httpx
 import psycopg
 import pytest
-
 from nldi.db.schemas.nldi_data import CrawlerSourceModel, FeatureSourceModel
 from nldi.server.linked_data import repos, services
 
@@ -49,11 +48,11 @@ def test_repo_list_nav_modes(dbsession_containerized) -> None:
 
 @pytest.mark.order(70)
 @pytest.mark.integration
-def test_svc_dm_from_comid(dbsession_containerized) -> None:
+async def test_svc_dm_from_comid(dbsession_containerized) -> None:
     nav_svc = services.NavigationService(session=dbsession_containerized)
     comid = 13294366
     q = nav_svc.dm(comid, 10.0)
-    actual = nav_svc.flowline_svc.list(statement=q)
+    actual = await nav_svc.flowline_svc.list(statement=q)
     # produces a list of COMIDs matching the nav from the starting comid specified.
     expected = [13294366, 13293406, 13294268, 13293404, 13293396, 13293394, 13293398, 13294110]
     # expected according to https://nhgf.dev-wma.chs.usgs.gov/api/nldi/linked-data/comid/13294366/navigation/DM/flowlines?f=json&distance=10
@@ -62,11 +61,11 @@ def test_svc_dm_from_comid(dbsession_containerized) -> None:
 
 @pytest.mark.order(70)
 @pytest.mark.integration
-def test_svc_dd_from_comid(dbsession_containerized) -> None:
+async def test_svc_dd_from_comid(dbsession_containerized) -> None:
     nav_svc = services.NavigationService(session=dbsession_containerized)
     comid = 13294366
     q = nav_svc.dd(comid, 10.0)
-    actual = nav_svc.flowline_svc.list(statement=q)
+    actual = await nav_svc.flowline_svc.list(statement=q)
     expected = [13294366, 13293406, 13294268, 13293404, 13293400, 13293396, 13294110, 13293394, 13293398]
     # expected according to https://nhgf.dev-wma.chs.usgs.gov/api/nldi/linked-data/comid/13294366/navigation/DD/flowlines?f=json&distance=10
     assert isinstance(actual, list)
@@ -75,11 +74,11 @@ def test_svc_dd_from_comid(dbsession_containerized) -> None:
 
 @pytest.mark.order(70)
 @pytest.mark.integration
-def test_svc_ut_from_comid(dbsession_containerized) -> None:
+async def test_svc_ut_from_comid(dbsession_containerized) -> None:
     nav_svc = services.NavigationService(session=dbsession_containerized)
     comid = 13294366
     q = nav_svc.ut(comid, 10.0)
-    actual = nav_svc.flowline_svc.list(statement=q)
+    actual = await nav_svc.flowline_svc.list(statement=q)
     expected = [13294366]
     # expected according to https://nhgf.dev-wma.chs.usgs.gov/api/nldi/linked-data/comid/13294366/navigation/UT/flowlines?f=json&distance=10
     assert isinstance(actual, list)
@@ -88,11 +87,11 @@ def test_svc_ut_from_comid(dbsession_containerized) -> None:
 
 @pytest.mark.order(70)
 @pytest.mark.integration
-def test_svc_um_from_comid(dbsession_containerized) -> None:
+async def test_svc_um_from_comid(dbsession_containerized) -> None:
     nav_svc = services.NavigationService(session=dbsession_containerized)
     comid = 13294366
     q = nav_svc.um(comid, 10.0)
-    actual = nav_svc.flowline_svc.list(statement=q)
+    actual = await nav_svc.flowline_svc.list(statement=q)
     expected = [13294366]
     # expected according to https://nhgf.dev-wma.chs.usgs.gov/api/nldi/linked-data/comid/13294366/navigation/UM/flowlines?f=json&distance=10
     assert isinstance(actual, list)
@@ -101,58 +100,65 @@ def test_svc_um_from_comid(dbsession_containerized) -> None:
 
 @pytest.mark.order(70)
 @pytest.mark.integration
-def test_svc_estimate_measure(dbsession_containerized) -> None:
+async def test_svc_estimate_measure(dbsession_containerized) -> None:
     nav_svc = services.NavigationService(session=dbsession_containerized)
     source_name = "wqp"
     identifier = "USGS-05427930"
-    actual = nav_svc.estimate_measure(identifier, source_name)
+    actual = await nav_svc.estimate_measure(identifier, source_name)
     assert actual == pytest.approx(16.633304437714568)
 
 
 @pytest.mark.order(71)
 @pytest.mark.integration
-def test_svc_nav_wrapper_function(dbsession_containerized) -> None:
+async def test_svc_nav_wrapper_function(dbsession_containerized) -> None:
     nav_svc = services.NavigationService(session=dbsession_containerized)
     comid = 13294366
 
-    a = nav_svc.flowline_svc.list(statement=nav_svc.um(comid, 10.0))
-    b = nav_svc.flowline_svc.list(statement=nav_svc.navigation("UM", comid, 10.0))
+    a = await nav_svc.flowline_svc.list(statement=nav_svc.um(comid, 10.0))
+    b = await nav_svc.flowline_svc.list(statement=nav_svc.navigation("UM", comid, 10.0))
     assert a == b
 
-    a = nav_svc.flowline_svc.list(statement=nav_svc.ut(comid, 10.0))
-    b = nav_svc.flowline_svc.list(statement=nav_svc.navigation("UT", comid, 10.0))
+    a = await nav_svc.flowline_svc.list(statement=nav_svc.ut(comid, 10.0))
+    b = await nav_svc.flowline_svc.list(statement=nav_svc.navigation("UT", comid, 10.0))
     assert a == b
 
-    a = nav_svc.flowline_svc.list(statement=nav_svc.dm(comid, 10.0))
-    b = nav_svc.flowline_svc.list(statement=nav_svc.navigation("DM", comid, 10.0))
+    a = await nav_svc.flowline_svc.list(statement=nav_svc.dm(comid, 10.0))
+    b = await nav_svc.flowline_svc.list(statement=nav_svc.navigation("DM", comid, 10.0))
     assert a == b
 
-    a = nav_svc.flowline_svc.list(statement=nav_svc.dd(comid, 10.0))
-    b = nav_svc.flowline_svc.list(statement=nav_svc.navigation("DD", comid, 10.0))
+    a = await nav_svc.flowline_svc.list(statement=nav_svc.dd(comid, 10.0))
+    b = await nav_svc.flowline_svc.list(statement=nav_svc.navigation("DD", comid, 10.0))
     assert a == b
 
 
 @pytest.mark.order(72)
 @pytest.mark.integration
-def test_svc_dm_from_comid_as_features(dbsession_containerized) -> None:
+async def test_svc_dm_from_comid_as_features(dbsession_containerized) -> None:
     nav_svc = services.NavigationService(session=dbsession_containerized)
     comid = 13294366
     ## Construct the query by hand....
     q = nav_svc.dm(comid, 10.0)
-    actual_direct = nav_svc.flowline_svc.features_from_nav_query(q)
+    actual_direct = []
+    async for item in nav_svc.flowline_svc.features_from_nav_query(q):
+        actual_direct.append(item)
 
     ## Use the wrapper in the service/business-logic layer
-    actual_from_bl = nav_svc.walk_flowlines("comid", comid, "DM", 10.0)
+    actual_from_bl = []
+    _a_generator = await nav_svc.walk_flowlines("comid", comid, "DM", 10.0)
+    async for item in _a_generator:
+        actual_from_bl.append(item)
     assert len(actual_direct) == len(actual_from_bl)
 
 
 @pytest.mark.order(73)
 @pytest.mark.integration
-def test_svc_dm_from_comid_trimmed(dbsession_containerized) -> None:
+async def test_svc_dm_from_comid_trimmed(dbsession_containerized) -> None:
     nav_svc = services.NavigationService(session=dbsession_containerized)
     source_name = "wqp"
     identifier = "USGS-05427930"
-    actual = nav_svc.walk_flowlines(source_name, identifier, "UT", 10.0, True)
+    actual =[]
+    async for item in await nav_svc.walk_flowlines(source_name, identifier, "UT", 10.0, True):
+        actual.append(item)
     assert len(actual) == 5
     # https://nhgf.dev-wma.chs.usgs.gov/api/nldi/linked-data/wqp/USGS-05427930/navigation/UT/flowlines?f=json&distance=10&trimStart=true
 
@@ -160,14 +166,14 @@ def test_svc_dm_from_comid_trimmed(dbsession_containerized) -> None:
 # region  Endpoints
 @pytest.mark.order(75)
 @pytest.mark.integration
-def test_api_get_nav_modes_by_id(f_client_containerized) -> None:
+async def test_api_get_nav_modes_by_id(f_client_containerized) -> None:
     source_name = "wqp"
     identifier = "USGS-05427930"
 
-    r = f_client_containerized.get(f"{API_PREFIX}/linked-data/{source_name}/{identifier}/navigation?f=json")
+    r = await f_client_containerized.get(f"{API_PREFIX}/linked-data/{source_name}/{identifier}/navigation?f=json")
     assert r.status_code == 200
     assert r.headers["content-type"].startswith("application/json")
-    actual = r.json
+    actual = r.json()
     for expected_key in ["upstreamMain", "upstreamTributaries", "downstreamMain", "downstreamDiversions"]:
         assert expected_key in actual
         assert actual[expected_key] != ""
@@ -176,14 +182,16 @@ def test_api_get_nav_modes_by_id(f_client_containerized) -> None:
 @pytest.mark.order(75)
 @pytest.mark.parametrize("nav_mode", NAV_MODES)
 @pytest.mark.integration
-def test_api_get_each_nav_mode_by_id(f_client_containerized, nav_mode) -> None:
+async def test_api_get_each_nav_mode_by_id(f_client_containerized, nav_mode) -> None:
     source_name = "wqp"
     identifier = "USGS-05427930"
 
-    r = f_client_containerized.get(f"{API_PREFIX}/linked-data/{source_name}/{identifier}/navigation/{nav_mode}?f=json")
+    r = await f_client_containerized.get(
+        f"{API_PREFIX}/linked-data/{source_name}/{identifier}/navigation/{nav_mode}?f=json"
+    )
     assert r.status_code == 200
     assert r.headers["content-type"].startswith("application/json")
-    actual = r.json
+    actual = r.json()
     assert isinstance(actual, list)
     actual_comid = actual[0]  # should always be first
     assert actual_comid["source"] == "Flowlines"
@@ -193,17 +201,17 @@ def test_api_get_each_nav_mode_by_id(f_client_containerized, nav_mode) -> None:
 
 @pytest.mark.order(75)
 @pytest.mark.integration
-def test_api_get_navigated_flowlines(f_client_containerized) -> None:
+async def test_api_get_navigated_flowlines(f_client_containerized) -> None:
     source_name = "wqp"
     identifier = "USGS-05427930"
 
     # https://nhgf.dev-wma.chs.usgs.gov/api/nldi/linked-data/wqp/USGS-05427930/navigation/UT/flowlines?f=json&distance=10
-    r = f_client_containerized.get(
+    r = await f_client_containerized.get(
         f"{API_PREFIX}/linked-data/{source_name}/{identifier}/navigation/UT/flowlines?f=json&distance=10"
     )
     assert r.status_code == 200
     assert r.headers["content-type"].startswith("application/json")
-    actual = r.json
+    actual = r.json()
     assert actual["type"] == "FeatureCollection"
     assert isinstance(actual["features"], list)
     assert len(actual["features"]) == 5
@@ -211,17 +219,17 @@ def test_api_get_navigated_flowlines(f_client_containerized) -> None:
 
 @pytest.mark.order(75)
 @pytest.mark.integration
-def test_api_get_navigated_flowlines_trimmed(f_client_containerized) -> None:
+async def test_api_get_navigated_flowlines_trimmed(f_client_containerized) -> None:
     source_name = "wqp"
     identifier = "USGS-05427930"
 
     # https://nhgf.dev-wma.chs.usgs.gov/api/nldi/linked-data/wqp/USGS-05427930/navigation/UT/flowlines?f=json&distance=10&trimStart=true
-    r = f_client_containerized.get(
+    r = await f_client_containerized.get(
         f"{API_PREFIX}/linked-data/{source_name}/{identifier}/navigation/UT/flowlines?f=json&distance=10&trimStart=true"
     )
     assert r.status_code == 200
     assert r.headers["content-type"].startswith("application/json")
-    actual = r.json
+    actual = r.json()
     assert actual["type"] == "FeatureCollection"
     assert isinstance(actual["features"], list)
     assert len(actual["features"]) == 5
@@ -229,14 +237,14 @@ def test_api_get_navigated_flowlines_trimmed(f_client_containerized) -> None:
 
 @pytest.mark.order(75)
 @pytest.mark.integration
-def test_api_get_each_nav_mode_by_id_othersource(f_client_containerized) -> None:
+async def test_api_get_each_nav_mode_by_id_othersource(f_client_containerized) -> None:
     source_name = "wqp"
     identifier = "USGS-05427930"
     second_source = "nwissite"
 
     nav_mode = "UT"
 
-    r = f_client_containerized.get(
+    r = await f_client_containerized.get(
         f"{API_PREFIX}/linked-data/{source_name}/{identifier}/navigation/{nav_mode}/{second_source}?f=json&distance=10.0"
     )
     assert r.status_code == 200
@@ -246,7 +254,7 @@ def test_api_get_each_nav_mode_by_id_othersource(f_client_containerized) -> None
 @pytest.mark.order(78)
 @pytest.mark.system
 @pytest.mark.parametrize("nav_mode", NAV_MODES)
-def test_api_get_navigated_flowlines_trimmed_system(f_client_testdb, nav_mode) -> None:
+async def test_api_get_navigated_flowlines_trimmed_system(f_client_testdb, nav_mode) -> None:
     source_name = "wqp"
     identifier = "USGS-05427930"
 
@@ -256,10 +264,10 @@ def test_api_get_navigated_flowlines_trimmed_system(f_client_testdb, nav_mode) -
     )
     expected = r.json()
 
-    r = f_client_testdb.get(
+    r = await f_client_testdb.get(
         f"{API_PREFIX}/linked-data/{source_name}/{identifier}/navigation/{nav_mode}/flowlines?f=json&distance=10&trimStart=true",
     )
-    actual = r.json
+    actual = r.json()
 
     assert actual["type"] == expected["type"]
     # Same flowlines returned (check by comid)
@@ -281,7 +289,7 @@ def test_api_get_navigated_flowlines_trimmed_system(f_client_testdb, nav_mode) -
 @pytest.mark.order(78)
 @pytest.mark.system
 @pytest.mark.parametrize("nav_mode", NAV_MODES)
-def test_api_get_navigated_features_trimmed_system(f_client_testdb, nav_mode) -> None:
+async def test_api_get_navigated_features_trimmed_system(f_client_testdb, nav_mode) -> None:
     source_name = "wqp"
     identifier = "USGS-05427930"
 
@@ -291,10 +299,10 @@ def test_api_get_navigated_features_trimmed_system(f_client_testdb, nav_mode) ->
     )
     expected = r.json()  # < is a function from httpx response
 
-    r = f_client_testdb.get(
+    r = await f_client_testdb.get(
         f"{API_PREFIX}/linked-data/{source_name}/{identifier}/navigation/{nav_mode}/nwissite?f=json&distance=10"
     )
-    actual = r.json  # < is a property from flask client response
+    actual = r.json()  # < is a property from flask client response
 
     assert actual["type"] == expected["type"]
     assert len(actual["features"]) == len(expected["features"])
@@ -302,7 +310,7 @@ def test_api_get_navigated_features_trimmed_system(f_client_testdb, nav_mode) ->
 
 @pytest.mark.order(78)
 @pytest.mark.system
-def test_api_get_navigated_flowlines_specialcase(f_client_testdb) -> None:
+async def test_api_get_navigated_flowlines_specialcase(f_client_testdb) -> None:
     # This data offered by @dblodgett-usgs as a test case; see issue #76
     r = httpx.get(
         f"{AUTH_PREFIX}/linked-data/comid/19487554/navigation/DM?f=json",
@@ -310,5 +318,5 @@ def test_api_get_navigated_flowlines_specialcase(f_client_testdb) -> None:
     )
     expected = r.json()  # < is a function from httpx response
 
-    r = f_client_testdb.get(f"{API_PREFIX}/linked-data/comid/19487554/navigation/DM?f=json")
-    actual = r.json  # < is a property from flask client response
+    r = await f_client_testdb.get(f"{API_PREFIX}/linked-data/comid/19487554/navigation/DM?f=json")
+    actual = r.json()  # < is a property from flask client response

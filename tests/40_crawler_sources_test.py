@@ -49,10 +49,10 @@ def test_source_repo_get_by_id(dbsession_containerized) -> None:
 
 @pytest.mark.order(40)
 @pytest.mark.integration
-def test_source_repo_lookup_by_suffix(dbsession_containerized) -> None:
+async def test_source_repo_lookup_by_suffix(dbsession_containerized) -> None:
     src_repo = repos.CrawlerSourceRepository(session=dbsession_containerized)
 
-    feature = src_repo.get_one_or_none(
+    feature = await src_repo.get_one_or_none(
         func.lower(CrawlerSourceModel.source_suffix) == "WQP".lower(),
     )
     assert feature.crawler_source_id == 1  # < known value for this source.
@@ -60,27 +60,28 @@ def test_source_repo_lookup_by_suffix(dbsession_containerized) -> None:
 
 @pytest.mark.order(40)
 @pytest.mark.integration
-def test_source_repo_lookup_by_suffix_nonesuch(dbsession_containerized) -> None:
+async def test_source_repo_lookup_by_suffix_nonesuch(dbsession_containerized) -> None:
     src_repo = repos.CrawlerSourceRepository(session=dbsession_containerized)
 
-    feature = src_repo.get_one_or_none(CrawlerSourceModel.source_suffix == "nonesuch")
+    feature = await src_repo.get_one_or_none(CrawlerSourceModel.source_suffix == "nonesuch")
     assert feature is None
 
 
 @pytest.mark.order(40)
 @pytest.mark.integration
-def test_source_repo_listall(dbsession_containerized) -> None:
+async def test_source_repo_listall(dbsession_containerized) -> None:
     src_repo = repos.CrawlerSourceRepository(session=dbsession_containerized)
-    features, count = src_repo.list_and_count()
+    features, count = await src_repo.list_and_count()
     assert count == 3  # < true for the containerized db
     assert isinstance(features, list)
     assert isinstance(features[0], CrawlerSourceModel)
 
+
 @pytest.mark.order(40)
 @pytest.mark.integration
-def test_source_svc_listall(dbsession_containerized) -> None:
+async def test_source_svc_listall(dbsession_containerized) -> None:
     src_svc = services.CrawlerSourceService(session=dbsession_containerized)
-    features = src_svc.list()
+    features = await src_svc.list()
     assert isinstance(features, list)
     assert isinstance(features[0], CrawlerSourceModel)
 
@@ -88,64 +89,64 @@ def test_source_svc_listall(dbsession_containerized) -> None:
 # region: service layer
 @pytest.mark.order(42)
 @pytest.mark.integration
-def test_source_service_search_by_suffix(dbsession_containerized) -> None:
+async def test_source_service_search_by_suffix(dbsession_containerized) -> None:
     src_svc = services.CrawlerSourceService(session=dbsession_containerized)
 
-    feature = src_svc.get_by_suffix("wqp")
+    feature = await src_svc.get_by_suffix("wqp")
     assert feature.source_suffix.lower() == "wqp"
 
     ## Case insensitive:
-    feature = src_svc.get_by_suffix("WQP")
+    feature = await src_svc.get_by_suffix("WQP")
     assert feature.source_suffix.lower() == "wqp"
 
     ## weird case:
-    feature = src_svc.get_by_suffix("wQp")
+    feature = await src_svc.get_by_suffix("wQp")
     assert feature.source_suffix.lower() == "wqp"
 
 
 @pytest.mark.order(42)
 @pytest.mark.integration
-def test_source_service_search_by_suffix_nonesuch(dbsession_containerized) -> None:
+async def test_source_service_search_by_suffix_nonesuch(dbsession_containerized) -> None:
     src_svc = services.CrawlerSourceService(session=dbsession_containerized)
 
     with pytest.raises(NotFoundError):
-        feature = src_svc.get_by_suffix("nonesuch")
+        feature = await src_svc.get_by_suffix("nonesuch")
 
 
 @pytest.mark.order(43)
 @pytest.mark.integration
-def test_source_service_suffix_exists(dbsession_containerized) -> None:
+async def test_source_service_suffix_exists(dbsession_containerized) -> None:
     src_svc = services.CrawlerSourceService(session=dbsession_containerized)
 
-    actual = src_svc.suffix_exists("wqp")
+    actual = await src_svc.suffix_exists("wqp")
     assert actual is True
 
-    actual = src_svc.suffix_exists("WQP")
+    actual = await src_svc.suffix_exists("WQP")
     assert actual is True
 
-    actual = src_svc.suffix_exists("nonesuch")
+    actual = await src_svc.suffix_exists("nonesuch")
     assert actual is False
 
 
 @pytest.mark.order(45)
 @pytest.mark.integration
-def test_source_list_endpoint(f_client_containerized) -> None:
-    r = f_client_containerized.get(f"{API_PREFIX}/linked-data?f=json")
+async def test_source_list_endpoint(f_client_containerized) -> None:
+    r = await f_client_containerized.get(f"{API_PREFIX}/linked-data?f=json")
     assert r.status_code == 200
     assert r.headers["content-type"].startswith("application/json")
 
-    actual = r.json
+    actual = r.json()
     assert isinstance(actual, list)
     assert len(actual) == 4  # < true for containerized db
 
 
 @pytest.mark.order(46)
 @pytest.mark.system
-def test_source_list_endpoint(f_client_testdb) -> None:
-    r = f_client_testdb.get(f"{API_PREFIX}/linked-data?f=json")
+async def test_source_list_endpoint(f_client_testdb) -> None:
+    r = await f_client_testdb.get(f"{API_PREFIX}/linked-data?f=json")
     assert r.status_code == 200
     assert r.headers["content-type"].startswith("application/json")
 
-    actual = r.json
+    actual = r.json()
     assert isinstance(actual, list)
-    assert len(actual) >= 4 # unknown number.. .but several.
+    assert len(actual) >= 4  # unknown number.. .but several.

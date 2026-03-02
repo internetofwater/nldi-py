@@ -13,14 +13,14 @@ hide a lot of the detail for fetching items from the underlying data store.
 The repository exposes CRUD (and CRUD-like) methods to the caller.
 """
 
-from advanced_alchemy.repository import SQLAlchemySyncRepository
+from advanced_alchemy.repository import SQLAlchemyAsyncRepository
 
 from nldi.db.schemas import struct_geojson
 from nldi.db.schemas.nhdplus import CatchmentModel, FlowlineModel
 from nldi.db.schemas.nldi_data import CrawlerSourceModel, FeatureSourceModel
 
 
-class CrawlerSourceRepository(SQLAlchemySyncRepository[CrawlerSourceModel]):
+class CrawlerSourceRepository(SQLAlchemyAsyncRepository[CrawlerSourceModel]):
     model_type = CrawlerSourceModel
     id_attribute = "crawler_source_id"
 
@@ -33,16 +33,16 @@ class CrawlerSourceRepository(SQLAlchemySyncRepository[CrawlerSourceModel]):
         return super().__init__(**kwargs)
 
 
-class FlowlineRepository(SQLAlchemySyncRepository[FlowlineModel]):
+class FlowlineRepository(SQLAlchemyAsyncRepository[FlowlineModel]):
     model_type = FlowlineModel
     id_attribute = "nhdplus_comid"
 
 
-class CatchmentRepository(SQLAlchemySyncRepository[CatchmentModel]):
+class CatchmentRepository(SQLAlchemyAsyncRepository[CatchmentModel]):
     model_type = CatchmentModel
     id_attribute = "featureid"
 
 
-class FeatureRepository(SQLAlchemySyncRepository[FeatureSourceModel]):
+class FeatureRepository(SQLAlchemyAsyncRepository[FeatureSourceModel]):
     model_type = FeatureSourceModel
     id_attribute = "identifier"

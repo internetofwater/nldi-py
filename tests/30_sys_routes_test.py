@@ -16,7 +16,6 @@ import pytest
 
 from . import API_PREFIX
 
-
 # @pytest.mark.order(21)
 # @pytest.mark.integration
 # def test_server_config_form(f_client_containerized) -> None:
@@ -33,15 +32,15 @@ from . import API_PREFIX
 
 @pytest.mark.order(21)
 @pytest.mark.integration
-def test_server_healthcheck_form(f_client_containerized) -> None:
+async def test_server_healthcheck_form(f_client_containerized) -> None:
     """
     Health endpoint returns a list of status objects (one for each dependent subsystem).
 
     We don't care about the actual status (at this point) -- just that we get the right object/structure.
     """
-    r = f_client_containerized.get(f"{API_PREFIX}/about/health")
+    r = await f_client_containerized.get(f"{API_PREFIX}/about/health")
     assert r.status_code == 200
-    actual = r.json
+    actual = r.json()
     assert isinstance(actual, dict)
     assert actual.get("server") is not None
     assert actual.get("db") is not None
@@ -50,16 +49,16 @@ def test_server_healthcheck_form(f_client_containerized) -> None:
 
 @pytest.mark.order(21)
 @pytest.mark.integration
-def test_server_openapi_docs(f_client_containerized) -> None:
+async def test_server_openapi_docs(f_client_containerized) -> None:
     """
     Health endpoint returns a list of status objects (one for each dependent subsystem).
 
     We don't care about the actual status (at this point) -- just that we get the right object/structure.
     """
-    r = f_client_containerized.get(f"{API_PREFIX}/docs")
+    r = await f_client_containerized.get(f"{API_PREFIX}/docs")
     assert r.status_code == 200
 
-    r = f_client_containerized.get(f"{API_PREFIX}/docs/openapi.json")
+    r = await f_client_containerized.get(f"{API_PREFIX}/docs/openapi.json")
     assert r.status_code == 200
 
 
@@ -67,11 +66,10 @@ def test_server_openapi_docs(f_client_containerized) -> None:
 ## Here, we're checking that config matches expected values and that we have function to the database
 @pytest.mark.order(22)
 @pytest.mark.integration
-def test_server_db_config_container(f_client_containerized) -> None:
-
-    r = f_client_containerized.get(f"{API_PREFIX}/about/health")
+async def test_server_db_config_container(f_client_containerized) -> None:
+    r = await f_client_containerized.get(f"{API_PREFIX}/about/health")
     assert r.status_code == 200
-    actual = r.json
+    actual = r.json()
     assert actual["server"]["status"] == "online"
 
 
@@ -79,9 +77,8 @@ def test_server_db_config_container(f_client_containerized) -> None:
 # Testing aginst the in-the-cloud test database
 @pytest.mark.order(22)
 @pytest.mark.system
-def test_server_db_config_testdb(f_client_testdb) -> None:
-
-    r = f_client_testdb.get(f"{API_PREFIX}/about/health")
+async def test_server_db_config_testdb(f_client_testdb) -> None:
+    r = await f_client_testdb.get(f"{API_PREFIX}/about/health")
     assert r.status_code == 200
-    actual = r.json
+    actual = r.json()
     assert actual["db"]["status"] == "online"  # < will only pass if the db really is online.

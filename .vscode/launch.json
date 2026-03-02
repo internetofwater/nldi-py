@@ -2,44 +2,39 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "GUNICORN",
+            "name": "HyperCorn",
             "type": "debugpy",
             "justMyCode": false,
             "envFile": "${workspaceFolder}/tests/data/secret.env",
             "request": "launch",
-            "program": "${workspaceFolder}/.venv/bin/gunicorn",
+            "program": "${workspaceFolder}/.venv/bin/hypercorn",
             "args": [
                 "--bind",
                 "0.0.0.0:8001",
                 "--workers",
                 "1",
-                "--timeout",
-                "6000",
-                "-k",
-                "uvicorn.workers.UvicornWorker",
+                "--reload",
+                "--log-level", "DEBUG",
                 "nldi.asgi:APP",
-                "--worker-connections",
-                "100",
-                "--access-logfile",
-                "-"
             ]
         },
         {
-            "name": "UVICORN",
+            "name": "uvicorn",
             "type": "debugpy",
             "justMyCode": false,
             "envFile": "${workspaceFolder}/tests/data/secret.env",
             "request": "launch",
             "program": "${workspaceFolder}/.venv/bin/uvicorn",
             "args": [
-                "--host",
-                "0.0.0.0",
-                "--port",
-                "8080",
-                "--interface",
-                "wsgi",
-                "nldi.wsgi:APP"
+                "--host", "0.0.0.0",
+                "--port", "8001",
+                "--workers",
+                "1",
+                "--reload",
+                "--log-level", "debug",
+                "nldi.asgi:APP",
             ]
         }
+
     ]
 }

@@ -11,6 +11,7 @@ import logging
 import os
 import pathlib
 import re
+from collections.abc import AsyncGenerator
 from datetime import date, datetime, time
 from decimal import Decimal
 from functools import singledispatch
@@ -23,8 +24,38 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 from . import __version__
 
+
+def to_json(dict_, pretty=False):
+    """
+    Serialize dict to json
+
+    Can be "pretty printed" with indents and newlines. This increases the size of the return string
+    for no real benefit in function.  Use sparingly. Prefer to have the client prettify the
+    serialized JSON if they want.
+
+    :param dict_: `dict` of JSON representation
+    :param pretty: `bool` of whether to prettify JSON (default is `False`)
+
+    :returns: JSON string representation
+    """
+    if pretty:
+        indent = 4
+    else:
+        indent = None
+    return json.dumps(dict_, default=json_serial, indent=indent)
+
+
+# region: jinja config cache
 THISDIR = Path(__file__).parent.resolve()
 TEMPLATES = THISDIR / "templates"
+_JINJA_ENV = Environment(
+    loader=FileSystemLoader([TEMPLATES, "."]),
+    extensions=["jinja2.ext.i18n"],
+    autoescape=select_autoescape(),
+    enable_async=True,
+)
+_JINJA_ENV.filters["to_json"] = to_json
+_JINJA_ENV.globals.update(to_json=to_json)
 
 
 def url_join(*parts: str) -> str:
@@ -45,25 +76,6 @@ def url_join(*parts: str) -> str:
     return "/".join([str(p).strip().strip("/") for p in parts]).rstrip("/")
 
 
-def to_json(dict_: dict, pretty: bool = False) -> str:
-    # NOTE: mostly deprecated....   prefer to use flask.jsonify for return responses.  This func
-    # is still used in the jinja template renderer.
-    """
-    Serialize dict to json
-
-    :param dict_: `dict` of JSON representation
-    :param pretty: `bool` of whether to prettify JSON (default is `False`)
-
-    :returns: JSON string representation
-    """
-    if pretty:
-        indent = 4
-    else:
-        indent = None
-
-    return json.dumps(dict_, indent=indent)
-
-
 def stream_j2_template(template: Path, data: dict) -> str:
     """
     Stream Jinja2 template
@@ -73,22 +85,29 @@ def stream_j2_template(template: Path, data: dict) -> str:
 
     :returns: string of rendered template
     """
-    template_paths = [TEMPLATES, "."]
-    env = Environment(
-        loader=FileSystemLoader(template_paths),
-        extensions=["jinja2.ext.i18n"],
-        autoescape=select_autoescape(),
-    )
-
-    env.filters["to_json"] = to_json
-    env.globals.update(to_json=to_json)
-
-    template = env.get_template(template)
+    template = _JINJA_ENV.get_template(template)
 
     rv = template.stream(data=data)
     rv.enable_buffering(15)
 
     return rv
+
+
+async def async_stream_j2_template(template: str, data: AsyncGenerator) -> AsyncGenerator[str, None]:
+    """
+    Stream a Jinja2 template asynchronously over an async data source.
+
+    Uses Jinja2's async environment so that the template's ``{% for %}`` loop
+    consumes the async generator lazily, enabling true end-to-end streaming.
+
+    :param template: template filename (relative to the templates directory)
+    :param data: async generator of dicts to pass as ``data`` to the template
+    :returns: async generator of rendered string chunks
+    """
+    logging.debug("Beginning STREAM response...")
+    t = _JINJA_ENV.get_template(template)
+    async for chunk in t.generate_async(data=data):
+        yield chunk
 
 
 def render_j2_template(template, data):
@@ -109,22 +128,6 @@ def render_j2_template(template, data):
 
     template = env.get_template(template)
     return template.render(data=data, version=__version__)
-
-
-def to_json(dict_, pretty=False):
-    """
-    Serialize dict to json
-
-    :param dict_: `dict` of JSON representation
-    :param pretty: `bool` of whether to prettify JSON (default is `False`)
-
-    :returns: JSON string representation
-    """
-    if pretty:
-        indent = 4
-    else:
-        indent = None
-    return json.dumps(dict_, default=json_serial, indent=indent)
 
 
 def get_path_basename(urlpath):

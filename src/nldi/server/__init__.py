@@ -5,3 +5,11 @@
 # See the full copyright notice in LICENSE.md
 #
 """ """
+
+from litestar.datastructures import State
+
+from ..config import MasterConfig
+
+
+class AppState(State):
+    nldi_config: MasterConfig

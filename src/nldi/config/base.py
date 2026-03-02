@@ -102,7 +102,7 @@ class DatabaseConfig:
         _sanitized = DB_URL.create(
             "postgresql+psycopg",
             username="USERNAME",
-            password="*p*a*s*s*",
+            password="*p*a*s*s*",  # noqa: S106
             host=".".join(self.host.split(".")[1:]),
             port=self.port,
             database=self.dbname,
@@ -157,7 +157,7 @@ class MasterConfig:
         md_id_section = cls.clean_dict(cfg["metadata"]["identification"])
         try:
             pygeoapi_cfg = cfg.get("pygeoapi")
-            pygeoapi_url = pygeoapi_cfg.get("gdp_url",  default.PYGEOAPI_URL) or default.PYGEOAPI_URL
+            pygeoapi_url = pygeoapi_cfg.get("gdp_url", default.PYGEOAPI_URL) or default.PYGEOAPI_URL
         except (AttributeError, KeyError):
             logging.warning(f"Unable to determine pygeoapi url.  Using default: {default.PYGEOAPI_URL}")
             pygeoapi_url = default.PYGEOAPI_URL
