@@ -76,8 +76,12 @@ class FlowlineService(SQLAlchemyAsyncRepositoryService[FlowlineModel]):
         )
         logging.debug("Feature Navigation SQL Query:")
         logging.debug(f"{stmt.compile()}")
-        async for f in await self.repository.session.stream_scalars(stmt):
-            yield f.as_feature(excl_props=["objectid", "permanent_identifier", "fmeasure", "tmeasure", "reachcode"])
+        result = await self.repository.session.stream_scalars(stmt)
+        try:
+            async for f in result:
+                yield f.as_feature(excl_props=["objectid", "permanent_identifier", "fmeasure", "tmeasure", "reachcode"])
+        finally:
+            await result.close()
 
     async def trimed_features_from_nav_query(
         self, nav_query: Select, trim_query: Select
@@ -92,10 +96,14 @@ class FlowlineService(SQLAlchemyAsyncRepositoryService[FlowlineModel]):
         )
         logging.debug("Feature Navigation (trimmed) SQL Query:")
         logging.debug(f"{stmt.compile()}")
-        async for f, g in await self.repository.session.stream(stmt):
-            _tmp = f.as_feature(excl_props=["objectid", "permanent_identifier", "fmeasure", "tmeasure", "reachcode"])
-            _tmp.geometry = json.loads(g)
-            yield _tmp
+        result = await self.repository.session.stream(stmt)
+        try:
+            async for f, g in result:
+                _tmp = f.as_feature(excl_props=["objectid", "permanent_identifier", "fmeasure", "tmeasure", "reachcode"])
+                _tmp.geometry = json.loads(g)
+                yield _tmp
+        finally:
+            await result.close()
 
     async def feat_get_distance_from_flowline(self, feature_id: str, feature_source: str) -> float:
         x = (

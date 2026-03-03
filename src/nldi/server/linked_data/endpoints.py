@@ -399,10 +399,13 @@ class LinkedDataController(Controller):
             raise ValidationException(detail=str(e))
 
         async def feature_stream():
-            async for feat in features:
-                if exclude_geom:
-                    feat.geometry = {}
-                yield msgspec.to_builtins(feat)
+            try:
+                async for feat in features:
+                    if exclude_geom:
+                        feat.geometry = {}
+                    yield msgspec.to_builtins(feat)
+            finally:
+                await features.aclose()
 
         return Stream(
             util.async_stream_j2_template("FeatureCollection.j2", feature_stream()),
