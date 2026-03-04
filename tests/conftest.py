@@ -5,16 +5,14 @@
 """Configuration for running pytest"""
 
 import pathlib
-from collections.abc import Generator
+from collections.abc import AsyncGenerator, Generator
 
 import pytest
 import pytest_asyncio
 from dotenv import dotenv_values
 from litestar.testing import AsyncTestClient
-from sqlalchemy import Engine, create_engine
 from sqlalchemy.engine import URL as DB_URL
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker, create_async_engine
 from testcontainers.core.container import DockerContainer
 from testcontainers.core.waiting_utils import wait_for_logs
 
@@ -114,8 +112,8 @@ def testdb_env_info() -> dict[str, str]:
 
 
 @pytest.fixture()
-def engine_testdb(testdb_env_info) -> Generator[Engine, None, None]:
-    """A sqlalchemy engine, configured for the containerized db."""
+def engine_testdb(testdb_env_info) -> Generator[AsyncEngine, None, None]:
+    """A sqlalchemy async engine, configured for the testdb."""
     _URL = DB_URL.create(  # noqa: N806
         "postgresql+psycopg",
         username=testdb_env_info["NLDI_DB_USERNAME"],
@@ -131,19 +129,16 @@ def engine_testdb(testdb_env_info) -> Generator[Engine, None, None]:
         _private_engine.dispose()
 
 
-@pytest.fixture()
-def dbsession_testdb(engine_testdb) -> Generator[Session, None, None]:
-    """A sqlalchemy session, connecting to the containerized DB."""
-    session = async_sessionmaker(bind=engine_testdb, expire_on_commit=False)()
-    try:
+@pytest_asyncio.fixture()
+async def dbsession_testdb(engine_testdb) -> AsyncGenerator[AsyncSession, None]:
+    """A sqlalchemy async session, connecting to the testdb."""
+    async with async_sessionmaker(bind=engine_testdb, expire_on_commit=False)() as session:
         yield session
-    finally:
-        session.close()
 
 
 @pytest.fixture()
-def engine_containerized(containerized_db_env_info) -> Generator[Engine, None, None]:
-    """A sqlalchemy engine, configured for the containerized db."""
+def engine_containerized(containerized_db_env_info) -> Generator[AsyncEngine, None, None]:
+    """A sqlalchemy async engine, configured for the containerized db."""
     _URL = DB_URL.create(  # noqa: N806
         "postgresql+psycopg",
         username=containerized_db_env_info["NLDI_DB_USERNAME"],
@@ -159,14 +154,11 @@ def engine_containerized(containerized_db_env_info) -> Generator[Engine, None, N
         _private_engine.dispose()
 
 
-@pytest.fixture()
-def dbsession_containerized(engine_containerized) -> Generator[Session, None, None]:
-    """A sqlalchemy session, connecting to the containerized DB."""
-    session = async_sessionmaker(bind=engine_containerized, expire_on_commit=False)()
-    try:
+@pytest_asyncio.fixture()
+async def dbsession_containerized(engine_containerized) -> AsyncGenerator[AsyncSession, None]:
+    """A sqlalchemy async session, connecting to the containerized DB."""
+    async with async_sessionmaker(bind=engine_containerized, expire_on_commit=False)() as session:
         yield session
-    finally:
-        session.close()
 
 
 @pytest_asyncio.fixture()
