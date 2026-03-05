@@ -3,7 +3,7 @@
 START_COMID=21412883  ## This comid selected from https://reference.geoconnex.us/collections/mainstems/items/29559
                       ## as the outlet/mouth of the Colorado River
 
-N=1                 ## Number of jobs in a batch.  These jobs run serially.
+N=2                 ## Number of jobs in a batch.  These jobs run serially.
 PARALLELISM=10        ## How many batches to launch.  Batches run in parallel... the jobs within are serial.
 
 #BASE_URL="https://labs-beta.waterdata.usgs.gov/api/nldi"  # Use for QA

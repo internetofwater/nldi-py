@@ -13,7 +13,10 @@ from advanced_alchemy.extensions.litestar import SQLAlchemyAsyncConfig, SQLAlche
 from litestar import Litestar
 from litestar.config.cors import CORSConfig
 from litestar.logging import LoggingConfig
+from litestar.openapi.config import OpenAPIConfig, SwaggerRenderPlugin
+from litestar.openapi.spec import Tag
 
+from . import __version__
 from .config import get_config, log_level
 from .server.linked_data.endpoints import LinkedDataController
 from .server.root.endpoints import RootController
@@ -37,6 +40,27 @@ def create_app() -> Litestar:
         logging_config=LoggingConfig(root={"level": log_level(), "handlers": ["queue_listener"]}),
         on_startup=[lambda app: setattr(app.state, "nldi_config", _cfg)],
         path=_cfg.server.prefix,
+        openapi_config=OpenAPIConfig(
+            title=_cfg.metadata.title,
+            version=__version__,
+            path="/docs",
+            render_plugins=[SwaggerRenderPlugin()],
+            use_handler_docstrings=True,
+            tags=[
+                Tag(
+                    name="nldi",
+                    description="Root NLDI services",
+                ),
+                Tag(
+                    name="by_comid",
+                    description="Endpoints that only work against the `comid` source. 'comid' can always be used as a source in `by_sourceid` endpoints.",
+                ),
+                Tag(
+                    name="by_sourceid",
+                    description="lookups by a source name (`source_name`); 'comid' is always a valid source. A list of all sources is available at the `/linked-data` endpoint.",
+                ),
+            ],
+        ),
     )
     return app
 

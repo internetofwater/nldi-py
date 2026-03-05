@@ -16,12 +16,14 @@ from litestar import Controller, Response, get
 from litestar.connection import Request
 from litestar.di import Provide
 from litestar.exceptions import ClientException, NotFoundException, ServiceUnavailableException, ValidationException
+from litestar.openapi.spec.example import Example
 from litestar.params import Parameter
 from litestar.response import Stream
 from litestar.types import ASGIApp, Receive, Scope, Send
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ... import util
+from ...db.schemas import struct_geojson as geojson
 from .. import AppState
 from . import services
 from .services.navigation import NAV_DIST_DEFAULTS
@@ -98,11 +100,25 @@ async def provide_sources_svc(db_session: AsyncSession) -> services.CrawlerSourc
 async def provide_base_url(state: AppState) -> str:
     return state.nldi_config.server.base_url
 
+
 # region: response objects
 class DataSource(msgspec.Struct):
     source: str
     sourceName: str  # noqa: N815
     features: str
+
+
+opi_sources_examples = [
+    Example(id="comid", value="comid"),
+    Example(id="wqp", value="wqp"),
+]
+
+
+opi_id_examples = [
+    Example(id="comid", value="13293396"),
+    Example(id="wqp", value="USGS-05427930"),
+]
+
 
 # region: Route definition
 class LinkedDataController(Controller):
@@ -120,13 +136,14 @@ class LinkedDataController(Controller):
     }
     middleware = [timing_middleware_factory]
 
-    @get("/")
+    @get("/", tags=["nldi"])
     async def list_sources(self, base_url: str, sources_svc: services.CrawlerSourceService) -> list[DataSource]:
         """
         List all data sources.
 
-        Produces a list of sources found in the NLDI database.  Sources include a property, ``features`` which
-        is the link to the features that we know about, extracted from the named datasource.
+        Produces a list of sources found in the NLDI database.  Sources include a
+        property, ``features`` which is the link to the features that we know about,
+        extracted from the named datasource.
         """
 
         src_list = await sources_svc.list()
@@ -148,16 +165,22 @@ class LinkedDataController(Controller):
             )
         return _rv
 
-    @get("/hydrolocation")
+    @get("/hydrolocation", tags=["nldi"])
     async def get_hydrolocation(
         self,
         base_url: str,
         pygeoapi_svc: services.PyGeoAPIService,
-        coords: str,
-    ) -> Response:
-        """Find hydrolocation by WKT coordinates."""
-        logging.debug(f"get_hydrolocation({base_url=}, {coords=})")
+        coords: Annotated[
+            str,
+            Parameter(title="Coordinates as WKT string", examples=[Example(id="point", value="POINT(-89.509 43.087)")]),
+        ],
+    ) -> Response[geojson.FeatureCollection]:
+        """
+        Return the hydrologic location closest to a provided set of coordinates.
 
+        The coordinates are provided as WKT-formatted string.
+        """
+        logging.debug(f"get_hydrolocation({base_url=}, {coords=})")
         try:
             features = await pygeoapi_svc.hydrolocation_by_coords(coords, base_url=base_url)
         except RuntimeError as e:
@@ -172,15 +195,24 @@ class LinkedDataController(Controller):
             status_code=200,
         )
 
-    @get("/comid/position")
+    @get("/comid/position", tags=["by_comid"])
     async def flowline_by_position(
         self,
         base_url: str,
         catchment_svc: services.CatchmentService,
         flowline_svc: services.FlowlineService,
-        coords: str,
-    ) -> Response:
-        """Find flowline by spatial search."""
+        coords: Annotated[
+            str,
+            Parameter(title="Coordinates as WKT string", examples=[Example(id="point", value="POINT(-89.509 43.087)")]),
+        ],
+    ) -> Response[geojson.FeatureCollection]:
+        """
+        Find flowline by spatial search.
+
+        The supplied point (in WKT format) is expected in NAD83 longitude and latitude values. This
+        point is used to locate a ``catchment`` by spatial intersection. That catchment is linked
+        to the corresponding flowline by its comid.
+        """
 
         logging.debug(f"flowline_by_position({base_url=}, {coords=})")
 
@@ -209,18 +241,25 @@ class LinkedDataController(Controller):
             status_code=200,
         )
 
-    @get("/{source_name:str}")
+    @get("/{source_name:str}", tags=["by_sourceid"])
     async def list_features_by_source(
         self,
         base_url: str,
         feature_svc: services.FeatureService,
         flowline_svc: services.FlowlineService,
-        source_name: str,
+        source_name: Annotated[str, Parameter(title="Source Identifier", examples=opi_sources_examples)],
         f: str = "",
         limit: int = 0,
         offset: int = 0,
-    ) -> Response:
-        """List all features for a named source."""
+    ) -> Response[geojson.FeatureCollection]:
+        """
+        List all features for a named source.
+
+        The named source is retrieved as a FeatureCollection.  All features are returned.  The
+        size of the return can be limited by specifying a ``limit`` parameter.  The ``offset`` can
+        also be provided as part of the query.  In this way, you can step through all features
+        in batches.
+        """
 
         logging.debug(f"list_features_by_source({base_url=}, {source_name=}, {limit=}, {offset=})")
 
@@ -236,17 +275,21 @@ class LinkedDataController(Controller):
             status_code=200,
         )
 
-    @get("/{source_name:str}/{identifier:str}")
+    @get("/{source_name:str}/{identifier:str}", tags=["by_sourceid"])
     async def get_feature_by_identifier(
         self,
         base_url: str,
         feature_svc: services.FeatureService,
         flowline_svc: services.FlowlineService,
-        source_name: str,
-        identifier: str,
+        source_name: Annotated[str, Parameter(title="Source Identifier", examples=opi_sources_examples)],
+        identifier: Annotated[str, Parameter(title="Feature Identifier", examples=opi_id_examples)],
         f: str = "",
-    ) -> Response:
-        """Get a single feature by source name and identifier."""
+    ) -> Response[geojson.FeatureCollection]:
+        """
+        Get a single feature by source name and identifier.
+
+        A single source is queried, but note that the return is still a feature collection.
+        """
 
         logging.debug(f"get_feature_by_identifier({base_url=}, {source_name=}, {identifier=})")
 
@@ -285,16 +328,16 @@ class LinkedDataController(Controller):
                 status_code=200,
             )
 
-    @get("/{source_name:str}/{identifier:str}/basin")
+    @get("/{source_name:str}/{identifier:str}/basin", tags=["by_sourceid"])
     async def get_basin_by_id(
         self,
         state: AppState,
         basin_svc: services.BasinService,
-        source_name: str,
-        identifier: str,
-        simplified: bool = True,
+        source_name: Annotated[str, Parameter(title="Source Identifier", examples=opi_sources_examples)],
+        identifier: Annotated[str, Parameter(title="Feature Identifier", examples=opi_id_examples)],
+        simplified: Annotated[bool, Parameter(title="simplify geometry")] = True,
         split_catchment: Annotated[bool, Parameter(query="splitCatchment")] = False,
-    ) -> Response:
+    ) -> Response[geojson.FeatureCollection]:
         """Compute upstream basin polygon for a source/identifier."""
         logging.debug(f"get_basin_by_id({source_name=}, {identifier=}, {simplified=}, {split_catchment=})")
 
@@ -313,12 +356,12 @@ class LinkedDataController(Controller):
             status_code=200,
         )
 
-    @get(path="/{source_name:str}/{identifier:str}/navigation")
+    @get(path="/{source_name:str}/{identifier:str}/navigation", tags=["by_sourceid"])
     async def get_navigation_modes(
         self,
         base_url: str,
-        source_name: str,
-        identifier: str,
+        source_name: Annotated[str, Parameter(title="Source Identifier", examples=opi_sources_examples)],
+        identifier: Annotated[str, Parameter(title="Feature Identifier", examples=opi_id_examples)],
         sources_svc: services.CrawlerSourceService,
         f: str,
     ) -> dict:
@@ -337,12 +380,12 @@ class LinkedDataController(Controller):
             "downstreamDiversions": util.url_join(nav_url, "DD"),
         }
 
-    @get("/{source_name:str}/{identifier:str}/navigation/{nav_mode:str}")
+    @get("/{source_name:str}/{identifier:str}/navigation/{nav_mode:str}", tags=["by_sourceid"])
     async def get_navigation_info(
         self,
         base_url: str,
-        source_name: str,
-        identifier: str,
+        source_name: Annotated[str, Parameter(title="Source Identifier", examples=opi_sources_examples)],
+        identifier: Annotated[str, Parameter(title="Feature Identifier", examples=opi_id_examples)],
         nav_mode: str,
         sources_svc: services.CrawlerSourceService,
     ) -> list[dict]:
@@ -373,17 +416,17 @@ class LinkedDataController(Controller):
             )
         return content
 
-    @get("/{source_name:str}/{identifier:str}/navigation/{nav_mode:str}/flowlines")
+    @get("/{source_name:str}/{identifier:str}/navigation/{nav_mode:str}/flowlines", tags=["by_sourceid"])
     async def get_flowline_navigation(
         self,
         navigation_svc: services.NavigationService,
-        source_name: str,
-        identifier: str,
+        source_name: Annotated[str, Parameter(title="Source Identifier", examples=opi_sources_examples)],
+        identifier: Annotated[str, Parameter(title="Feature Identifier", examples=opi_id_examples)],
         nav_mode: str,
         distance: float | None = None,
         trim_start: Annotated[bool, Parameter(query="trimStart")] = False,
         exclude_geom: Annotated[bool, Parameter(query="excludeGeometry")] = False,
-    ) -> Response:
+    ) -> Response[geojson.FeatureCollection]:
         """Navigate flowlines from source/identifier."""
         logging.debug(
             f"get_flowline_navigation({source_name=}, {identifier=}, {nav_mode=}, {distance=}, {trim_start=}, {exclude_geom=})"
@@ -410,18 +453,18 @@ class LinkedDataController(Controller):
             status_code=200,
         )
 
-    @get("/{source_name:str}/{identifier:str}/navigation/{nav_mode:str}/{data_source:str}")
+    @get("/{source_name:str}/{identifier:str}/navigation/{nav_mode:str}/{data_source:str}", tags=["by_sourceid"])
     async def get_feature_navigation(
         self,
         navigation_svc: services.NavigationService,
-        source_name: str,
-        identifier: str,
+        source_name: Annotated[str, Parameter(title="Source Identifier", examples=opi_sources_examples)],
+        identifier: Annotated[str, Parameter(title="Feature Identifier", examples=opi_id_examples)],
         nav_mode: str,
         data_source: str,
         f: str = "",
         distance: float | None = None,
         exclude_geom: Annotated[bool, Parameter(query="excludeGeometry")] = False,
-    ) -> Response:
+    ) -> Response[geojson.FeatureCollection]:
         """Navigate features of a data source."""
 
         logging.debug(
