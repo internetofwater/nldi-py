@@ -118,6 +118,8 @@ opi_id_examples = [
     Example(id="comid", value="13293396"),
     Example(id="wqp", value="USGS-05427930"),
 ]
+
+
 # region: Route definition
 class LinkedDataController(Controller):
     path = "/linked-data"
@@ -169,7 +171,8 @@ class LinkedDataController(Controller):
         base_url: str,
         pygeoapi_svc: services.PyGeoAPIService,
         coords: Annotated[
-            str, Parameter(title="Coordinates as WKT string", examples=[Example(id="point", value="POINT(-89.509 43.087)")])
+            str,
+            Parameter(title="Coordinates as WKT string", examples=[Example(id="point", value="POINT(-89.509 43.087)")]),
         ],
     ) -> Response[geojson.FeatureCollection]:
         """
@@ -199,10 +202,17 @@ class LinkedDataController(Controller):
         catchment_svc: services.CatchmentService,
         flowline_svc: services.FlowlineService,
         coords: Annotated[
-            str, Parameter(title="Coordinates as WKT string", examples=[Example(id="point", value="POINT(-89.509 43.087)")])
+            str,
+            Parameter(title="Coordinates as WKT string", examples=[Example(id="point", value="POINT(-89.509 43.087)")]),
         ],
     ) -> Response[geojson.FeatureCollection]:
-        """Find flowline by spatial search."""
+        """
+        Find flowline by spatial search.
+
+        The supplied point (in WKT format) is expected in NAD83 longitude and latitude values. This
+        point is used to locate a ``catchment`` by spatial intersection. That catchment is linked
+        to the corresponding flowline by its comid.
+        """
 
         logging.debug(f"flowline_by_position({base_url=}, {coords=})")
 
@@ -242,7 +252,14 @@ class LinkedDataController(Controller):
         limit: int = 0,
         offset: int = 0,
     ) -> Response[geojson.FeatureCollection]:
-        """List all features for a named source."""
+        """
+        List all features for a named source.
+
+        The named source is retrieved as a FeatureCollection.  All features are returned.  The
+        size of the return can be limited by specifying a ``limit`` parameter.  The ``offset`` can
+        also be provided as part of the query.  In this way, you can step through all features
+        in batches.
+        """
 
         logging.debug(f"list_features_by_source({base_url=}, {source_name=}, {limit=}, {offset=})")
 
@@ -268,7 +285,11 @@ class LinkedDataController(Controller):
         identifier: Annotated[str, Parameter(title="Feature Identifier", examples=opi_id_examples)],
         f: str = "",
     ) -> Response[geojson.FeatureCollection]:
-        """Get a single feature by source name and identifier."""
+        """
+        Get a single feature by source name and identifier.
+
+        A single source is queried, but note that the return is still a feature collection.
+        """
 
         logging.debug(f"get_feature_by_identifier({base_url=}, {source_name=}, {identifier=})")
 
@@ -314,7 +335,7 @@ class LinkedDataController(Controller):
         basin_svc: services.BasinService,
         source_name: Annotated[str, Parameter(title="Source Identifier", examples=opi_sources_examples)],
         identifier: Annotated[str, Parameter(title="Feature Identifier", examples=opi_id_examples)],
-        simplified: bool = True,
+        simplified: Annotated[bool, Parameter(title="simplify geometry")] = True,
         split_catchment: Annotated[bool, Parameter(query="splitCatchment")] = False,
     ) -> Response[geojson.FeatureCollection]:
         """Compute upstream basin polygon for a source/identifier."""

@@ -60,19 +60,11 @@ class RootController(litestar.Controller):
             "pygeoapi": msgspec.structs.asdict(_cfg.server.healthstatus("pygeoapi")),
         }
 
-    # @get("/docs/openapi.json", media_type="application/vnd.oai.openapi+json;version=3.0")
-    # async def openapi_json(self) -> dict:
-    #     """OpenAPI specification as JSON."""
-    #     from ..openapi import generate_openapi_json
 
-    #     return generate_openapi_json()
-
-    # @get("/docs", media_type="text/html")
-    # async def openapi_ui(self) -> str:
-    #     """Swagger UI."""
-    #     data = {"openapi-document-path": "openapi.json"}
-    #     return util.render_j2_template("swagger.html", data)
 
     @litestar.get("/openapi", include_in_schema=False)
-    async def openapi_redirect(self) -> Redirect:
-        return Redirect(path="docs")
+    async def openapi_redirect(self, request: litestar.Request) -> Redirect:
+        _prefix = request.app.path
+        _openapi = request.app.openapi_config.path
+
+        return Redirect(path=f"{_prefix}{self.path}{_openapi}")
