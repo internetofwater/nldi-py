@@ -81,7 +81,7 @@ class FlowlineService(SQLAlchemyAsyncRepositoryService[FlowlineModel]):
             async for f in result:
                 yield f.as_feature(excl_props=["objectid", "permanent_identifier", "fmeasure", "tmeasure", "reachcode"])
         finally:
-            self.repository.session.close()
+            await self.repository.session.close()
 
     async def trimed_features_from_nav_query(
         self, nav_query: Select, trim_query: Select
@@ -104,7 +104,7 @@ class FlowlineService(SQLAlchemyAsyncRepositoryService[FlowlineModel]):
                 yield _tmp
         finally:
             # This extra layer of try/finally is to force the closing of the db session, no matter what.
-            self.repository.session.close()
+            await self.repository.session.close()
 
     async def feat_get_distance_from_flowline(self, feature_id: str, feature_source: str) -> float:
         x = (
