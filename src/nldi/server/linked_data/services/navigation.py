@@ -7,9 +7,7 @@
 """Navigation business logic service layer"""
 
 from collections.abc import AsyncGenerator
-from contextlib import contextmanager
 from enum import StrEnum
-from typing import Generator, Self
 
 import sqlalchemy
 from advanced_alchemy.exceptions import NotFoundError
@@ -60,19 +58,6 @@ class NavigationService:
         self.feature_svc = FeatureService(session=self._session)
         self.source_svc = CrawlerSourceService(session=self._session)
         self.flowline_svc = FlowlineService(session=self._session)
-
-    @classmethod
-    @contextmanager
-    def new(
-        cls,
-        session: AsyncSession | None = None,
-    ) -> Generator[Self, None, None]:
-        if not session:
-            raise ValueError("Please supply an optional configuration or session to use.")
-        if session:
-            yield cls(
-                session=session,
-            )
 
     def navigation(
         self,
@@ -399,9 +384,3 @@ class NavigationService:
         nav_results_query = self.navigation(nav_mode, start_comid, distance)
 
         return self.feature_svc.features_from_nav_query(return_source, nav_results_query)
-
-
-def navigation_svc(db_session: AsyncSession) -> Generator[NavigationService, None, None]:
-    """Provider function as part of the dependency-injection mechanism."""
-    with NavigationService.new(session=db_session) as service:
-        yield service

@@ -15,7 +15,7 @@ object as being an implementation of a unit-of-work pattern.
 
 import json
 import logging
-from collections.abc import AsyncGenerator, Generator
+from collections.abc import AsyncGenerator
 
 import msgspec
 import sqlalchemy
@@ -23,7 +23,6 @@ import sqlalchemy
 # from advanced_alchemy.exceptions import NotFoundError
 from advanced_alchemy.service import SQLAlchemyAsyncRepositoryService
 from sqlalchemy import and_
-from sqlalchemy.orm import Session
 from sqlalchemy.sql.expression import Select
 
 from nldi.db.schemas.nhdplus import FlowlineModel
@@ -275,8 +274,3 @@ class FlowlineService(SQLAlchemyAsyncRepositoryService[FlowlineModel]):
                 )
         finally:
             await result.close()
-
-def flowline_svc(db_session: Session) -> Generator[FlowlineService, None, None]:
-    """Provider function as part of the dependency-injection mechanism."""
-    with FlowlineService.new(session=db_session) as service:
-        yield service
