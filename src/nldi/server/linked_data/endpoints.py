@@ -7,6 +7,7 @@
 """Linked data controller for NLDI API."""
 
 import logging
+from collections.abc import AsyncGenerator, Callable
 from time import perf_counter
 from typing import Annotated
 
@@ -67,6 +68,11 @@ def timing_middleware_factory(app: ASGIApp) -> ASGIApp:
         logging.info(f"{scope['method']} {scope['path']}: {(_end - _start):.3f} seconds")
 
     return endpoint_timer
+
+
+def _get_session_maker(request: Request) -> Callable[[], AsyncSession]:
+    """Retrieve the SQLAlchemy session factory from app state."""
+    return request.app.state.session_maker_class
 
 
 async def provide_basin_svc(db_session: AsyncSession, state: AppState) -> services.BasinService:
@@ -244,9 +250,8 @@ class LinkedDataController(Controller):
     @get("/{source_name:str}", tags=["by_sourceid"])
     async def list_features_by_source(
         self,
+        request: Request,
         base_url: str,
-        feature_svc: services.FeatureService,
-        flowline_svc: services.FlowlineService,
         source_name: Annotated[str, Parameter(title="Source Identifier", examples=opi_sources_examples)],
         f: str = "",
         limit: int = 0,
@@ -264,13 +269,21 @@ class LinkedDataController(Controller):
         logging.debug(f"list_features_by_source({base_url=}, {source_name=}, {limit=}, {offset=})")
 
         _template = "FeatureCollectionGraph.j2" if f == "jsonld" else "FeatureCollection.j2"
+        session_maker = _get_session_maker(request)
 
-        if source_name == "comid":
-            feature_iterator = flowline_svc.feature_iterator(base_url=base_url, limit=limit, offset=offset)
-        else:
-            feature_iterator = feature_svc.iter_by_src(source_name, base_url=base_url, limit=limit, offset=offset)
+        async def _stream() -> AsyncGenerator[str, None]:
+            async with session_maker() as session:
+                if source_name == "comid":
+                    svc = services.FlowlineService(session=session)
+                    feature_iterator = svc.feature_iterator(base_url=base_url, limit=limit, offset=offset)
+                else:
+                    svc = services.FeatureService(session=session)
+                    feature_iterator = svc.iter_by_src(source_name, base_url=base_url, limit=limit, offset=offset)
+                async for chunk in util.async_stream_j2_template(_template, feature_iterator):
+                    yield chunk
+
         return Stream(
-            util.async_stream_j2_template(_template, feature_iterator),
+            _stream(),
             media_type="application/json",
             status_code=200,
         )
@@ -419,7 +432,7 @@ class LinkedDataController(Controller):
     @get("/{source_name:str}/{identifier:str}/navigation/{nav_mode:str}/flowlines", tags=["by_sourceid"])
     async def get_flowline_navigation(
         self,
-        navigation_svc: services.NavigationService,
+        request: Request,
         source_name: Annotated[str, Parameter(title="Source Identifier", examples=opi_sources_examples)],
         identifier: Annotated[str, Parameter(title="Feature Identifier", examples=opi_id_examples)],
         nav_mode: str,
@@ -433,22 +446,29 @@ class LinkedDataController(Controller):
         )
 
         _distance = distance if distance is not None else NAV_DIST_DEFAULTS.get(nav_mode, 100)
+        session_maker = _get_session_maker(request)
 
-        try:
-            features = await navigation_svc.walk_flowlines(source_name, identifier, nav_mode, _distance, trim_start)
-        except NotFoundError as e:
-            raise NotFoundException(detail=str(e))
-        except ValueError as e:
-            raise ValidationException(detail=str(e))
+        async def _stream() -> AsyncGenerator[str, None]:
+            async with session_maker() as session:
+                navigation_svc = services.NavigationService(session=session)
+                try:
+                    features = await navigation_svc.walk_flowlines(source_name, identifier, nav_mode, _distance, trim_start)
+                except NotFoundError as e:
+                    raise NotFoundException(detail=str(e))
+                except ValueError as e:
+                    raise ValidationException(detail=str(e))
 
-        async def feature_stream():
-            async for feat in features:
-                if exclude_geom:
-                    feat.geometry = {}
-                yield msgspec.to_builtins(feat)
+                async def feature_stream():
+                    async for feat in features:
+                        if exclude_geom:
+                            feat.geometry = {}
+                        yield msgspec.to_builtins(feat)
+
+                async for chunk in util.async_stream_j2_template("FeatureCollection.j2", feature_stream()):
+                    yield chunk
 
         return Stream(
-            util.async_stream_j2_template("FeatureCollection.j2", feature_stream()),
+            _stream(),
             media_type="application/json",
             status_code=200,
         )
@@ -456,7 +476,7 @@ class LinkedDataController(Controller):
     @get("/{source_name:str}/{identifier:str}/navigation/{nav_mode:str}/{data_source:str}", tags=["by_sourceid"])
     async def get_feature_navigation(
         self,
-        navigation_svc: services.NavigationService,
+        request: Request,
         source_name: Annotated[str, Parameter(title="Source Identifier", examples=opi_sources_examples)],
         identifier: Annotated[str, Parameter(title="Feature Identifier", examples=opi_id_examples)],
         nav_mode: str,
@@ -473,22 +493,29 @@ class LinkedDataController(Controller):
 
         _template = "FeatureCollectionGraph.j2" if f == "jsonld" else "FeatureCollection.j2"
         _distance = distance if distance is not None else NAV_DIST_DEFAULTS.get(nav_mode, 100)
+        session_maker = _get_session_maker(request)
 
-        try:
-            features = await navigation_svc.walk_features(source_name, identifier, nav_mode, data_source, _distance)
-        except NotFoundError as e:
-            raise NotFoundException(detail=str(e))
-        except ValueError as e:
-            raise ValidationException(detail=str(e))
+        async def _stream() -> AsyncGenerator[str, None]:
+            async with session_maker() as session:
+                navigation_svc = services.NavigationService(session=session)
+                try:
+                    features = await navigation_svc.walk_features(source_name, identifier, nav_mode, data_source, _distance)
+                except NotFoundError as e:
+                    raise NotFoundException(detail=str(e))
+                except ValueError as e:
+                    raise ValidationException(detail=str(e))
 
-        async def _feature_stream():
-            async for feat in features:
-                if exclude_geom:
-                    feat.geometry = {}
-                yield msgspec.to_builtins(feat)
+                async def _feature_stream():
+                    async for feat in features:
+                        if exclude_geom:
+                            feat.geometry = {}
+                        yield msgspec.to_builtins(feat)
+
+                async for chunk in util.async_stream_j2_template(_template, _feature_stream()):
+                    yield chunk
 
         return Stream(
-            util.async_stream_j2_template(_template, _feature_stream()),
+            _stream(),
             media_type="application/json",
             status_code=200,
         )
