@@ -80,11 +80,12 @@ class FeatureService(SQLAlchemyAsyncRepositoryService[FeatureSourceModel]):
             .limit(limit or None)
             .execution_options(yield_per=100)
         )
-        async for f in await self.repository.session.stream_scalars(stmt):
-            nav_url = util.url_join(base_url, "linked-data", source_suffix, f.identifier, "navigation")
-            yield msgspec.to_builtins(
-                f.as_feature(excl_props=["crawler_source_id"], xtra_props={"navigation": nav_url})
-            )
+        async with self.repository.session.stream_scalars(stmt) as result:
+            async for f in result:
+                nav_url = util.url_join(base_url, "linked-data", source_suffix, f.identifier, "navigation")
+                yield msgspec.to_builtins(
+                    f.as_feature(excl_props=["crawler_source_id"], xtra_props={"navigation": nav_url})
+                )
 
     async def features_from_nav_query(self, source_suffix: str, nav_query: Select) -> AsyncGenerator:
         subq = nav_query.subquery()
@@ -95,8 +96,9 @@ class FeatureService(SQLAlchemyAsyncRepositoryService[FeatureSourceModel]):
             .join(subq, FeatureSourceModel.comid == subq.c.comid)
             .execution_options(yield_per=100)
         )
-        async for f in await self.repository.session.stream_scalars(stmt):
-            yield f.as_feature()
+        async with self.repository.session.stream_scalars(stmt) as result:
+            async for f in result:
+                yield f.as_feature()
 
 
 def feature_svc(db_session: AsyncSession) -> Generator[FeatureSourceModel, None, None]:
