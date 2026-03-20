@@ -29,7 +29,7 @@ def create_app() -> Litestar:
         config=SQLAlchemyAsyncConfig(
             connection_string=_cfg.db.URL,
             create_all=False,
-            engine_config=EngineConfig(pool_pre_ping=True, pool_size=10, max_overflow=25),
+            engine_config=EngineConfig(pool_pre_ping=True, pool_size=10, max_overflow=10, pool_recycle=300, pool_timeout=30),
         )
     )
 
