@@ -448,26 +448,28 @@ class LinkedDataController(Controller):
         _distance = distance if distance is not None else NAV_DIST_DEFAULTS.get(nav_mode, 100)
         session_maker = _get_session_maker(request)
 
-        # Validate and resolve the starting feature before streaming so errors
-        # can be returned as proper 404/422 responses before headers are sent.
         async with session_maker() as session:
-            navigation_svc = services.NavigationService(session=session)
             try:
-                features = await navigation_svc.walk_flowlines(source_name, identifier, nav_mode, _distance, trim_start)
+                await services.NavigationService(session=session).validate_start(source_name, identifier, nav_mode, trim_start)
             except NotFoundError as e:
                 raise NotFoundException(detail=str(e))
             except ValueError as e:
                 raise ValidationException(detail=str(e))
 
         async def _stream() -> AsyncGenerator[str, None]:
-            async def feature_stream():
-                async for feat in features:
-                    if exclude_geom:
-                        feat.geometry = {}
-                    yield msgspec.to_builtins(feat)
+            async with session_maker() as session:
+                features = await services.NavigationService(session=session).walk_flowlines(
+                    source_name, identifier, nav_mode, _distance, trim_start
+                )
 
-            async for chunk in util.async_stream_j2_template("FeatureCollection.j2", feature_stream()):
-                yield chunk
+                async def feature_stream():
+                    async for feat in features:
+                        if exclude_geom:
+                            feat.geometry = {}
+                        yield msgspec.to_builtins(feat)
+
+                async for chunk in util.async_stream_j2_template("FeatureCollection.j2", feature_stream()):
+                    yield chunk
 
         return Stream(
             _stream(),
@@ -498,23 +500,27 @@ class LinkedDataController(Controller):
         session_maker = _get_session_maker(request)
 
         async with session_maker() as session:
-            navigation_svc = services.NavigationService(session=session)
             try:
-                features = await navigation_svc.walk_features(source_name, identifier, nav_mode, data_source, _distance)
+                await services.NavigationService(session=session).validate_start(source_name, identifier, nav_mode)
             except NotFoundError as e:
                 raise NotFoundException(detail=str(e))
             except ValueError as e:
                 raise ValidationException(detail=str(e))
 
         async def _stream() -> AsyncGenerator[str, None]:
-            async def _feature_stream():
-                async for feat in features:
-                    if exclude_geom:
-                        feat.geometry = {}
-                    yield msgspec.to_builtins(feat)
+            async with session_maker() as session:
+                features = await services.NavigationService(session=session).walk_features(
+                    source_name, identifier, nav_mode, data_source, _distance
+                )
 
-            async for chunk in util.async_stream_j2_template(_template, _feature_stream()):
-                yield chunk
+                async def _feature_stream():
+                    async for feat in features:
+                        if exclude_geom:
+                            feat.geometry = {}
+                        yield msgspec.to_builtins(feat)
+
+                async for chunk in util.async_stream_j2_template(_template, _feature_stream()):
+                    yield chunk
 
         return Stream(
             _stream(),
