@@ -72,7 +72,9 @@ def timing_middleware_factory(app: ASGIApp) -> ASGIApp:
 
 def _get_session_maker(request: Request) -> Callable[[], AsyncSession]:
     """Retrieve the SQLAlchemy session factory from app state."""
-    return request.app.state.session_maker_class
+    state = dict(request.app.state)
+    key = next(k for k in state if k.startswith("session_maker_class"))
+    return state[key]
 
 
 async def provide_basin_svc(db_session: AsyncSession, state: AppState) -> services.BasinService:
@@ -448,15 +450,19 @@ class LinkedDataController(Controller):
         _distance = distance if distance is not None else NAV_DIST_DEFAULTS.get(nav_mode, 100)
         session_maker = _get_session_maker(request)
 
+        async with session_maker() as session:
+            try:
+                await services.NavigationService(session=session).validate_start(source_name, identifier, nav_mode, trim_start)
+            except NotFoundError as e:
+                raise NotFoundException(detail=str(e))
+            except ValueError as e:
+                raise ValidationException(detail=str(e))
+
         async def _stream() -> AsyncGenerator[str, None]:
             async with session_maker() as session:
-                navigation_svc = services.NavigationService(session=session)
-                try:
-                    features = await navigation_svc.walk_flowlines(source_name, identifier, nav_mode, _distance, trim_start)
-                except NotFoundError as e:
-                    raise NotFoundException(detail=str(e))
-                except ValueError as e:
-                    raise ValidationException(detail=str(e))
+                features = await services.NavigationService(session=session).walk_flowlines(
+                    source_name, identifier, nav_mode, _distance, trim_start
+                )
 
                 async def feature_stream():
                     async for feat in features:
@@ -495,15 +501,19 @@ class LinkedDataController(Controller):
         _distance = distance if distance is not None else NAV_DIST_DEFAULTS.get(nav_mode, 100)
         session_maker = _get_session_maker(request)
 
+        async with session_maker() as session:
+            try:
+                await services.NavigationService(session=session).validate_start(source_name, identifier, nav_mode)
+            except NotFoundError as e:
+                raise NotFoundException(detail=str(e))
+            except ValueError as e:
+                raise ValidationException(detail=str(e))
+
         async def _stream() -> AsyncGenerator[str, None]:
             async with session_maker() as session:
-                navigation_svc = services.NavigationService(session=session)
-                try:
-                    features = await navigation_svc.walk_features(source_name, identifier, nav_mode, data_source, _distance)
-                except NotFoundError as e:
-                    raise NotFoundException(detail=str(e))
-                except ValueError as e:
-                    raise ValidationException(detail=str(e))
+                features = await services.NavigationService(session=session).walk_features(
+                    source_name, identifier, nav_mode, data_source, _distance
+                )
 
                 async def _feature_stream():
                     async for feat in features:

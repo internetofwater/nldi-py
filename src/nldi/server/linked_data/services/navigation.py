@@ -331,6 +331,24 @@ class NavigationService:
         _r = hits.fetchone()[0]
         return _r
 
+    async def validate_start(self, source_name: str, identifier: str, nav_mode: str, trim_start: bool = False) -> None:
+        """Validate that a navigation starting point exists. Raises NotFoundError or ValueError if not."""
+        if source_name == "comid":
+            if trim_start:
+                raise ValueError("Cannot use 'trim_start' with 'comid' source features.")
+            if not await self.flowline_svc.get(identifier):
+                raise NotFoundError(f"COMID {identifier} does not exist.")
+        else:
+            feature = await self.feature_svc.feature_lookup(source_name, identifier)
+            if not feature:
+                raise NotFoundError(f"Feature ID {identifier} does not exist in source {source_name}.")
+            if not feature.comid:
+                raise NotFoundError(
+                    f"The comid for features source {source_name} and feature ID {identifier} does not exist"
+                )
+        if nav_mode not in self.modes:
+            raise ValueError(f"Invalid navigation mode: {nav_mode}.  Mode must be one of {self.modes}.")
+
     async def walk_flowlines(
         self,
         source_name: str,
