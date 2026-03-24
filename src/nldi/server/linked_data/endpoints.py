@@ -497,24 +497,24 @@ class LinkedDataController(Controller):
         _distance = distance if distance is not None else NAV_DIST_DEFAULTS.get(nav_mode, 100)
         session_maker = _get_session_maker(request)
 
+        async with session_maker() as session:
+            navigation_svc = services.NavigationService(session=session)
+            try:
+                features = await navigation_svc.walk_features(source_name, identifier, nav_mode, data_source, _distance)
+            except NotFoundError as e:
+                raise NotFoundException(detail=str(e))
+            except ValueError as e:
+                raise ValidationException(detail=str(e))
+
         async def _stream() -> AsyncGenerator[str, None]:
-            async with session_maker() as session:
-                navigation_svc = services.NavigationService(session=session)
-                try:
-                    features = await navigation_svc.walk_features(source_name, identifier, nav_mode, data_source, _distance)
-                except NotFoundError as e:
-                    raise NotFoundException(detail=str(e))
-                except ValueError as e:
-                    raise ValidationException(detail=str(e))
+            async def _feature_stream():
+                async for feat in features:
+                    if exclude_geom:
+                        feat.geometry = {}
+                    yield msgspec.to_builtins(feat)
 
-                async def _feature_stream():
-                    async for feat in features:
-                        if exclude_geom:
-                            feat.geometry = {}
-                        yield msgspec.to_builtins(feat)
-
-                async for chunk in util.async_stream_j2_template(_template, _feature_stream()):
-                    yield chunk
+            async for chunk in util.async_stream_j2_template(_template, _feature_stream()):
+                yield chunk
 
         return Stream(
             _stream(),
