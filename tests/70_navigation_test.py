@@ -237,6 +237,17 @@ async def test_api_get_navigated_flowlines_trimmed(f_client_containerized) -> No
 
 @pytest.mark.order(75)
 @pytest.mark.integration
+async def test_api_get_navigated_flowlines_invalid_identifier(f_client_containerized) -> None:
+    # USGS-620600145574500 has no comid; should return 404 before streaming begins (not a mid-stream error)
+    # https://github.com/internetofwater/nldi-py/issues -- regression for streaming 404 bug
+    r = await f_client_containerized.get(
+        f"{API_PREFIX}/linked-data/nwissite/USGS-620600145574500/navigation/DM/flowlines?f=json&distance=10"
+    )
+    assert r.status_code == 404
+
+
+@pytest.mark.order(75)
+@pytest.mark.integration
 async def test_api_get_each_nav_mode_by_id_othersource(f_client_containerized) -> None:
     source_name = "wqp"
     identifier = "USGS-05427930"
