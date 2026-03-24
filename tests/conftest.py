@@ -102,13 +102,14 @@ def containerized_db_env_info():
 @pytest.fixture()
 def testdb_env_info() -> dict[str, str]:
     """
-    Loads environment variables from the .env
+    Loads test database credentials from a secret.env file located in the parent of the project root
+    (i.e. one directory above the repository). This keeps credentials out of the repository entirely.
 
-    Note that this file must exist in a specific location and contain the correct information.
+    Expected location: ../secret.env  (relative to the project root)
 
-    DO NOT !!! commit the env file to the repository.
+    Required keys: NLDI_DB_HOST, NLDI_DB_PORT, NLDI_DB_USERNAME, NLDI_DB_PASSWORD, NLDI_DB_NAME
     """
-    return dotenv_values(pathlib.Path(__file__).parent / "data" / "secret.env")
+    return dotenv_values(pathlib.Path(__file__).parent.parent.parent / "secret.env")
 
 
 @pytest.fixture()
