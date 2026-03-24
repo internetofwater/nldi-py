@@ -72,7 +72,9 @@ def timing_middleware_factory(app: ASGIApp) -> ASGIApp:
 
 def _get_session_maker(request: Request) -> Callable[[], AsyncSession]:
     """Retrieve the SQLAlchemy session factory from app state."""
-    return request.app.state.session_maker_class
+    state = dict(request.app.state)
+    key = next(k for k in state if k.startswith("session_maker_class"))
+    return state[key]
 
 
 async def provide_basin_svc(db_session: AsyncSession, state: AppState) -> services.BasinService:
