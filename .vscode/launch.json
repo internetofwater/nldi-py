@@ -5,7 +5,7 @@
             "name": "HyperCorn",
             "type": "debugpy",
             "justMyCode": false,
-            "envFile": "${workspaceFolder}/tests/data/secret.env",
+            "envFile": "${workspaceFolder}/../secret.env",
             "request": "launch",
             "program": "${workspaceFolder}/.venv/bin/hypercorn",
             "args": [
@@ -22,7 +22,7 @@
             "name": "uvicorn",
             "type": "debugpy",
             "justMyCode": false,
-            "envFile": "${workspaceFolder}/tests/data/secret.env",
+            "envFile": "${workspaceFolder}/../secret.env",
             "request": "launch",
             "program": "${workspaceFolder}/.venv/bin/uvicorn",
             "args": [
