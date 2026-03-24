@@ -14,6 +14,9 @@ and organization.
 
 
 """
+## NOTE: extra test case:  navigate from USGS-620600145574500
+
+
 
 # prefix for the API under test
 API_PREFIX = "/api/nldi"
