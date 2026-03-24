@@ -8,9 +8,9 @@
 """Service / business-logic layer."""
 
 from .basin import BasinService
-from .catchment import CatchmentService, catchment_svc
-from .crawlersource import CrawlerSourceService, crawler_source_svc
-from .feature import FeatureService, feature_svc
-from .flowline import FlowlineService, flowline_svc
-from .navigation import NavigationService, navigation_svc
-from .pygeoapi import PyGeoAPIService, pygeoapi_svc
+from .catchment import CatchmentService
+from .crawlersource import CrawlerSourceService
+from .feature import FeatureService
+from .flowline import FlowlineService
+from .navigation import NavigationService
+from .pygeoapi import PyGeoAPIService

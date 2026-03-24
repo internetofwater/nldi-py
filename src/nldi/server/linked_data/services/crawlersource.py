@@ -13,14 +13,9 @@ but then applies its own logic/handling.  I think of the services
 object as being an implementation of a unit-of-work pattern.
 """
 
-from collections.abc import Generator
-
 import sqlalchemy
 from advanced_alchemy.exceptions import NotFoundError
 from advanced_alchemy.service import SQLAlchemyAsyncRepositoryService
-
-# from sqlalchemy.orm import Session
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from nldi.db.schemas.nldi_data import CrawlerSourceModel
 
@@ -44,9 +39,3 @@ class CrawlerSourceService(SQLAlchemyAsyncRepositoryService[CrawlerSourceModel])
         except NotFoundError:
             return False
         return True
-
-
-def crawler_source_svc(db_session: AsyncSession) -> Generator[CrawlerSourceService, None, None]:
-    """Provider function as part of the dependency-injection mechanism."""
-    with CrawlerSourceService.new(session=db_session) as service:
-        yield service

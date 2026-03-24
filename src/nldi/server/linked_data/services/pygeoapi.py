@@ -7,8 +7,6 @@
 
 import json
 import logging
-from contextlib import contextmanager
-from typing import Generator, Iterator, Self
 
 import httpx
 import shapely
@@ -47,12 +45,6 @@ class PyGeoAPIService:
         self._session = session
         self.flowline_svc = FlowlineService(session=self._session)
         self.catchment_svc = CatchmentService(session=self._session)
-
-    @classmethod
-    @contextmanager
-    def new(cls, session: AsyncSession) -> Iterator[Self]:
-        if session:
-            yield cls(session=session)
 
     @classmethod
     async def _post_to_external_service(cls, url: str, data: dict = {}, timeout: int = 0) -> dict:
@@ -179,9 +171,3 @@ class PyGeoAPIService:
         # previous versions yielded the return value here, allowing caller to loop over a generator producing
         # just the single value. Returning the single feature instead represents a breaking change -- caller must
         # make their own list if they need this feature in that form.
-
-
-def pygeoapi_svc(db_session: AsyncSession) -> Generator[NavigationService, None, None]:
-    """Provider function as part of the dependency-injection mechanism."""
-    with PyGeoAPIService.new(session=db_session) as service:
-        yield service

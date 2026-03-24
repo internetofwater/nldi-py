@@ -15,13 +15,11 @@ object as being an implementation of a unit-of-work pattern.
 
 import json
 import logging
-from collections.abc import Generator
 
 import geoalchemy2
 import sqlalchemy
 from advanced_alchemy.service import SQLAlchemyAsyncRepositoryService
 from geomet import wkt
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from nldi.db.schemas.nhdplus import CatchmentModel, FlowlineVAAModel
 
@@ -109,9 +107,3 @@ class CatchmentService(SQLAlchemyAsyncRepositoryService[CatchmentModel]):
         if result is None:
             raise KeyError(f"No such item: {comid}")
         return struct_geojson.Feature(properties=dict(), id=0, geometry=json.loads(result.the_geom))
-
-
-def catchment_svc(db_session: AsyncSession) -> Generator[CatchmentModel, None, None]:
-    """Provider function as part of the dependency-injection mechanism."""
-    with CatchmentService.new(session=db_session) as service:
-        yield service

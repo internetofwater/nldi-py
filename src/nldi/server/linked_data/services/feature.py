@@ -13,14 +13,13 @@ but then applies its own logic/handling.  I think of the services
 object as being an implementation of a unit-of-work pattern.
 """
 
-from collections.abc import AsyncGenerator, Generator
+from collections.abc import AsyncGenerator
 
 import msgspec
 import sqlalchemy
 from advanced_alchemy import filters
 from advanced_alchemy.exceptions import NotFoundError
 from advanced_alchemy.service import SQLAlchemyAsyncRepositoryService
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.expression import Select
 
 from nldi.db.schemas.nldi_data import CrawlerSourceModel, FeatureSourceModel
@@ -105,9 +104,3 @@ class FeatureService(SQLAlchemyAsyncRepositoryService[FeatureSourceModel]):
                 yield f.as_feature()
         finally:
             await result.close()
-
-
-def feature_svc(db_session: AsyncSession) -> Generator[FeatureSourceModel, None, None]:
-    """Provider function as part of the dependency-injection mechanism."""
-    with FeatureService.new(session=db_session) as service:
-        yield service
