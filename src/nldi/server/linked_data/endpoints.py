@@ -448,24 +448,26 @@ class LinkedDataController(Controller):
         _distance = distance if distance is not None else NAV_DIST_DEFAULTS.get(nav_mode, 100)
         session_maker = _get_session_maker(request)
 
+        # Validate and resolve the starting feature before streaming so errors
+        # can be returned as proper 404/422 responses before headers are sent.
+        async with session_maker() as session:
+            navigation_svc = services.NavigationService(session=session)
+            try:
+                features = await navigation_svc.walk_flowlines(source_name, identifier, nav_mode, _distance, trim_start)
+            except NotFoundError as e:
+                raise NotFoundException(detail=str(e))
+            except ValueError as e:
+                raise ValidationException(detail=str(e))
+
         async def _stream() -> AsyncGenerator[str, None]:
-            async with session_maker() as session:
-                navigation_svc = services.NavigationService(session=session)
-                try:
-                    features = await navigation_svc.walk_flowlines(source_name, identifier, nav_mode, _distance, trim_start)
-                except NotFoundError as e:
-                    raise NotFoundException(detail=str(e))
-                except ValueError as e:
-                    raise ValidationException(detail=str(e))
+            async def feature_stream():
+                async for feat in features:
+                    if exclude_geom:
+                        feat.geometry = {}
+                    yield msgspec.to_builtins(feat)
 
-                async def feature_stream():
-                    async for feat in features:
-                        if exclude_geom:
-                            feat.geometry = {}
-                        yield msgspec.to_builtins(feat)
-
-                async for chunk in util.async_stream_j2_template("FeatureCollection.j2", feature_stream()):
-                    yield chunk
+            async for chunk in util.async_stream_j2_template("FeatureCollection.j2", feature_stream()):
+                yield chunk
 
         return Stream(
             _stream(),
