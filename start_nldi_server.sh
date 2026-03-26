@@ -22,7 +22,7 @@ exec hypercorn -w ${WSGI_WORKERS} \
         --bind ${CONTAINER_HOST}:${CONTAINER_PORT} \
         --workers ${WSGI_WORKERS} \
         --log-level DEBUG \
-        --keepalive 600 \
+        --keep-alive 600 \
         nldi.asgi:APP
 
-# Keepalive set high -- to prevent hypercorn giving up on a long-running request by the worker. 
+# Keepalive set high -- to prevent hypercorn giving up on a long-running request by the worker.
