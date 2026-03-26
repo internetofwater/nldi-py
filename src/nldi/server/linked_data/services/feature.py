@@ -77,17 +77,13 @@ class FeatureService(SQLAlchemyAsyncRepositoryService[FeatureSourceModel]):
             .order_by(FeatureSourceModel.identifier)
             .offset(offset)
             .limit(limit or None)
-            .execution_options(yield_per=100)
         )
-        result = await self.repository.session.stream_scalars(stmt)
-        try:
-            async for f in result:
-                nav_url = util.url_join(base_url, "linked-data", source_suffix, f.identifier, "navigation")
-                yield msgspec.to_builtins(
-                    f.as_feature(excl_props=["crawler_source_id"], xtra_props={"navigation": nav_url})
-                )
-        finally:
-            await result.close()
+        result = await self.repository.session.scalars(stmt)
+        for f in result:
+            nav_url = util.url_join(base_url, "linked-data", source_suffix, f.identifier, "navigation")
+            yield msgspec.to_builtins(
+                f.as_feature(excl_props=["crawler_source_id"], xtra_props={"navigation": nav_url})
+            )
 
     async def features_from_nav_query(self, source_suffix: str, nav_query: Select) -> AsyncGenerator:
         subq = nav_query.subquery()
@@ -96,11 +92,7 @@ class FeatureService(SQLAlchemyAsyncRepositoryService[FeatureSourceModel]):
             .where(sqlalchemy.func.lower(CrawlerSourceModel.source_suffix) == source_suffix.lower())
             .join(CrawlerSourceModel, CrawlerSourceModel.crawler_source_id == FeatureSourceModel.crawler_source_id)
             .join(subq, FeatureSourceModel.comid == subq.c.comid)
-            .execution_options(yield_per=100)
         )
-        result = await self.repository.session.stream_scalars(stmt)
-        try:
-            async for f in result:
-                yield f.as_feature()
-        finally:
-            await result.close()
+        result = await self.repository.session.scalars(stmt)
+        for f in result:
+            yield f.as_feature()
