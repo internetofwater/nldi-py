@@ -63,9 +63,13 @@ def _html_redirect_if_wanted(request: Request) -> Response | None:
 def timing_middleware_factory(app: ASGIApp) -> ASGIApp:
     async def endpoint_timer(scope: Scope, receive: Receive, send: Send) -> None:
         _start = perf_counter()
-        await app(scope, receive, send)
-        _end = perf_counter()
-        logging.info(f"{scope['method']} {scope['path']}: {(_end - _start):.3f} seconds")
+        try:
+            await app(scope, receive, send)
+        except (ConnectionError, TimeoutError, OSError) as e:
+            logging.warning(f"Connection lost during {scope['method']} {scope['path']}: {e}")
+        finally:
+            _end = perf_counter()
+            logging.info(f"{scope['method']} {scope['path']}: {(_end - _start):.3f} seconds")
 
     return endpoint_timer
 
@@ -274,15 +278,20 @@ class LinkedDataController(Controller):
         session_maker = _get_session_maker(request)
 
         async def _stream() -> AsyncGenerator[str, None]:
-            async with session_maker() as session:
-                if source_name == "comid":
-                    svc = services.FlowlineService(session=session)
-                    feature_iterator = svc.feature_iterator(base_url=base_url, limit=limit, offset=offset)
-                else:
-                    svc = services.FeatureService(session=session)
-                    feature_iterator = svc.iter_by_src(source_name, base_url=base_url, limit=limit, offset=offset)
-                async for chunk in util.async_stream_j2_template(_template, feature_iterator):
-                    yield chunk
+            try:
+                async with session_maker() as session:
+                    if source_name == "comid":
+                        svc = services.FlowlineService(session=session)
+                        feature_iterator = svc.feature_iterator(base_url=base_url, limit=limit, offset=offset)
+                    else:
+                        svc = services.FeatureService(session=session)
+                        feature_iterator = svc.iter_by_src(source_name, base_url=base_url, limit=limit, offset=offset)
+                    async for chunk in util.async_stream_j2_template(_template, feature_iterator):
+                        yield chunk
+            except (ConnectionError, TimeoutError, OSError) as e:
+                logging.warning(f"Stream interrupted (client disconnect or timeout): {e}")
+            except Exception as e:
+                logging.error(f"Unexpected error during stream: {e}", exc_info=True)
 
         return Stream(
             _stream(),
@@ -459,19 +468,24 @@ class LinkedDataController(Controller):
                 raise ValidationException(detail=str(e))
 
         async def _stream() -> AsyncGenerator[str, None]:
-            async with session_maker() as session:
-                features = await services.NavigationService(session=session).walk_flowlines(
-                    source_name, identifier, nav_mode, _distance, trim_start
-                )
+            try:
+                async with session_maker() as session:
+                    features = await services.NavigationService(session=session).walk_flowlines(
+                        source_name, identifier, nav_mode, _distance, trim_start
+                    )
 
-                async def feature_stream():
-                    async for feat in features:
-                        if exclude_geom:
-                            feat.geometry = {}
-                        yield msgspec.to_builtins(feat)
+                    async def feature_stream():
+                        async for feat in features:
+                            if exclude_geom:
+                                feat.geometry = {}
+                            yield msgspec.to_builtins(feat)
 
-                async for chunk in util.async_stream_j2_template("FeatureCollection.j2", feature_stream()):
-                    yield chunk
+                    async for chunk in util.async_stream_j2_template("FeatureCollection.j2", feature_stream()):
+                        yield chunk
+            except (ConnectionError, TimeoutError, OSError) as e:
+                logging.warning(f"Stream interrupted (client disconnect or timeout): {e}")
+            except Exception as e:
+                logging.error(f"Unexpected error during stream: {e}", exc_info=True)
 
         return Stream(
             _stream(),
@@ -510,19 +524,24 @@ class LinkedDataController(Controller):
                 raise ValidationException(detail=str(e))
 
         async def _stream() -> AsyncGenerator[str, None]:
-            async with session_maker() as session:
-                features = await services.NavigationService(session=session).walk_features(
-                    source_name, identifier, nav_mode, data_source, _distance
-                )
+            try:
+                async with session_maker() as session:
+                    features = await services.NavigationService(session=session).walk_features(
+                        source_name, identifier, nav_mode, data_source, _distance
+                    )
 
-                async def _feature_stream():
-                    async for feat in features:
-                        if exclude_geom:
-                            feat.geometry = {}
-                        yield msgspec.to_builtins(feat)
+                    async def _feature_stream():
+                        async for feat in features:
+                            if exclude_geom:
+                                feat.geometry = {}
+                            yield msgspec.to_builtins(feat)
 
-                async for chunk in util.async_stream_j2_template(_template, _feature_stream()):
-                    yield chunk
+                    async for chunk in util.async_stream_j2_template(_template, _feature_stream()):
+                        yield chunk
+            except (ConnectionError, TimeoutError, OSError) as e:
+                logging.warning(f"Stream interrupted (client disconnect or timeout): {e}")
+            except Exception as e:
+                logging.error(f"Unexpected error during stream: {e}", exc_info=True)
 
         return Stream(
             _stream(),

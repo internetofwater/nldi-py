@@ -29,7 +29,13 @@ def create_app() -> Litestar:
         config=SQLAlchemyAsyncConfig(
             connection_string=_cfg.db.URL,
             create_all=False,
-            engine_config=EngineConfig(pool_pre_ping=True, pool_size=10, max_overflow=10, pool_recycle=300, pool_timeout=30),
+            engine_config=EngineConfig(
+                pool_pre_ping=True,
+                pool_size=10,  ## How many connection to hold ready in the pool.  A large number here will tax the database.
+                max_overflow=10,  ## How much we can increase the pool to respond to burst traffic.
+                pool_recycle=3600,  ## how long to wait before giving up on a long session and recycling the session back to the pool.
+                pool_timeout=30,  ## If the max pool size (pool_size + max_overflow) makes a session wait, this is how long before it gives up waiting for a session from the pool.
+            ),
         )
     )
 

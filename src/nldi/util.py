@@ -106,8 +106,11 @@ async def async_stream_j2_template(template: str, data: AsyncGenerator) -> Async
     """
     logging.debug("Beginning STREAM response...")
     t = _JINJA_ENV.get_template(template)
-    async for chunk in t.generate_async(data=data):
-        yield chunk
+    try:
+        async for chunk in t.generate_async(data=data):
+            yield chunk
+    except (GeneratorExit, ConnectionError, TimeoutError) as e:
+        logging.warning(f"Template stream terminated: {e}")
 
 
 def render_j2_template(template, data):
