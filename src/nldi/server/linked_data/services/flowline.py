@@ -68,19 +68,12 @@ class FlowlineService(SQLAlchemyAsyncRepositoryService[FlowlineModel]):
 
     async def features_from_nav_query(self, nav_query: Select) -> AsyncGenerator[struct_geojson.Feature, None]:
         subq = nav_query.subquery()
-        stmt = (
-            sqlalchemy.select(FlowlineModel)
-            .join(subq, FlowlineModel.nhdplus_comid == subq.c.comid)
-            .execution_options(yield_per=100)
-        )
+        stmt = sqlalchemy.select(FlowlineModel).join(subq, FlowlineModel.nhdplus_comid == subq.c.comid)
         logging.debug("Feature Navigation SQL Query:")
         logging.debug(f"{stmt.compile()}")
-        result = await self.repository.session.stream_scalars(stmt)
-        try:
-            async for f in result:
-                yield f.as_feature(excl_props=["objectid", "permanent_identifier", "fmeasure", "tmeasure", "reachcode"])
-        finally:
-            await result.close()
+        result = await self.repository.session.scalars(stmt)
+        for f in result:
+            yield f.as_feature(excl_props=["objectid", "permanent_identifier", "fmeasure", "tmeasure", "reachcode"])
 
     async def trimed_features_from_nav_query(
         self, nav_query: Select, trim_query: Select
@@ -91,18 +84,14 @@ class FlowlineService(SQLAlchemyAsyncRepositoryService[FlowlineModel]):
             sqlalchemy.select(FlowlineModel, trim_subq.c.trimmed_geojson)
             .join(nav_subq, FlowlineModel.nhdplus_comid == nav_subq.c.comid)
             .join(trim_subq, FlowlineModel.nhdplus_comid == trim_subq.c.comid)
-            .execution_options(yield_per=100)
         )
         logging.debug("Feature Navigation (trimmed) SQL Query:")
         logging.debug(f"{stmt.compile()}")
-        result = await self.repository.session.stream(stmt)
-        try:
-            async for f, g in result:
-                _tmp = f.as_feature(excl_props=["objectid", "permanent_identifier", "fmeasure", "tmeasure", "reachcode"])
-                _tmp.geometry = json.loads(g)
-                yield _tmp
-        finally:
-            await result.close()
+        result = await self.repository.session.execute(stmt)
+        for f, g in result:
+            _tmp = f.as_feature(excl_props=["objectid", "permanent_identifier", "fmeasure", "tmeasure", "reachcode"])
+            _tmp.geometry = json.loads(g)
+            yield _tmp
 
     async def feat_get_distance_from_flowline(self, feature_id: str, feature_source: str) -> float:
         x = (
@@ -244,33 +233,29 @@ class FlowlineService(SQLAlchemyAsyncRepositoryService[FlowlineModel]):
     ) -> AsyncGenerator[dict, None]:
         """Provides a paginated response for the feature collection as an async generator.
 
-        Rows are fetched from the database in batches of 100 (yield_per) and produced
-        one at a time, enabling the caller to stream results without loading the full
-        result set into memory before beginning.
+        Rows are fetched from the database in a single query and yielded
+        one at a time, enabling the caller to stream results to the client
+        without inter-batch stalls.
         """
         stmt = (
             sqlalchemy.select(FlowlineModel)
             .order_by(FlowlineModel.nhdplus_comid)
             .offset(offset)
             .limit(limit)
-            .execution_options(yield_per=100)
         )
 
         logging.debug("Feature Iterator SQL Query:")
         logging.debug(f"{stmt.compile()}")
 
-        result = await self.repository.session.stream_scalars(stmt)
-        try:
-            async for f in result:
-                nav_url = util.url_join(base_url, "linked-data/comid", f.nhdplus_comid, "navigation")
-                yield msgspec.to_builtins(
-                    f.as_feature(
-                        rename_fields={
-                            "permanent_identifier": "identifier",
-                            "nhdplus_comid": "comid",
-                        },
-                        xtra_props={"navigation": nav_url},
-                    )
+        result = await self.repository.session.scalars(stmt)
+        for f in result:
+            nav_url = util.url_join(base_url, "linked-data/comid", f.nhdplus_comid, "navigation")
+            yield msgspec.to_builtins(
+                f.as_feature(
+                    rename_fields={
+                        "permanent_identifier": "identifier",
+                        "nhdplus_comid": "comid",
+                    },
+                    xtra_props={"navigation": nav_url},
                 )
-        finally:
-            await result.close()
+            )
