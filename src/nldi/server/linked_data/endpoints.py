@@ -289,7 +289,9 @@ class LinkedDataController(Controller):
                     else:
                         svc = services.FeatureService(session=session)
                         feature_iterator = svc.iter_by_src(source_name, base_url=base_url, limit=limit, offset=offset)
-                    async for chunk in util.async_stream_j2_template(_template, feature_iterator):
+                    data = [item async for item in feature_iterator]
+
+                    async for chunk in util.async_stream_j2_template(_template, data):
                         yield chunk
             except (ConnectionError, TimeoutError, OSError) as e:
                 logging.warning(f"Stream interrupted (client disconnect or timeout): {e}")
@@ -476,14 +478,13 @@ class LinkedDataController(Controller):
                     features = await services.NavigationService(session=session).walk_flowlines(
                         source_name, identifier, nav_mode, _distance, trim_start
                     )
+                    data = []
+                    async for feat in features:
+                        if exclude_geom:
+                            feat.geometry = {}
+                        data.append(msgspec.to_builtins(feat))
 
-                    async def feature_stream():
-                        async for feat in features:
-                            if exclude_geom:
-                                feat.geometry = {}
-                            yield msgspec.to_builtins(feat)
-
-                    async for chunk in util.async_stream_j2_template("FeatureCollection.j2", feature_stream()):
+                    async for chunk in util.async_stream_j2_template("FeatureCollection.j2", data):
                         yield chunk
             except (ConnectionError, TimeoutError, OSError) as e:
                 logging.warning(f"Stream interrupted (client disconnect or timeout): {e}")
@@ -532,14 +533,13 @@ class LinkedDataController(Controller):
                     features = await services.NavigationService(session=session).walk_features(
                         source_name, identifier, nav_mode, data_source, _distance
                     )
+                    data = []
+                    async for feat in features:
+                        if exclude_geom:
+                            feat.geometry = {}
+                        data.append(msgspec.to_builtins(feat))
 
-                    async def _feature_stream():
-                        async for feat in features:
-                            if exclude_geom:
-                                feat.geometry = {}
-                            yield msgspec.to_builtins(feat)
-
-                    async for chunk in util.async_stream_j2_template(_template, _feature_stream()):
+                    async for chunk in util.async_stream_j2_template(_template, data):
                         yield chunk
             except (ConnectionError, TimeoutError, OSError) as e:
                 logging.warning(f"Stream interrupted (client disconnect or timeout): {e}")
