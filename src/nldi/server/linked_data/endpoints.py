@@ -7,6 +7,7 @@
 """Linked data controller for NLDI API."""
 
 import logging
+import uuid
 from collections.abc import AsyncGenerator, Callable
 from time import perf_counter
 from typing import Annotated
@@ -62,14 +63,16 @@ def _html_redirect_if_wanted(request: Request) -> Response | None:
 
 def timing_middleware_factory(app: ASGIApp) -> ASGIApp:
     async def endpoint_timer(scope: Scope, receive: Receive, send: Send) -> None:
+        req_id = uuid.uuid4().hex[:8]
         _start = perf_counter()
+        logging.info(f"[{req_id}] {scope['method']} {scope['path']}?{scope.get('query_string', b'').decode()} - started")
         try:
             await app(scope, receive, send)
         except (ConnectionError, TimeoutError, OSError) as e:
-            logging.warning(f"Connection lost during {scope['method']} {scope['path']}: {e}")
+            logging.warning(f"[{req_id}] Connection lost during {scope['method']} {scope['path']}: {e}")
         finally:
             _end = perf_counter()
-            logging.info(f"{scope['method']} {scope['path']}: {(_end - _start):.3f} seconds")
+            logging.info(f"[{req_id}] {scope['method']} {scope['path']}: {(_end - _start):.3f} seconds")
 
     return endpoint_timer
 
