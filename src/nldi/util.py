@@ -104,7 +104,6 @@ async def async_stream_j2_template(template: str, data: AsyncGenerator) -> Async
     :param data: async generator of dicts to pass as ``data`` to the template
     :returns: async generator of rendered string chunks
     """
-    logging.debug("Beginning STREAM response...")
     t = _JINJA_ENV.get_template(template)
     try:
         async for chunk in t.generate_async(data=data):
