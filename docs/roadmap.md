@@ -70,6 +70,7 @@ Endpoints that call pygeoapi. Proper timeout handling.
 
 Decisions to make during implementation, not before:
 
+- **Repo strategy** — work on upstream repo (PRs are the permanent record in the right place, but visible to project owner) vs fork (private workflow, but PRs orphaned from upstream). Leaning upstream with a heads-up conversation.
 - **msgspec** — keep for struct definitions + Litestar integration, or replace with DTOs entirely?
 - **shapely** — can we eliminate direct usage (WKT parsing → regex, `to_shape()` → `ST_AsGeoJSON`)? GeoAlchemy2 transitive dep remains.
 - **JSON-LD** — Jinja template or Python string builder? Decide in Phase 5 based on complexity.
