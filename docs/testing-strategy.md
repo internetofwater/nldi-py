@@ -4,7 +4,7 @@ Tests pass before we commit. No exceptions.
 
 ## TDD workflow
 
-Follow the red-green-refactor cycle strictly (see `~/.claude/TDD.md`):
+Follow the red-green-refactor cycle strictly (see `docs/tdd.md`):
 
 1. **Red** — write one failing test. Run it. Confirm it fails for the right reason.
 2. **Green** — write minimal code to pass. Run all tests. Confirm green.
