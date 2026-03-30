@@ -2,4 +2,9 @@
 # SPDX-FileCopyrightText: 2024-present USGS
 """NLDI — Network Linked Data Index."""
 
-__version__ = "3.0.0-dev"
+from importlib.metadata import PackageNotFoundError, metadata
+
+try:
+    __version__ = metadata("nldi-py")["Version"]
+except PackageNotFoundError:
+    __version__ = "0.0.0"
