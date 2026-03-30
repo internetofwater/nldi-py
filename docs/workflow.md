@@ -44,7 +44,9 @@ Tag `pre-refactor` marks the snapshot before the refactor began.
 - **Issue** = the "what" and "why" — problem description, analysis, decision rationale
 - **PR** = the "how" — implementation plan, commits, summary of changes
 
-Issues persist as documentation after PRs are merged.
+The PR is the permanent record. Code changes, but the PR persists. It should contain enough context to re-create the work or debug a regression months later: what was the plan, what was tried, what was decided, and why. A future reader should not need to ask the author.
+
+Issues persist as the decision log. "Why did we do X?" → check the issue. "How did we do X?" → check the PR.
 
 ## Release (post-refactor)
 
