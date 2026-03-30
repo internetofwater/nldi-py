@@ -4,6 +4,20 @@
 
 No big-bang rewrite. The system must be deployable and testable against the existing API contract at every phase. Each phase produces a working system that does more than the last.
 
+## Approach: Greenfield src, migrated tests
+
+The pre-refactor codebase is tagged as `pre-refactor` for reference. The refactor starts with a clean `src/` tree, applying the guiding principles from the start. The hard-won logic — SQL queries, navigation CTEs, ORM model definitions — is copied in as needed, not rewritten.
+
+What gets replaced: the plumbing (session management, serialization, middleware, DI wiring, Jinja templating).
+
+What gets carried forward:
+- SQLAlchemy ORM models (thin table mappings)
+- Navigation query logic (recursive CTEs, distance calculations)
+- Spatial query logic (PostGIS functions)
+- Test suite (adapted to new structure, not discarded)
+- Testcontainers setup and DB fixtures
+- Test data (custom Docker image on ghcr.io)
+
 ## Phase 1: Skeleton
 
 Stand up the application framework with every endpoint defined. All routes return the correct path structure and content types. Endpoints that aren't yet implemented return `501 Not Implemented`.
