@@ -2,7 +2,9 @@
 
 ## Current state
 
-Load testing is done manually via shell scripts (`tests/load/`) that use parallel curl batches against deployed infrastructure. This works for smoke testing but lacks:
+Load testing is done manually via shell scripts (`tests/load/`) that use parallel curl batches
+against deployed infrastructure. This works for smoke testing but lacks:
+
 - Controlled ramp-up and sustained load profiles
 - Metrics collection (response times, error rates, connection counts)
 - Reproducibility across runs
@@ -10,22 +12,26 @@ Load testing is done manually via shell scripts (`tests/load/`) that use paralle
 
 ## Recommendation: Locust
 
-[Locust](https://locust.io/) is Python-native, scriptable, and can model realistic traffic patterns. A basic test plan would translate directly from the existing shell scripts.
+[Locust](https://locust.io/) is Python-native, scriptable, and can model realistic traffic patterns. A
+basic test plan would translate directly from the existing shell scripts.
 
 ### Test scenarios
 
 **Scenario 1: Navigation (heavy path)**
 The primary load concern. Exercises DB connection pool, large result sets, streaming.
+
 - `GET /linked-data/comid/{comid}/navigation/DM/flowlines?distance=50&f=json`
 - Random COMIDs from a curated worklist (same approach as `coloradoriver.sh`)
 - Vary distance parameter to mix light and heavy queries
 
 **Scenario 2: Basin with split catchment (external dependency)**
 Exercises DB + pygeoapi call. Sensitive to upstream timeouts.
+
 - `GET /linked-data/{source}/{id}/basin?splitCatchment=true`
 
 **Scenario 3: Simple lookups (baseline)**
 Should stay fast under any load. If these degrade, the problem is connection starvation.
+
 - `GET /linked-data` (source list)
 - `GET /linked-data/{source}/{id}` (single feature)
 

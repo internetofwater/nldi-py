@@ -2,15 +2,19 @@
 
 > "A complex system that works is invariably found to have evolved from a simple system that worked." — John Gall
 
-No big-bang rewrite. The system must be deployable and testable against the existing API contract at every phase. Each phase produces a working system that does more than the last.
+No big-bang rewrite. The system must be deployable and testable against the existing API contract at every
+phase. Each phase produces a working system that does more than the last.
 
 ## Approach: Greenfield src, migrated tests
 
-The pre-refactor codebase is tagged as `pre-refactor` for reference. The refactor starts with a clean `src/` tree, applying the guiding principles from the start. The hard-won logic — SQL queries, navigation CTEs, ORM model definitions — is copied in as needed, not rewritten.
+The pre-refactor codebase is tagged as `pre-refactor` for reference. The refactor starts with a clean `src/`
+tree, applying the guiding principles from the start. The hard-won logic — SQL queries, navigation CTEs, ORM
+model definitions — is copied in as needed, not rewritten.
 
 What gets replaced: the plumbing (session management, serialization, middleware, DI wiring, Jinja templating).
 
 What gets carried forward:
+
 - SQLAlchemy ORM models (thin table mappings)
 - Navigation query logic (recursive CTEs, distance calculations)
 - Spatial query logic (PostGIS functions)
@@ -20,9 +24,11 @@ What gets carried forward:
 
 ## Phase 1: Skeleton
 
-Stand up the application framework with every endpoint defined. All routes return the correct path structure and content types. Endpoints that aren't yet implemented return `501 Not Implemented`.
+Stand up the application framework with every endpoint defined. All routes return the correct
+path structure and content types. Endpoints that aren't yet implemented return `501 Not Implemented`.
 
 This phase establishes:
+
 - Application entry point and configuration
 - Middleware (CORS, HEAD, Cache-Control, Vary — explicit, not framework-magic)
 - Error handling (RFC 9457 problem+json)
@@ -67,7 +73,8 @@ This phase includes proper timeout handling (504, not 500).
 
 ## Phase 5: JSON-LD
 
-Add `f=jsonld` support with correct `application/ld+json` content type. Evaluate whether Jinja is needed for the JSON-LD graph structure or if a Python builder suffices.
+Add `f=jsonld` support with correct `application/ld+json` content type. Evaluate whether
+Jinja is needed for the JSON-LD graph structure or if a Python builder suffices.
 
 ## At every phase
 

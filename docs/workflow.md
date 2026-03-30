@@ -1,7 +1,5 @@
 # NLDI-py Development Workflow
 
-Adapted from `~/.claude/feature_branch_workflow.md` for this project.
-
 ## Branching model
 
 - `main` — current production code. Untouched during refactor.
@@ -16,25 +14,30 @@ Tag `pre-refactor` marks the snapshot before the refactor began.
 1. **Decide** — pick an issue or next item from the phased strategy
 2. **Plan** — explore, design the approach, get approval before writing code
 3. **Branch + PR** — sync and branch from `refactor/v3`, push, open a PR immediately
-   ```
+
+   ```bash
    git checkout refactor/v3 && git pull
    git checkout -b feature/xyz
    git push -u origin feature/xyz
    gh pr create --base refactor/v3 --title "..."
    ```
+
 4. **Comment the plan** — post the implementation plan as the first comment on the PR
 5. **Implement** — do the work; multiple commits are fine
 6. **Before each commit**:
+
    - `task test:unit` — all unit tests pass
    - `task lint` — ruff check passes
    - `task format` — ruff format passes
+
 7. **Before marking ready for review**:
    - `task test:integration` — all integration tests pass
    - `task typecheck` — type checking passes
 8. **Summarize** — add a summary comment on the PR describing what was done
 9. **Ready for review** — mark the PR as ready
 10. **Cleanup** — after merge, delete local branch
-   ```
+
+   ```bash
    git checkout refactor/v3 && git pull && git branch -D feature/xyz
    ```
 
@@ -51,7 +54,9 @@ Tag `pre-refactor` marks the snapshot before the refactor began.
 - **Issue** = the "what" and "why" — problem description, analysis, decision rationale
 - **PR** = the "how" — implementation plan, commits, summary of changes
 
-The PR is the permanent record. Code changes, but the PR persists. It should contain enough context to re-create the work or debug a regression months later: what was the plan, what was tried, what was decided, and why. A future reader should not need to ask the author.
+The PR is the permanent record. Code changes, but the PR persists. It should contain enough context
+to re-create the work or debug a regression months later: what was the plan, what was tried, what
+was decided, and why. A future reader should not need to ask the author.
 
 Issues persist as the decision log. "Why did we do X?" → check the issue. "How did we do X?" → check the PR.
 

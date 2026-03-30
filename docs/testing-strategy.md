@@ -11,20 +11,25 @@ Follow the red-green-refactor cycle strictly (see `docs/tdd.md`):
 3. **Refactor** — clean up without changing behavior. Confirm still green.
 4. **Repeat.**
 
-Before starting a new feature or endpoint, list the behaviors as a checklist. Work through them one at a time. Order them so the earliest items produce a working (if minimal) result.
+Before starting a new feature or endpoint, list the behaviors as a checklist. Work through them
+one at a time. Order them so the earliest items produce a working (if minimal) result.
 
 ### Which layer during TDD?
 
 - **Red-green-refactor runs against unit tests.** Fast feedback, no Docker, no DB.
-- **Integration tests written after** a unit of work is complete (e.g. an endpoint is wired up). Confirm SQL correctness against real PostGIS.
+- **Integration tests written after** a unit of work is complete (e.g. an endpoint is wired up). Confirm
+  SQL correctness against real PostGIS.
 - **Parity tests written per phase.** Confirm the assembled endpoints match Java responses.
 
-Don't run integration tests in the inner TDD loop — too slow. Save them for validation after the unit tests are green.
+Don't run integration tests in the inner TDD loop — too slow. Save them for validation after the
+unit tests are green.
 
 ## Test layers
 
 ### Unit tests
+
 No database, no network. Pure logic.
+
 - Serialization (GeoJSON, JSON-LD, problem+json)
 - Content negotiation (`f=` handling, browser redirect logic)
 - Middleware behavior (CORS, HEAD, Cache-Control, Vary headers)
@@ -35,7 +40,9 @@ No database, no network. Pure logic.
 Fast. Run on every commit.
 
 ### Integration tests
+
 Testcontainers with the custom PostGIS database image (published on ghcr.io). Real SQL against real data.
+
 - Query correctness (source lookups, feature lookups, spatial intersects)
 - Navigation CTEs (all four modes, distance limits, trimming)
 - Session lifecycle (one connection, released before response)
@@ -45,7 +52,9 @@ Testcontainers with the custom PostGIS database image (published on ghcr.io). Re
 Slower. Run before merge.
 
 ### Parity tests
+
 Contract tests that prove the Python service is a safe replacement for the Java service.
+
 - Capture known-good responses from the Java service as golden files
 - Run the same requests against the Python app
 - Compare response body shape, status codes, content types
@@ -56,11 +65,13 @@ Golden files should be curated carefully — navigation results can be very larg
 These are the tests that answer: "can we switch?"
 
 ### System tests (existing)
-Tests that run against a live RDS instance. These exist in the current suite but are not clearly separated. They should be marked and isolated so they don't run in CI by default.
+
+Tests that run against a live RDS instance. These exist in the current suite but are not clearly
+separated. They should be marked and isolated so they don't run in CI by default.
 
 ## Test organization
 
-```
+```text
 tests/
   unit/           # no I/O, no containers
   integration/    # testcontainers + ghcr.io DB image
@@ -72,6 +83,7 @@ tests/
 ## Markers
 
 Use pytest markers to control what runs where:
+
 - `@pytest.mark.unit` — default, always runs
 - `@pytest.mark.integration` — requires Docker
 - `@pytest.mark.parity` — requires golden files
@@ -80,6 +92,7 @@ Use pytest markers to control what runs where:
 ## Migration from existing tests
 
 The current test suite has useful coverage but is not organized by layer. Refactor alongside the app:
+
 - Identify what each existing test actually exercises (unit vs integration vs system)
 - Move to the appropriate directory
 - Adapt fixtures to the new session/connection setup as it changes
