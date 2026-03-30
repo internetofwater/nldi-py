@@ -24,10 +24,16 @@ Tag `pre-refactor` marks the snapshot before the refactor began.
    ```
 4. **Comment the plan** — post the implementation plan as the first comment on the PR
 5. **Implement** — do the work; multiple commits are fine
-6. **Lint + format** — `uv run ruff format . && uv run ruff check --fix .`
-7. **Summarize** — add a summary comment on the PR describing what was done
-8. **Ready for review** — mark the PR as ready
-9. **Cleanup** — after merge, delete local branch
+6. **Before each commit**:
+   - `task test:unit` — all unit tests pass
+   - `task lint` — ruff check passes
+   - `task format` — ruff format passes
+7. **Before marking ready for review**:
+   - `task test:integration` — all integration tests pass
+   - `task typecheck` — type checking passes
+8. **Summarize** — add a summary comment on the PR describing what was done
+9. **Ready for review** — mark the PR as ready
+10. **Cleanup** — after merge, delete local branch
    ```
    git checkout refactor/v3 && git pull && git branch -D feature/xyz
    ```
@@ -36,7 +42,8 @@ Tag `pre-refactor` marks the snapshot before the refactor began.
 
 - **Agents never merge** — a human must review and merge all PRs
 - **No amending commits** — prefer new commits to keep history clean and reviewable
-- **Tests pass before commit** — no exceptions
+- **Unit tests pass on every commit** — no exceptions
+- **Integration tests pass before review** — the PR is not ready until they do
 - **PR is the single source of truth** — plan, commits, and summary all in one place
 
 ## Issue vs PR documentation
