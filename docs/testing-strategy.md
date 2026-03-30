@@ -2,6 +2,25 @@
 
 Tests pass before we commit. No exceptions.
 
+## TDD workflow
+
+Follow the red-green-refactor cycle strictly (see `~/.claude/TDD.md`):
+
+1. **Red** — write one failing test. Run it. Confirm it fails for the right reason.
+2. **Green** — write minimal code to pass. Run all tests. Confirm green.
+3. **Refactor** — clean up without changing behavior. Confirm still green.
+4. **Repeat.**
+
+Before starting a new feature or endpoint, list the behaviors as a checklist. Work through them one at a time. Order them so the earliest items produce a working (if minimal) result.
+
+### Which layer during TDD?
+
+- **Red-green-refactor runs against unit tests.** Fast feedback, no Docker, no DB.
+- **Integration tests written after** a unit of work is complete (e.g. an endpoint is wired up). Confirm SQL correctness against real PostGIS.
+- **Parity tests written per phase.** Confirm the assembled endpoints match Java responses.
+
+Don't run integration tests in the inner TDD loop — too slow. Save them for validation after the unit tests are green.
+
 ## Test layers
 
 ### Unit tests
