@@ -5,6 +5,7 @@
 from litestar import Controller, get, head
 from litestar.response import Redirect
 
+from ..config import get_prefix
 from ..media import MediaType
 
 
@@ -45,9 +46,9 @@ class RootController(Controller):
     @get("/swagger-ui/index.html", include_in_schema=False)
     async def swagger_ui_redirect(self) -> Redirect:
         """Redirect legacy Java Swagger UI path to docs."""
-        return Redirect(path="/api/nldi/docs", status_code=301)
+        return Redirect(path=f"{get_prefix()}/docs", status_code=301)
 
     @get("/openapi", include_in_schema=False)
     async def openapi_redirect(self) -> Redirect:
         """Redirect legacy OpenAPI path to docs."""
-        return Redirect(path="/api/nldi/docs", status_code=301)
+        return Redirect(path=f"{get_prefix()}/docs", status_code=301)
