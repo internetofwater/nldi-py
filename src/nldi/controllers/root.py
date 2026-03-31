@@ -2,9 +2,8 @@
 # SPDX-FileCopyrightText: 2024-present USGS
 """Root controller — landing page and health check."""
 
-from litestar import Controller, Request, route
+from litestar import Controller, get, head
 
-from ..helpers import head_response
 from ..media import MediaType
 
 
@@ -14,11 +13,14 @@ class RootController(Controller):
     path = ""
     tags = ["nldi"]
 
-    @route("/", http_method=["GET", "HEAD"], media_type=MediaType.JSON)
-    async def landing_page(self, request: Request) -> dict:
+    @head(["/", "/about/health"], include_in_schema=False)
+    async def handle_head(self) -> None:
+        """HEAD support for all root endpoints."""
+        return None
+
+    @get("/", media_type=MediaType.JSON)
+    async def landing_page(self) -> dict:
         """Landing page."""
-        if request.method == "HEAD":
-            return head_response()
         return {
             "title": "Network Linked Data Index API",
             "description": "NLDI API",
@@ -34,9 +36,7 @@ class RootController(Controller):
             ],
         }
 
-    @route("/about/health", http_method=["GET", "HEAD"], include_in_schema=False)
-    async def health_check(self, request: Request) -> dict:
+    @get("/about/health", include_in_schema=False)
+    async def health_check(self) -> dict:
         """Health check."""
-        if request.method == "HEAD":
-            return head_response()
         return {"status": "ok"}
