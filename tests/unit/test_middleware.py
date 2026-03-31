@@ -40,6 +40,13 @@ def test_head_fast_return():
         assert r.content == b""
 
 
+def test_head_nonexistent_returns_404():
+    with TestClient(app=_make_app()) as client:
+        r = client.head("/nonexistent")
+        assert r.status_code == 404
+        assert r.content == b""
+
+
 def test_cache_control():
     with TestClient(app=_make_app()) as client:
         r = client.get("/test")

@@ -43,14 +43,26 @@ def headers_middleware_factory(app: ASGIApp) -> ASGIApp:
             return
 
         if scope["method"] == "HEAD":
+            # Rewrite to GET so Litestar routes it normally, but capture
+            # only the status and headers — discard the body.
+            scope["method"] = "GET"
+            captured_status = None
+            captured_headers = []
+
+            async def capture_send(message):
+                nonlocal captured_status, captured_headers
+                if message["type"] == "http.response.start":
+                    captured_status = message["status"]
+                    captured_headers = list(message.get("headers", []))
+                # Discard http.response.body — don't forward it
+
+            await app(scope, receive, capture_send)
+
             await send(
                 {
                     "type": "http.response.start",
-                    "status": 200,
-                    "headers": [
-                        (b"content-type", MediaType.JSON.encode()),
-                        *STANDARD_HEADERS,
-                    ],
+                    "status": captured_status,
+                    "headers": captured_headers + STANDARD_HEADERS,
                 }
             )
             await send({"type": "http.response.body", "body": b""})
