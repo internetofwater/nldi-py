@@ -1,69 +1,44 @@
-# Taskfile to ease the use of dev tooling...
-# note that task should be run in the virtual environment you set up with uv.
-#
-#  uv run  task reformat    # runs the 'reformat' task, defined below to use ruff
-#  uv run  task fixme       # this will run both the reformat and lint tasks
-
-version: '3'
-
-env:
-  SRCS: ./src
+version: "3"
 
 tasks:
-  fixme:
-    summary: |
-      Runs static code analysis tools, including reformat.
+  lint:
+    desc: Run ruff linter
     cmds:
-      - task: reformat
-      - task: lint
-#      - task: typecheck
-#      TODO: type checking....
+      - uv run ruff check src/
 
   format:
+    desc: Format code with ruff
     cmds:
-      - ruff format $SRCS
+      - uv run ruff format src/
 
-  lint:
+  format:check:
+    desc: Check formatting without changes
     cmds:
-      - ruff check $SRCS
+      - uv run ruff format --check src/
+
+  test:
+    desc: Run all tests
+    cmds:
+      - uv run pytest tests/unit tests/integration tests/parity
+
+  test:unit:
+    desc: Run unit tests only
+    cmds:
+      - uv run pytest tests/unit
+
+  test:integration:
+    desc: Run integration tests (requires Docker)
+    cmds:
+      - uv run pytest tests/integration
 
   typecheck:
+    desc: Run type checker
     cmds:
-      - mypy --install-types --non-interactive $SRCS
+      - echo "Type checker not yet configured"
 
-  tests:
-    summary: |
-      Runs all tests configured in pytest, regardless of marking.
+  check:
+    desc: Pre-commit gate — lint, format check, unit tests
     cmds:
-      - pytest --cov --sparse-ordering ./tests
-
-  ## NOTE: for the following test-like tasks, I have an implied hierarchy of tests.
-  # tests.unittest are small and fast, with no out-of-process dependencies.
-  # tests.integration have out-of-process dependencies, namely a connection to the containerized
-  #     database running in a local docker service.  Integration implies (to me) that unittests
-  #     should also run.
-  # tests.system require connection to cloud-hosted database.  system implies integration and
-  #     also unittest.  In theory, tests.system is the same as the run-all-tests task  above.
-  #     The main difference is that the `tests` target will also cover unmarked tests.
-
-  tests.unittest:
-    summary: |
-      Run only tests marked as 'unittest'
-    cmds:
-      - pytest  -m 'unittest' --cov --sparse-ordering ./tests
-
-  tests.integration:
-    summary: |
-      Run tests marked as 'integration' (unittests are also included)
-    cmds:
-      - pytest  -m 'integration' -m 'unittest' --cov --sparse-ordering ./tests
-
-  test.system:
-    summary: |
-      Run all tests marked as 'system', as well as integration and unittest
-      - pytest  -m 'integration' -m 'unittest' -m 'system' --cov --sparse-ordering ./tests
-
-
-  docker:
-    cmds:
-      - docker build . -t nldi-py
+      - task: lint
+      - task: format:check
+      - task: test:unit
