@@ -10,8 +10,7 @@ from typing import Any
 from litestar import Request, Response
 from litestar.exceptions import HTTPException
 
-PROBLEM_JSON = "application/problem+json"
-
+from .media import MediaType
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +24,7 @@ def problem_details_handler(_request: Request[Any, Any, Any], exc: HTTPException
         "status": exc.status_code,
         "detail": exc.detail,
     }
-    return Response(content=body, status_code=exc.status_code, media_type=PROBLEM_JSON)
+    return Response(content=body, status_code=exc.status_code, media_type=MediaType.PROBLEM_JSON)
 
 
 def unhandled_exception_handler(_request: Request[Any, Any, Any], exc: Exception) -> Response[dict[str, Any]]:
@@ -44,4 +43,4 @@ def unhandled_exception_handler(_request: Request[Any, Any, Any], exc: Exception
         "detail": "An unexpected error occurred.",
         "instance": f"urn:error:{ref}",
     }
-    return Response(content=body, status_code=500, media_type=PROBLEM_JSON)
+    return Response(content=body, status_code=500, media_type=MediaType.PROBLEM_JSON)
