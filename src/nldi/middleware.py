@@ -2,17 +2,15 @@
 # SPDX-FileCopyrightText: 2024-present USGS
 """ASGI middleware for explicit HTTP headers.
 
-Litestar provides built-in CORSConfig and HEAD handling, but we implement these
-explicitly for two reasons:
+Litestar provides built-in CORSConfig, but we implement CORS headers explicitly
+because CORSConfig only adds headers when it sees an Origin request header.
+Behind a reverse proxy that strips Origin, CORS headers silently disappear.
+This middleware adds them unconditionally.
 
-1. Litestar's CORSConfig only adds headers when it sees an Origin request header.
-   Behind a reverse proxy that strips Origin, CORS headers silently disappear.
-   This middleware adds them unconditionally.
-
-2. Litestar does not automatically handle HEAD for GET routes. Spring Boot (the
-   Java implementation we're replacing) does. Our middleware intercepts HEAD at
-   the ASGI layer and returns 200 with headers immediately — no route handler
-   execution, no wasted DB queries.
+Litestar does not automatically handle HEAD for GET routes (unlike Spring Boot,
+which the Java implementation relies on). Our middleware intercepts HEAD at the
+ASGI layer and returns 200 with headers immediately — no route handler execution,
+no wasted DB queries.
 
 By owning these headers explicitly, the app behaves correctly regardless of what
 sits between it and the client (proxy, CDN, load balancer).
