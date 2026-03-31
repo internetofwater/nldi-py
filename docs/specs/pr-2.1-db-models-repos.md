@@ -2,7 +2,8 @@
 
 ## Purpose
 
-Establish the data access layer: database connection, ORM models mapping to existing tables, and repository interfaces for simple lookups. This is the foundation for all Phase 2 endpoints.
+Establish the data access layer: database connection, ORM models mapping to existing tables,
+and repository interfaces for simple lookups. This is the foundation for all Phase 2 endpoints.
 
 ## Database Connection
 
@@ -20,7 +21,7 @@ Ported from pre-refactor. These map to existing database tables we don't control
 ### nldi_data schema
 
 | Model | Table | PK | Notes |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `CrawlerSourceModel` | `crawler_source` | `crawler_source_id` | Source registry |
 | `FeatureSourceModel` | `feature` | `identifier` | Features with geometry, FK to crawler_source and mainstem_lookup |
 | `MainstemLookupModel` | `mainstem_lookup` | `nhdpv2_comid` | Mainstem URI lookup |
@@ -28,7 +29,7 @@ Ported from pre-refactor. These map to existing database tables we don't control
 ### nhdplus schema
 
 | Model | Table | PK | Notes |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `FlowlineModel` | `nhdflowline_np21` | `nhdplus_comid` | Flowlines with geometry |
 | `FlowlineVAAModel` | `plusflowlinevaa_np21` | `comid` | Value-added attributes for navigation (Phase 3) |
 | `CatchmentModel` | `catchmentsp` | `ogc_fid` | Catchment polygons |
@@ -46,7 +47,7 @@ Ported from pre-refactor. These map to existing database tables we don't control
 Using advanced-alchemy `SQLAlchemyAsyncRepository`. One per model that Phase 2 endpoints need.
 
 | Repository | Model | Methods needed for Phase 2 |
-|---|---|---|
+| --- | --- | --- |
 | `CrawlerSourceRepository` | `CrawlerSourceModel` | `list()`, `get_one_or_none(suffix=...)` |
 | `FeatureRepository` | `FeatureSourceModel` | `get_one_or_none(source, identifier)`, `list(source, limit, offset)` |
 | `FlowlineRepository` | `FlowlineModel` | `get(comid)` |
