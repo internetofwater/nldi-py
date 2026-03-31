@@ -20,6 +20,8 @@ See docs/principles.md #3: "Explicit over magical."
 
 from litestar.types import ASGIApp, Receive, Scope, Send
 
+from .media import MediaType
+
 CORS_HEADERS = [
     (b"access-control-allow-origin", b"*"),
     (b"access-control-allow-methods", b"GET, HEAD, OPTIONS"),
@@ -46,7 +48,7 @@ def headers_middleware_factory(app: ASGIApp) -> ASGIApp:
                     "type": "http.response.start",
                     "status": 200,
                     "headers": [
-                        (b"content-type", b"application/json"),
+                        (b"content-type", MediaType.JSON.encode()),
                         *STANDARD_HEADERS,
                     ],
                 }
