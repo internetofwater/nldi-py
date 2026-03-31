@@ -86,9 +86,9 @@ class FeatureSourceModel(NLDIBaseModel):
         foreign_keys=[crawler_source_id],
         lazy="immediate",
     )
-    sourceName: AssociationProxy[str] = association_proxy("crawler_source", "source_name")  # noqa: N815
-    source: AssociationProxy[str] = association_proxy("crawler_source", "source_suffix")
-    type: AssociationProxy[str] = association_proxy("crawler_source", "feature_type")
+    source_name_proxy: AssociationProxy[str] = association_proxy("crawler_source", "source_name")
+    source_suffix_proxy: AssociationProxy[str] = association_proxy("crawler_source", "source_suffix")
+    feature_type_proxy: AssociationProxy[str] = association_proxy("crawler_source", "feature_type")
 
     mainstem_lookup = relationship(
         "MainstemLookupModel",
