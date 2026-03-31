@@ -3,15 +3,14 @@
 Integration branch: `refactor/v3`
 Reference snapshot: tag `pre-refactor`
 
-## Phase 0: Project setup
+## Phase 0: Project setup ✅
 
 Housekeeping before any feature work.
 
-| PR | Description | Acceptance |
+| PR | Description | Status |
 | --- | --- | --- |
-| 0.1 | Create `refactor/v3` branch, clean `src/` tree, `pyproject.toml` with updated deps (drop advanced-alchemy, Jinja2 tentatively) | `uv sync` succeeds, empty app |
-| 0.2 | Taskfile with `lint`, `format`, `typecheck`, `test:unit`, `test:integration` tasks | All tasks runnable (tests pass trivially) |
-| 0.3 | Migrate test scaffolding — `conftest.py`, testcontainers fixtures, pytest markers. Reorganize into `tests/unit/`, `tests/integration/`, `tests/parity/`, `tests/system/` | Existing DB fixtures work, markers filter correctly |
+| ~~0.1~~ | Clean `src/` tree, `pyproject.toml` with minimal deps | ✅ #156 |
+| ~~0.2~~ | Taskfile + test reorganization (combined 0.2 and 0.3) | ✅ #157 |
 
 ## Phase 1: Skeleton
 
