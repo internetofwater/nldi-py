@@ -2,9 +2,11 @@
 # SPDX-FileCopyrightText: 2024-present USGS
 """Linked data controller — all NLDI data endpoints."""
 
+from typing import Annotated
+
 from litestar import Controller, get, head
-from litestar.di import Provide
 from litestar.exceptions import HTTPException
+from litestar.params import Dependency
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..config import get_base_url
@@ -43,7 +45,6 @@ class LinkedDataController(Controller):
     path = "/linked-data"
     tags = ["nldi"]
     before_request = check_format
-    dependencies = {"source_repo": Provide(provide_source_repo)}
 
     @head(_ALL_PATHS, include_in_schema=False)
     async def handle_head(self) -> None:
@@ -51,18 +52,22 @@ class LinkedDataController(Controller):
         return None
 
     @get("/")
-    async def list_sources(self, source_repo: CrawlerSourceRepository) -> list[DataSource]:
+    async def list_sources(
+        self, source_repo: Annotated[CrawlerSourceRepository, Dependency(skip_validation=True)]
+    ) -> list[dict]:
         """List all data sources."""
         base_url = get_base_url()
         sources = await source_repo.list()
-        result = [DataSource(source="comid", sourceName="NHDPlus comid", features=f"{base_url}/linked-data/comid")]
+        result: list[dict] = [
+            {"source": "comid", "sourceName": "NHDPlus comid", "features": f"{base_url}/linked-data/comid"}
+        ]
         for s in sources:
             result.append(
-                DataSource(
-                    source=s.source_suffix,
-                    sourceName=s.source_name,
-                    features=f"{base_url}/linked-data/{s.source_suffix}",
-                )
+                {
+                    "source": s.source_suffix,
+                    "sourceName": s.source_name,
+                    "features": f"{base_url}/linked-data/{s.source_suffix}",
+                }
             )
         return result
 
