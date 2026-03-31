@@ -4,8 +4,8 @@
 
 import os
 
-from advanced_alchemy.config.engine import EngineConfig
 from advanced_alchemy.extensions.litestar import SQLAlchemyAsyncConfig, SQLAlchemyPlugin
+from advanced_alchemy.extensions.litestar.plugins.init.config.engine import EngineConfig
 from litestar import Litestar
 from litestar.exceptions import HTTPException
 from litestar.logging import LoggingConfig
@@ -47,7 +47,7 @@ def create_app() -> Litestar:
         path=get_prefix(),
         plugins=_db_plugin(),
         logging_config=LoggingConfig(root={"level": get_log_level(), "handlers": ["queue_listener"]}),
-        exception_handlers={
+        exception_handlers={  # ty: ignore[invalid-argument-type]
             HTTPException: problem_details_handler,
             Exception: unhandled_exception_handler,
         },

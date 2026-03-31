@@ -11,10 +11,12 @@ def get_prefix() -> str:
     return os.getenv("NLDI_PREFIX", "/api/nldi")
 
 
-def get_log_level() -> int:
-    """Return the configured log level from NLDI_LOG_LEVEL env var."""
+def get_log_level() -> str:
+    """Return the configured log level name from NLDI_LOG_LEVEL env var."""
     name = os.getenv("NLDI_LOG_LEVEL", "WARNING").upper()
-    return logging.getLevelNamesMapping().get(name, logging.WARNING)
+    if name not in logging.getLevelNamesMapping():
+        return "WARNING"
+    return name
 
 
 def get_database_url() -> str:
