@@ -25,46 +25,60 @@ class NLDIBaseModel(DeclarativeBase):
 
 
 class CrawlerSourceModel(NLDIBaseModel):
-    """Source registry — crawler_source table."""
+    """Source registry — crawler_source table.
+
+    Each row represents a data source that the NLDI crawler has ingested.
+    The source_suffix is used as the URL path segment (e.g. 'wqp', 'nwissite').
+    """
 
     __tablename__ = "crawler_source"
 
     crawler_source_id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    source_name: Mapped[str] = mapped_column(String(500))
-    source_suffix: Mapped[str] = mapped_column(String(10))
-    source_uri: Mapped[str] = mapped_column(String(256))
-    feature_id: Mapped[str] = mapped_column(String(256))
-    feature_name: Mapped[str] = mapped_column(String(256))
-    feature_uri: Mapped[str] = mapped_column(String(256))
-    feature_reach: Mapped[str] = mapped_column(String(256), nullable=True)
-    feature_measure: Mapped[str] = mapped_column(String(256), nullable=True)
-    ingest_type: Mapped[str] = mapped_column(String(5), nullable=True)
-    feature_type: Mapped[str] = mapped_column(String(100), nullable=True)
+    source_name: Mapped[str] = mapped_column(String(500))  # Human-readable name
+    source_suffix: Mapped[str] = mapped_column(String(10))  # URL path segment (e.g. 'wqp')
+    source_uri: Mapped[str] = mapped_column(String(256))  # Base URI for the source
+    feature_id: Mapped[str] = mapped_column(String(256))  # Column name for feature ID in source
+    feature_name: Mapped[str] = mapped_column(String(256))  # Column name for feature name in source
+    feature_uri: Mapped[str] = mapped_column(String(256))  # URI template for features
+    feature_reach: Mapped[str] = mapped_column(String(256), nullable=True)  # Column name for reach code
+    feature_measure: Mapped[str] = mapped_column(String(256), nullable=True)  # Column name for measure
+    ingest_type: Mapped[str] = mapped_column(String(5), nullable=True)  # 'point' or 'reach'
+    feature_type: Mapped[str] = mapped_column(String(100), nullable=True)  # Geometry type of features
 
 
 class MainstemLookupModel(NLDIBaseModel):
-    """Mainstem URI lookup — mainstem_lookup table."""
+    """Mainstem URI lookup — mainstem_lookup table.
+
+    Maps NHDPlus COMIDs to mainstem URIs (e.g. geoconnex.us mainstem identifiers).
+    """
 
     __tablename__ = "mainstem_lookup"
 
-    nhdpv2_comid: Mapped[int] = mapped_column(Integer, primary_key=True, nullable=True)
+    nhdpv2_comid: Mapped[int] = mapped_column(Integer, primary_key=True, nullable=True)  # noqa: see note below
+    # NOTE: nullable=True on a PK reflects the actual DB schema. Some rows may have NULL comids.
     mainstem_id: Mapped[int] = mapped_column(Integer, nullable=True)
-    uri: Mapped[str] = mapped_column(Text, nullable=True)
+    uri: Mapped[str] = mapped_column(Text, nullable=True)  # Mainstem URI (e.g. geoconnex.us/ref/mainstems/...)
 
 
 class FeatureSourceModel(NLDIBaseModel):
-    """Feature locations — feature table."""
+    """Feature locations — feature table.
+
+    Each row is a point feature ingested from a crawler source, linked to
+    the NHD network via comid and optionally positioned along a reach
+    via reachcode and measure.
+    """
 
     __tablename__ = "feature"
 
-    identifier: Mapped[str] = mapped_column(String(256), primary_key=True, nullable=True)
+    identifier: Mapped[str] = mapped_column(String(256), primary_key=True, nullable=True)  # noqa: see note below
+    # NOTE: nullable=True on PK — some features may lack identifiers in the source data.
     crawler_source_id: Mapped[int] = mapped_column(Integer, ForeignKey("crawler_source.crawler_source_id"))
-    name: Mapped[str] = mapped_column(String(256), nullable=True)
-    uri: Mapped[str] = mapped_column(String(256), nullable=True)
-    location: Mapped[Any] = mapped_column(geoalchemy2.Geometry, nullable=True)
+    name: Mapped[str] = mapped_column(String(256), nullable=True)  # Human-readable feature name
+    uri: Mapped[str] = mapped_column(String(256), nullable=True)  # Canonical URI for this feature
+    location: Mapped[Any] = mapped_column(geoalchemy2.Geometry, nullable=True)  # Point geometry (NAD83)
     comid: Mapped[int] = mapped_column(Integer, ForeignKey("mainstem_lookup.nhdpv2_comid"), nullable=True)
-    reachcode: Mapped[str] = mapped_column(String(14), nullable=True)
-    measure: Mapped[float] = mapped_column(Float(38), nullable=True)
+    reachcode: Mapped[str] = mapped_column(String(14), nullable=True)  # NHD reach code
+    measure: Mapped[float] = mapped_column(Float(38), nullable=True)  # Position along reach (0-100)
 
     crawler_source = relationship(
         "CrawlerSourceModel",
@@ -97,17 +111,20 @@ class NHDBaseModel(DeclarativeBase):
 
 
 class FlowlineModel(NHDBaseModel):
-    """NHD flowlines — nhdflowline_np21 table."""
+    """NHD flowlines — nhdflowline_np21 table.
+
+    Each row is a stream segment in the NHDPlus v2.1 network.
+    """
 
     __tablename__ = "nhdflowline_np21"
 
-    nhdplus_comid: Mapped[int] = mapped_column(Integer, primary_key=True)
-    objectid: Mapped[int] = mapped_column(Integer)
-    permanent_identifier: Mapped[str] = mapped_column(String)
-    shape: Mapped[Any] = mapped_column(geoalchemy2.Geometry, nullable=True)
-    fmeasure: Mapped[float] = mapped_column(Float)
-    tmeasure: Mapped[float] = mapped_column(Float)
-    reachcode: Mapped[str] = mapped_column(String)
+    nhdplus_comid: Mapped[int] = mapped_column(Integer, primary_key=True)  # Unique NHD segment ID
+    objectid: Mapped[int] = mapped_column(Integer)  # Internal DB row ID
+    permanent_identifier: Mapped[str] = mapped_column(String)  # NHD permanent identifier
+    shape: Mapped[Any] = mapped_column(geoalchemy2.Geometry, nullable=True)  # LineString geometry
+    fmeasure: Mapped[float] = mapped_column(Float)  # From-measure (downstream end, 0-100)
+    tmeasure: Mapped[float] = mapped_column(Float)  # To-measure (upstream end, 0-100)
+    reachcode: Mapped[str] = mapped_column(String)  # NHD reach code
 
     mainstem_lookup = relationship(
         MainstemLookupModel,
@@ -121,30 +138,34 @@ class FlowlineModel(NHDBaseModel):
 class FlowlineVAAModel(NHDBaseModel):
     """Flowline value-added attributes — plusflowlinevaa_np21 table.
 
-    Used for navigation CTEs in Phase 3.
+    Contains the network topology and routing attributes used for
+    navigation CTEs in Phase 3. Only columns needed for navigation are mapped.
     """
 
     __tablename__ = "plusflowlinevaa_np21"
 
-    comid: Mapped[int] = mapped_column(Integer, primary_key=True)
-    hydroseq: Mapped[int] = mapped_column(Integer)
-    levelpathid: Mapped[int] = mapped_column(Integer)
-    pathlength: Mapped[float] = mapped_column(Float)
-    terminalpathid: Mapped[int] = mapped_column(Integer)
-    startflag: Mapped[int] = mapped_column(SmallInteger, nullable=True)
-    terminalflag: Mapped[int] = mapped_column(SmallInteger, nullable=True)
-    uphydroseq: Mapped[int] = mapped_column(Integer)
-    dnminorhyd: Mapped[int] = mapped_column(Integer)
-    dnhydroseq: Mapped[int] = mapped_column(Integer)
-    lengthkm: Mapped[float] = mapped_column(Float)
-    fcode: Mapped[int] = mapped_column(Integer, nullable=True)
+    comid: Mapped[int] = mapped_column(Integer, primary_key=True)  # NHDPlus COMID
+    hydroseq: Mapped[int] = mapped_column(Integer)  # Hydrologic sequence number (routing order)
+    levelpathid: Mapped[int] = mapped_column(Integer)  # Level path identifier (mainstem grouping)
+    pathlength: Mapped[float] = mapped_column(Float)  # Distance to terminal point (km)
+    terminalpathid: Mapped[int] = mapped_column(Integer)  # Terminal path for this network
+    startflag: Mapped[int] = mapped_column(SmallInteger, nullable=True)  # 1 = headwater
+    terminalflag: Mapped[int] = mapped_column(SmallInteger, nullable=True)  # 1 = terminal (coast/sink)
+    uphydroseq: Mapped[int] = mapped_column(Integer)  # Upstream mainstem hydroseq
+    dnminorhyd: Mapped[int] = mapped_column(Integer)  # Downstream minor path hydroseq (diversions)
+    dnhydroseq: Mapped[int] = mapped_column(Integer)  # Downstream mainstem hydroseq
+    lengthkm: Mapped[float] = mapped_column(Float)  # Segment length in km
+    fcode: Mapped[int] = mapped_column(Integer, nullable=True)  # NHD feature code (stream type)
 
 
 class CatchmentModel(NHDBaseModel):
-    """Catchment polygons — catchmentsp table."""
+    """Catchment polygons — catchmentsp table.
+
+    Each row is the local drainage area for a single NHD flowline segment.
+    """
 
     __tablename__ = "catchmentsp"
 
-    ogc_fid: Mapped[int] = mapped_column(Integer, primary_key=True, nullable=True)
-    the_geom: Mapped[Any] = mapped_column(geoalchemy2.Geometry, nullable=True)
-    featureid: Mapped[int] = mapped_column(Integer, nullable=True)
+    ogc_fid: Mapped[int] = mapped_column(Integer, primary_key=True, nullable=True)  # Internal row ID
+    the_geom: Mapped[Any] = mapped_column(geoalchemy2.Geometry, nullable=True)  # Polygon geometry
+    featureid: Mapped[int] = mapped_column(Integer, nullable=True)  # Corresponding NHDPlus COMID
