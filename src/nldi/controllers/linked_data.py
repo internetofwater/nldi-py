@@ -10,7 +10,6 @@ from litestar.params import Dependency
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..config import get_base_url
-from ..db.models import CrawlerSourceModel
 from ..db.repos import CrawlerSourceRepository
 from ..dto import DataSource
 from ..negotiate import check_format
@@ -54,20 +53,18 @@ class LinkedDataController(Controller):
     @get("/")
     async def list_sources(
         self, source_repo: Annotated[CrawlerSourceRepository, Dependency(skip_validation=True)]
-    ) -> list[dict]:
+    ) -> list[DataSource]:
         """List all data sources."""
         base_url = get_base_url()
         sources = await source_repo.list()
-        result: list[dict] = [
-            {"source": "comid", "sourceName": "NHDPlus comid", "features": f"{base_url}/linked-data/comid"}
-        ]
+        result = [DataSource(source="comid", sourceName="NHDPlus comid", features=f"{base_url}/linked-data/comid")]
         for s in sources:
             result.append(
-                {
-                    "source": s.source_suffix,
-                    "sourceName": s.source_name,
-                    "features": f"{base_url}/linked-data/{s.source_suffix}",
-                }
+                DataSource(
+                    source=s.source_suffix,
+                    sourceName=s.source_name,
+                    features=f"{base_url}/linked-data/{s.source_suffix}",
+                )
             )
         return result
 
