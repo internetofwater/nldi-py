@@ -9,8 +9,7 @@ def _make_app() -> Litestar:
     async def test_route() -> dict:
         return {"ok": True}
 
-    app = Litestar(route_handlers=[test_route])
-    app.asgi_handler = headers_middleware_factory(app.asgi_handler)
+    app = Litestar(route_handlers=[test_route], middleware=[headers_middleware_factory])
     return app
 
 

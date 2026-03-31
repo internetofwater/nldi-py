@@ -7,7 +7,7 @@ because CORSConfig only adds headers when it sees an Origin request header.
 Behind a reverse proxy that strips Origin, CORS headers silently disappear.
 This middleware adds them unconditionally.
 
-HEAD is handled at the route level (not here) using @route with
+HEAD is handled at the route level using @route with
 http_method=["GET", "HEAD"] and early return for HEAD requests.
 
 See docs/principles.md #3: "Explicit over magical."

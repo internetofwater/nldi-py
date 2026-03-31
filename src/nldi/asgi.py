@@ -27,6 +27,7 @@ def create_app() -> Litestar:
             HTTPException: problem_details_handler,
             Exception: unhandled_exception_handler,
         },
+        middleware=[headers_middleware_factory],
         openapi_config=OpenAPIConfig(
             title="Network Linked Data Index API",
             version=__version__,
@@ -34,7 +35,6 @@ def create_app() -> Litestar:
             render_plugins=[SwaggerRenderPlugin()],
         ),
     )
-    app.asgi_handler = headers_middleware_factory(app.asgi_handler)
     return app
 
 
