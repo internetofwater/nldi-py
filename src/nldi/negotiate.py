@@ -6,6 +6,8 @@ from litestar import Response
 from litestar.connection import Request
 from litestar.exceptions import ClientException
 
+from .media import MediaType
+
 VALID_FORMATS = {"json", "jsonld", "html", ""}
 
 HTML_REDIRECT_TEMPLATE = """<!doctype html>
@@ -32,7 +34,7 @@ async def check_format(request: Request) -> Response | None:
         return Response(
             content=HTML_REDIRECT_TEMPLATE.format(url=json_url),
             status_code=200,
-            media_type="text/html",
+            media_type=MediaType.HTML,
         )
 
     return None
