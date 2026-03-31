@@ -26,9 +26,10 @@ async def check_format(request: Request) -> Response | None:
     f = request.query_params.get("f", "")
 
     if f not in VALID_FORMATS:
-        raise ClientException(detail=f"Invalid format '{f}'. Must be one of: json, jsonld, html")
+        options = ", ".join(sorted(VALID_FORMATS - {""}))
+        raise ClientException(detail=f"Invalid format '{f}'. Must be one of: {options}")
 
-    if not f and "text/html" in request.headers.get("accept", ""):
+    if not f and MediaType.HTML in request.headers.get("accept", ""):
         sep = "&" if "?" in str(request.url) else "?"
         json_url = f"{request.url}{sep}f=json"
         return Response(

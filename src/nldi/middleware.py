@@ -7,13 +7,8 @@ because CORSConfig only adds headers when it sees an Origin request header.
 Behind a reverse proxy that strips Origin, CORS headers silently disappear.
 This middleware adds them unconditionally.
 
-Litestar does not automatically handle HEAD for GET routes (unlike Spring Boot,
-which the Java implementation relies on). Our middleware intercepts HEAD at the
-ASGI layer and returns 200 with headers immediately — no route handler execution,
-no wasted DB queries.
-
-By owning these headers explicitly, the app behaves correctly regardless of what
-sits between it and the client (proxy, CDN, load balancer).
+HEAD is handled at the route level using @head decorators with
+multi-path arrays, excluded from the OpenAPI schema.
 
 See docs/principles.md #3: "Explicit over magical."
 """
@@ -38,20 +33,6 @@ def headers_middleware_factory(app: ASGIApp) -> ASGIApp:
     async def middleware(scope: Scope, receive: Receive, send: Send) -> None:
         if scope["type"] != "http":
             await app(scope, receive, send)
-            return
-
-        if scope["method"] == "HEAD":
-            await send(
-                {
-                    "type": "http.response.start",
-                    "status": 200,
-                    "headers": [
-                        (b"content-type", b"application/json"),
-                        *STANDARD_HEADERS,
-                    ],
-                }
-            )
-            await send({"type": "http.response.body", "body": b""})
             return
 
         async def send_with_headers(message):
