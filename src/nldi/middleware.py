@@ -35,6 +35,8 @@ STANDARD_HEADERS = [
 
 
 def headers_middleware_factory(app: ASGIApp) -> ASGIApp:
+    """Wrap an ASGI app to inject standard HTTP headers on every response."""
+
     async def middleware(scope: Scope, receive: Receive, send: Send) -> None:
         if scope["type"] != "http":
             await app(scope, receive, send)
