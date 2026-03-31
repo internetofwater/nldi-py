@@ -3,7 +3,9 @@
 """Root controller — landing page and health check."""
 
 from litestar import Controller, get, head
+from litestar.response import Redirect
 
+from ..config import get_prefix
 from ..media import MediaType
 
 
@@ -40,3 +42,13 @@ class RootController(Controller):
     async def health_check(self) -> dict:
         """Health check."""
         return {"status": "ok"}
+
+    @get("/swagger-ui/index.html", include_in_schema=False)
+    async def swagger_ui_redirect(self) -> Redirect:
+        """Redirect legacy Java Swagger UI path to docs."""
+        return Redirect(path=f"{get_prefix()}/docs", status_code=301)
+
+    @get("/openapi", include_in_schema=False)
+    async def openapi_redirect(self) -> Redirect:
+        """Redirect legacy OpenAPI path to docs."""
+        return Redirect(path=f"{get_prefix()}/docs", status_code=301)

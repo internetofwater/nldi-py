@@ -87,3 +87,17 @@ def test_head_nonexistent_returns_404():
     with _client() as client:
         r = client.head("/api/nldi/nonexistent")
         assert r.status_code == 404
+
+
+def test_swagger_ui_redirects_to_docs():
+    with _client() as client:
+        r = client.get("/api/nldi/swagger-ui/index.html", follow_redirects=False)
+        assert r.status_code == 301
+        assert "/api/nldi/docs" in r.headers["location"]
+
+
+def test_openapi_redirects_to_docs():
+    with _client() as client:
+        r = client.get("/api/nldi/openapi", follow_redirects=False)
+        assert r.status_code == 301
+        assert "/api/nldi/docs" in r.headers["location"]

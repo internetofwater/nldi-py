@@ -12,18 +12,18 @@ Housekeeping before any feature work.
 | ~~0.1~~ | Clean `src/` tree, `pyproject.toml` with minimal deps | ✅ #156 |
 | ~~0.2~~ | Taskfile + test reorganization (combined 0.2 and 0.3) | ✅ #157 |
 
-## Phase 1: Skeleton
+## Phase 1: Skeleton ✅
 
 All routes respond. Nothing touches the DB.
 
-| PR | Description | Depends on | Acceptance |
-| --- | --- | --- | --- |
-| 1.1 | App entry point, config via env vars, Litestar app shell | 0.2 | App starts, responds on `/` |
-| 1.2 | Middleware stack: CORS (unconditional), HEAD (fast-return), Cache-Control, Vary | 1.1 | Headers correct on every response (unit tests) |
-| 1.3 | Error handling: RFC 9457 problem+json, exception handlers for 400/404/500/503/504 | 1.1 | Errors return `application/problem+json` with correct status codes |
-| 1.4 | Content negotiation: `f=` validation (400 on invalid), browser redirect (`Accept: text/html` → click-here page) | 1.1 | Invalid `f=` rejected, browser redirect works |
-| 1.5 | Route stubs: all endpoints defined, return 501. Health check (no DB). OpenAPI generation. | 1.1–1.4 | Every endpoint responds, OpenAPI spec matches expected paths |
-| 1.6 | Legacy redirects: `/swagger-ui/index.html` → `/docs`, `/openapi` → `/docs` | 1.5 | Redirects return 301/302 to correct paths |
+| PR | Description | Status |
+| --- | --- | --- |
+| ~~1.1~~ | App entry point, config via env vars, Litestar app shell | ✅ #158 |
+| ~~1.2~~ | Middleware: CORS (unconditional), Cache-Control, Vary | ✅ #159 |
+| ~~1.3~~ | Error handling: RFC 9457 problem+json with error reference IDs | ✅ #160 |
+| ~~1.4~~ | Content negotiation: `f=` validation, browser redirect, MediaType enum | ✅ #161 |
+| ~~1.5~~ | Route stubs (501), health check, HEAD via `@head` multi-path, wiring | ✅ #162 |
+| ~~1.6~~ | Legacy redirects: `/swagger-ui/index.html` → `/docs`, `/openapi` → `/docs` | ✅ #163 |
 
 ## Phase 2: Read-only lookups
 
