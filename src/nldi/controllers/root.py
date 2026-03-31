@@ -3,7 +3,8 @@
 """Root controller — landing page and health check."""
 
 from litestar import Controller, get
-from litestar.enums import MediaType
+
+from ..media import MediaType
 
 
 class RootController(Controller):
@@ -19,11 +20,11 @@ class RootController(Controller):
             "title": "Network Linked Data Index API",
             "description": "NLDI API",
             "links": [
-                {"rel": "data", "type": "application/json", "title": "Sources", "href": "linked-data"},
-                {"rel": "service-doc", "type": "text/html", "title": "API docs", "href": "docs"},
+                {"rel": "data", "type": MediaType.JSON, "title": "Sources", "href": "linked-data"},
+                {"rel": "service-doc", "type": MediaType.HTML, "title": "API docs", "href": "docs"},
                 {
                     "rel": "service-desc",
-                    "type": "application/vnd.oai.openapi+json;version=3.1",
+                    "type": MediaType.OPENAPI_JSON,
                     "title": "OpenAPI definition",
                     "href": "docs/openapi.json",
                 },
