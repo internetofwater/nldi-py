@@ -34,3 +34,7 @@ is what Spring Boot does on the Java side).
 The `f=` query parameter is not standard content negotiation. When `f=` is absent and `Accept` includes
 `text/html`, the app assumes a browser and returns a canned HTML page with a link to `?f=json`. This is
 a pre-request concern that applies to all linked-data endpoints.
+
+## Database error handling
+
+DB connection errors and timeouts currently fall through to the catch-all 500 handler. A dedicated exception handler for `sqlalchemy.exc.OperationalError` should be added to return 503 Service Unavailable with a problem+json response. Register alongside the existing handlers in `create_app`. Cross-cutting — covers all DB-backed endpoints in one place.
