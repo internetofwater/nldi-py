@@ -16,7 +16,6 @@ from collections.abc import AsyncGenerator
 
 import psycopg
 import pytest
-
 from nldi import util
 
 

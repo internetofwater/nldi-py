@@ -20,7 +20,6 @@ Random other endpoints.
 
 import psycopg
 import pytest
-
 from nldi.db.schemas import struct_geojson
 from nldi.server.linked_data.services import basin, catchment, pygeoapi
 

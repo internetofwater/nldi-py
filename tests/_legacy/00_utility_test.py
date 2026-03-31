@@ -8,7 +8,6 @@ import json
 from collections.abc import AsyncGenerator
 
 import pytest
-
 from nldi import util
 
 

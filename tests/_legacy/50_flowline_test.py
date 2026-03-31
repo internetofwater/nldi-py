@@ -28,7 +28,6 @@ from collections.abc import AsyncGenerator as AsyncGeneratorType
 
 import geoalchemy2
 import pytest
-
 from nldi.server.linked_data import repos, services
 
 from . import API_PREFIX

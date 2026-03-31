@@ -27,10 +27,9 @@ Crawler Sources
 
 import pytest
 from advanced_alchemy.exceptions import NotFoundError
-from sqlalchemy import func
-
 from nldi.db.schemas.nldi_data import CrawlerSourceModel
 from nldi.server.linked_data import repos, services
+from sqlalchemy import func
 
 from . import API_PREFIX
 
