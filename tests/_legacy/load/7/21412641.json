@@ -1,7 +1,0 @@
-{
-    "type": "FeatureCollection",
-    "features": [{"type": "Feature", "geometry": {}, "properties": {"nhdplus_comid": 21412641, "mainstem": "https://geoconnex.us/ref/mainstems/29559", "sourceName": "NHDPlus comid", "source": "comid"}, "id": 21412641},
-{"type": "Feature", "geometry": {}, "properties": {"nhdplus_comid": 21412191, "mainstem": "https://geoconnex.us/ref/mainstems/29559", "sourceName": "NHDPlus comid", "source": "comid"}, "id": 21412191},
-{"type": "Feature", "geometry": {}, "properties": {"nhdplus_comid": 21412883, "mainstem": "https://geoconnex.us/ref/mainstems/29559", "sourceName": "NHDPlus comid", "source": "comid"}, "id": 21412883}
-]
-}
