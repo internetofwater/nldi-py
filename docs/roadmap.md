@@ -31,13 +31,13 @@ One PR per endpoint or small logical group. Each PR includes integration tests a
 
 | PR | Description | Depends on | Acceptance |
 | --- | --- | --- | --- |
-| 2.1 | DB engine setup (plain SQLAlchemy async, env var config). ORM models (ported from pre-refactor, cleaned up). DTO definitions for response shapes. | 1.5 | DB connects, models map to tables, DTOs define wire format |
-| 2.2 | `GET /linked-data` — list sources | 2.1 | Parity with Java response shape |
-| 2.3 | `GET /linked-data/{source_name}` — list features by source | 2.1 | Parity, pagination works |
-| 2.4 | `GET /linked-data/{source_name}/{identifier}` — single feature | 2.1 | Parity, 404 on missing |
-| 2.5 | `GET /linked-data/comid/position` — flowline by spatial search | 2.1 | Parity, spatial query correct |
-| 2.6 | `GET /linked-data/{source}/{id}/navigation` — nav modes | 2.1 | Returns correct mode URLs |
-| 2.7 | `GET /linked-data/{source}/{id}/navigation/{nav_mode}` — nav info with mode validation | 2.1 | Parity, invalid mode returns 400 |
+| ~~2.1~~ | DB engine setup, ORM models, repos, type checking | 1.5 | ✅ #164 |
+| ~~2.2~~ | `GET /linked-data` — list sources, integration test infra, fake repos, DTOs | 2.1 | ✅ #165 |
+| 2.3 | `GET /linked-data/{source_name}` — list features by source | 2.2 | Parity, pagination works |
+| 2.4 | `GET /linked-data/{source_name}/{identifier}` — single feature | 2.2 | Parity, 404 on missing |
+| 2.5 | `GET /linked-data/comid/position` — flowline by spatial search | 2.2 | Parity, spatial query correct |
+| 2.6 | `GET /linked-data/{source}/{id}/navigation` — nav modes | 2.2 | Returns correct mode URLs |
+| 2.7 | `GET /linked-data/{source}/{id}/navigation/{nav_mode}` — nav info with mode validation | 2.2 | Parity, invalid mode returns 400 |
 
 ## Phase 3: Navigation
 
