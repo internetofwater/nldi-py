@@ -2,8 +2,6 @@
 # SPDX-FileCopyrightText: 2024-present USGS
 """ASGI application factory."""
 
-import os
-
 from advanced_alchemy.extensions.litestar import SQLAlchemyAsyncConfig, SQLAlchemyPlugin
 from advanced_alchemy.extensions.litestar.plugins.init.config.engine import EngineConfig
 from litestar import Litestar
@@ -13,7 +11,7 @@ from litestar.openapi.config import OpenAPIConfig
 from litestar.openapi.plugins import SwaggerRenderPlugin
 
 from . import __version__
-from .config import get_log_level, get_prefix
+from .config import get_database_url, get_log_level, get_prefix
 from .controllers.linked_data import LinkedDataController
 from .controllers.root import RootController
 from .errors import problem_details_handler, unhandled_exception_handler
@@ -21,9 +19,10 @@ from .middleware import headers_middleware_factory
 
 
 def _db_plugin() -> list:
-    """Return SQLAlchemy plugin if NLDI_DATABASE_URL is set, else empty list."""
-    url = os.getenv("NLDI_DATABASE_URL")
-    if not url:
+    """Return SQLAlchemy plugin if DB env vars are set, else empty list."""
+    try:
+        url = get_database_url()
+    except RuntimeError:
         return []
     return [
         SQLAlchemyPlugin(

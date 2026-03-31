@@ -3,8 +3,14 @@
 """Linked data controller — all NLDI data endpoints."""
 
 from litestar import Controller, get, head
+from litestar.di import Provide
 from litestar.exceptions import HTTPException
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from ..config import get_base_url
+from ..db.models import CrawlerSourceModel
+from ..db.repos import CrawlerSourceRepository
+from ..dto import DataSource
 from ..negotiate import check_format
 
 _ALL_PATHS = [
@@ -26,12 +32,18 @@ def _not_implemented() -> None:
     raise HTTPException(status_code=501, detail="Not yet implemented")
 
 
+async def provide_source_repo(db_session: AsyncSession) -> CrawlerSourceRepository:
+    """Provide CrawlerSourceRepository via DI."""
+    return CrawlerSourceRepository(session=db_session)
+
+
 class LinkedDataController(Controller):
     """NLDI linked data endpoints."""
 
     path = "/linked-data"
     tags = ["nldi"]
     before_request = check_format
+    dependencies = {"source_repo": Provide(provide_source_repo)}
 
     @head(_ALL_PATHS, include_in_schema=False)
     async def handle_head(self) -> None:
@@ -39,9 +51,20 @@ class LinkedDataController(Controller):
         return None
 
     @get("/")
-    async def list_sources(self) -> None:
+    async def list_sources(self, source_repo: CrawlerSourceRepository) -> list[DataSource]:
         """List all data sources."""
-        _not_implemented()
+        base_url = get_base_url()
+        sources = await source_repo.list()
+        result = [DataSource(source="comid", sourceName="NHDPlus comid", features=f"{base_url}/linked-data/comid")]
+        for s in sources:
+            result.append(
+                DataSource(
+                    source=s.source_suffix,
+                    sourceName=s.source_name,
+                    features=f"{base_url}/linked-data/{s.source_suffix}",
+                )
+            )
+        return result
 
     @get("/hydrolocation")
     async def get_hydrolocation(self, coords: str = "") -> None:
