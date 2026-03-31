@@ -14,15 +14,15 @@ Housekeeping before any feature work.
 
 ## Phase 1: Skeleton
 
-All routes respond. Nothing touches the DB except health check.
+All routes respond. Nothing touches the DB.
 
 | PR | Description | Depends on | Acceptance |
 | --- | --- | --- | --- |
-| 1.1 | App entry point, config loading, DB engine setup (plain SQLAlchemy async) | 0.1 | App starts, config loads from YAML |
+| 1.1 | App entry point, config via env vars, Litestar app shell | 0.2 | App starts, responds on `/` |
 | 1.2 | Middleware stack: CORS (unconditional), HEAD (fast-return), Cache-Control, Vary | 1.1 | Headers correct on every response (unit tests) |
 | 1.3 | Error handling: RFC 9457 problem+json, exception handlers for 400/404/500/503/504 | 1.1 | Errors return `application/problem+json` with correct status codes |
 | 1.4 | Content negotiation: `f=` validation (400 on invalid), browser redirect (`Accept: text/html` → click-here page) | 1.1 | Invalid `f=` rejected, browser redirect works |
-| 1.5 | Route stubs: all endpoints defined, return 501. Health check functional. OpenAPI generation. | 1.1–1.4 | Every endpoint responds, OpenAPI spec matches expected paths |
+| 1.5 | Route stubs: all endpoints defined, return 501. Health check (no DB). OpenAPI generation. | 1.1–1.4 | Every endpoint responds, OpenAPI spec matches expected paths |
 | 1.6 | Legacy redirects: `/swagger-ui/index.html` → `/docs`, `/openapi` → `/docs` | 1.5 | Redirects return 301/302 to correct paths |
 
 ## Phase 2: Read-only lookups
@@ -31,7 +31,7 @@ One PR per endpoint or small logical group. Each PR includes integration tests a
 
 | PR | Description | Depends on | Acceptance |
 | --- | --- | --- | --- |
-| 2.1 | ORM models (ported from pre-refactor, cleaned up). DTO definitions for response shapes. | 1.5 | Models map to DB tables, DTOs define wire format |
+| 2.1 | DB engine setup (plain SQLAlchemy async, env var config). ORM models (ported from pre-refactor, cleaned up). DTO definitions for response shapes. | 1.5 | DB connects, models map to tables, DTOs define wire format |
 | 2.2 | `GET /linked-data` — list sources | 2.1 | Parity with Java response shape |
 | 2.3 | `GET /linked-data/{source_name}` — list features by source | 2.1 | Parity, pagination works |
 | 2.4 | `GET /linked-data/{source_name}/{identifier}` — single feature | 2.1 | Parity, 404 on missing |
