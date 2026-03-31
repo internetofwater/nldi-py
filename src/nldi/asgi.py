@@ -10,6 +10,7 @@ from .config import get_log_level, get_prefix
 
 
 def create_app() -> Litestar:
+    """Create and configure the Litestar ASGI application."""
     return Litestar(
         route_handlers=[],
         path=get_prefix(),
