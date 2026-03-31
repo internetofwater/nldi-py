@@ -1,6 +1,24 @@
 # SPDX-License-Identifier: CC0-1.0
 # SPDX-FileCopyrightText: 2024-present USGS
-"""ASGI middleware for explicit HTTP headers."""
+"""ASGI middleware for explicit HTTP headers.
+
+Litestar provides built-in CORSConfig and HEAD handling, but we implement these
+explicitly for two reasons:
+
+1. Litestar's CORSConfig only adds headers when it sees an Origin request header.
+   Behind a reverse proxy that strips Origin, CORS headers silently disappear.
+   This middleware adds them unconditionally.
+
+2. Litestar does not automatically handle HEAD for GET routes. Spring Boot (the
+   Java implementation we're replacing) does. Our middleware intercepts HEAD at
+   the ASGI layer and returns 200 with headers immediately — no route handler
+   execution, no wasted DB queries.
+
+By owning these headers explicitly, the app behaves correctly regardless of what
+sits between it and the client (proxy, CDN, load balancer).
+
+See docs/principles.md #3: "Explicit over magical."
+"""
 
 from litestar.types import ASGIApp, Receive, Scope, Send
 
