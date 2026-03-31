@@ -54,8 +54,8 @@ class MainstemLookupModel(NLDIBaseModel):
 
     __tablename__ = "mainstem_lookup"
 
-    nhdpv2_comid: Mapped[int] = mapped_column(Integer, primary_key=True, nullable=True)  # noqa: see note below
-    # NOTE: nullable=True on a PK reflects the actual DB schema. Some rows may have NULL comids.
+    nhdpv2_comid: Mapped[int] = mapped_column(Integer, primary_key=True, nullable=True)
+    # nullable=True on PK reflects the actual DB schema. Some rows may have NULL comids.
     mainstem_id: Mapped[int] = mapped_column(Integer, nullable=True)
     uri: Mapped[str] = mapped_column(Text, nullable=True)  # Mainstem URI (e.g. geoconnex.us/ref/mainstems/...)
 
@@ -70,8 +70,8 @@ class FeatureSourceModel(NLDIBaseModel):
 
     __tablename__ = "feature"
 
-    identifier: Mapped[str] = mapped_column(String(256), primary_key=True, nullable=True)  # noqa: see note below
-    # NOTE: nullable=True on PK — some features may lack identifiers in the source data.
+    identifier: Mapped[str] = mapped_column(String(256), primary_key=True, nullable=True)
+    # nullable=True on PK — some features may lack identifiers in the source data.
     crawler_source_id: Mapped[int] = mapped_column(Integer, ForeignKey("crawler_source.crawler_source_id"))
     name: Mapped[str] = mapped_column(String(256), nullable=True)  # Human-readable feature name
     uri: Mapped[str] = mapped_column(String(256), nullable=True)  # Canonical URI for this feature
