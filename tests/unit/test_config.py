@@ -15,20 +15,14 @@ def test_custom_prefix(monkeypatch):
 
 def test_default_log_level():
     os.environ.pop("NLDI_LOG_LEVEL", None)
-    import logging
-
-    assert get_log_level() == logging.WARNING
+    assert get_log_level() == "WARNING"
 
 
 def test_custom_log_level(monkeypatch):
-    import logging
-
     monkeypatch.setenv("NLDI_LOG_LEVEL", "DEBUG")
-    assert get_log_level() == logging.DEBUG
+    assert get_log_level() == "DEBUG"
 
 
 def test_invalid_log_level_falls_back(monkeypatch):
-    import logging
-
     monkeypatch.setenv("NLDI_LOG_LEVEL", "NONSENSE")
-    assert get_log_level() == logging.WARNING
+    assert get_log_level() == "WARNING"

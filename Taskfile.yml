@@ -34,7 +34,7 @@ tasks:
   typecheck:
     desc: Run type checker
     cmds:
-      - echo "Type checker not yet configured"
+      - uv run ty check src/
 
   check:
     desc: Pre-commit gate — lint, format check, unit tests

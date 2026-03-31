@@ -2,6 +2,10 @@
 # SPDX-FileCopyrightText: 2024-present USGS
 """ASGI application factory."""
 
+import os
+
+from advanced_alchemy.extensions.litestar import SQLAlchemyAsyncConfig, SQLAlchemyPlugin
+from advanced_alchemy.extensions.litestar.plugins.init.config.engine import EngineConfig
 from litestar import Litestar
 from litestar.exceptions import HTTPException
 from litestar.logging import LoggingConfig
@@ -14,16 +18,36 @@ from .controllers.linked_data import LinkedDataController
 from .controllers.root import RootController
 from .errors import problem_details_handler, unhandled_exception_handler
 from .middleware import headers_middleware_factory
-from .negotiate import check_format
+
+
+def _db_plugin() -> list:
+    """Return SQLAlchemy plugin if NLDI_DATABASE_URL is set, else empty list."""
+    url = os.getenv("NLDI_DATABASE_URL")
+    if not url:
+        return []
+    return [
+        SQLAlchemyPlugin(
+            config=SQLAlchemyAsyncConfig(
+                connection_string=url,
+                create_all=False,
+                engine_config=EngineConfig(
+                    pool_pre_ping=True,
+                    pool_size=10,
+                    max_overflow=10,
+                ),
+            )
+        )
+    ]
 
 
 def create_app() -> Litestar:
     """Create and configure the Litestar ASGI application."""
-    app = Litestar(
+    return Litestar(
         route_handlers=[RootController, LinkedDataController],
         path=get_prefix(),
+        plugins=_db_plugin(),
         logging_config=LoggingConfig(root={"level": get_log_level(), "handlers": ["queue_listener"]}),
-        exception_handlers={
+        exception_handlers={  # ty: ignore[invalid-argument-type]
             HTTPException: problem_details_handler,
             Exception: unhandled_exception_handler,
         },
@@ -35,7 +59,6 @@ def create_app() -> Litestar:
             render_plugins=[SwaggerRenderPlugin()],
         ),
     )
-    return app
 
 
 app = create_app()
