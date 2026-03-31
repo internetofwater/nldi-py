@@ -67,3 +67,23 @@ def test_unknown_route_returns_problem_json():
         r = client.get("/api/nldi/nonexistent")
         assert r.status_code == 404
         assert r.headers.get("content-type") == "application/problem+json"
+
+
+def test_head_landing_page():
+    with _client() as client:
+        r = client.head("/api/nldi/")
+        assert r.status_code == 200
+        assert r.content == b""
+
+
+def test_head_linked_data_stub():
+    with _client() as client:
+        r = client.head("/api/nldi/linked-data/wqp")
+        assert r.status_code == 200
+        assert r.content == b""
+
+
+def test_head_nonexistent_returns_404():
+    with _client() as client:
+        r = client.head("/api/nldi/nonexistent")
+        assert r.status_code == 404

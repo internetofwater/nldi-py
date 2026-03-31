@@ -7,20 +7,13 @@ because CORSConfig only adds headers when it sees an Origin request header.
 Behind a reverse proxy that strips Origin, CORS headers silently disappear.
 This middleware adds them unconditionally.
 
-Litestar does not automatically handle HEAD for GET routes (unlike Spring Boot,
-which the Java implementation relies on). Our middleware intercepts HEAD at the
-ASGI layer and returns 200 with headers immediately — no route handler execution,
-no wasted DB queries.
-
-By owning these headers explicitly, the app behaves correctly regardless of what
-sits between it and the client (proxy, CDN, load balancer).
+HEAD is handled at the route level (not here) using @route with
+http_method=["GET", "HEAD"] and early return for HEAD requests.
 
 See docs/principles.md #3: "Explicit over magical."
 """
 
 from litestar.types import ASGIApp, Receive, Scope, Send
-
-from .media import MediaType
 
 CORS_HEADERS = [
     (b"access-control-allow-origin", b"*"),
@@ -40,32 +33,6 @@ def headers_middleware_factory(app: ASGIApp) -> ASGIApp:
     async def middleware(scope: Scope, receive: Receive, send: Send) -> None:
         if scope["type"] != "http":
             await app(scope, receive, send)
-            return
-
-        if scope["method"] == "HEAD":
-            # Rewrite to GET so Litestar routes it normally, but capture
-            # only the status and headers — discard the body.
-            scope["method"] = "GET"
-            captured_status = None
-            captured_headers = []
-
-            async def capture_send(message):
-                nonlocal captured_status, captured_headers
-                if message["type"] == "http.response.start":
-                    captured_status = message["status"]
-                    captured_headers = list(message.get("headers", []))
-                # Discard http.response.body — don't forward it
-
-            await app(scope, receive, capture_send)
-
-            await send(
-                {
-                    "type": "http.response.start",
-                    "status": captured_status,
-                    "headers": captured_headers + STANDARD_HEADERS,
-                }
-            )
-            await send({"type": "http.response.body", "body": b""})
             return
 
         async def send_with_headers(message):

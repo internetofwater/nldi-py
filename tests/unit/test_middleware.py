@@ -32,21 +32,6 @@ def test_options_preflight():
         assert r.headers.get("access-control-allow-origin") == "*"
 
 
-def test_head_fast_return():
-    with TestClient(app=_make_app()) as client:
-        r = client.head("/test")
-        assert r.status_code == 200
-        assert r.headers.get("content-type") is not None
-        assert r.content == b""
-
-
-def test_head_nonexistent_returns_404():
-    with TestClient(app=_make_app()) as client:
-        r = client.head("/nonexistent")
-        assert r.status_code == 404
-        assert r.content == b""
-
-
 def test_cache_control():
     with TestClient(app=_make_app()) as client:
         r = client.get("/test")
