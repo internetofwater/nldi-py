@@ -1,7 +1,6 @@
 """Integration test fixtures — testcontainers with PostGIS."""
 
 import pytest
-from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker, create_async_engine
 from testcontainers.core.container import DockerContainer
 from testcontainers.core.waiting_utils import wait_for_logs
 
@@ -23,6 +22,9 @@ def nldi_db_container():
     dc.with_env("NLDI_READ_ONLY_PASSWORD", "changeMe")
 
     dc.start()
+    # The container logs "ready to accept connections" twice:
+    # once before init scripts, once after. Wait for the second occurrence.
+    wait_for_logs(dc, "PostgreSQL init process complete")
     wait_for_logs(dc, "database system is ready to accept connections")
 
     client = dc.get_docker_client()
@@ -46,17 +48,13 @@ def db_url(nldi_db_container):
     return f"postgresql+asyncpg://{c['user']}:{c['password']}@{c['host']}:{c['port']}/{c['name']}"
 
 
-@pytest.fixture(scope="session")
-def db_engine(db_url):
-    """Create async engine for integration tests."""
-    engine = create_async_engine(db_url, pool_pre_ping=True)
-    yield engine
-    engine.dispose()
-
-
 @pytest.fixture()
-async def db_session(db_engine):
+async def db_session(db_url):
     """Provide an async session for a single test."""
-    session_factory = async_sessionmaker(db_engine, class_=AsyncSession, expire_on_commit=False)
+    from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+
+    engine = create_async_engine(db_url, pool_pre_ping=True)
+    session_factory = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
     async with session_factory() as session:
         yield session
+    await engine.dispose()
