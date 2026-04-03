@@ -55,6 +55,42 @@ async def provide_catchment_repo(db_session: AsyncSession) -> CatchmentRepositor
     return CatchmentRepository(session=db_session)
 
 
+def _build_comid_feature(flowline, base_url: str) -> Feature:
+    """Build a GeoJSON Feature from a FlowlineModel."""
+    comid = flowline.nhdplus_comid
+    return Feature(
+        geometry=parse_geometry(str(flowline.shape)) if flowline.shape else None,
+        properties={
+            "identifier": str(comid),
+            "navigation": f"{base_url}/linked-data/comid/{comid}/navigation",
+            "source": "comid",
+            "sourceName": "NHDPlus comid",
+            "comid": comid,
+        },
+        id=comid,
+    )
+
+
+def _build_source_feature(feat, base_url: str, source_name: str) -> Feature:
+    """Build a GeoJSON Feature from a FeatureSourceModel."""
+    return Feature(
+        geometry=parse_geometry(str(feat.location)) if feat.location else None,
+        properties={
+            "identifier": feat.identifier,
+            "navigation": f"{base_url}/linked-data/{source_name}/{feat.identifier}/navigation",
+            "name": feat.name,
+            "source": feat.source_suffix_proxy,
+            "sourceName": feat.source_name_proxy,
+            "comid": feat.comid if feat.comid else None,
+            "type": feat.feature_type_proxy,
+            "uri": feat.uri,
+            "reachcode": feat.reachcode or None,
+            "mainstem": feat.mainstem if feat.mainstem and feat.mainstem != "NA" else None,
+        },
+        id=feat.identifier,
+    )
+
+
 class LinkedDataController(Controller):
     """NLDI linked data endpoints."""
 
@@ -112,17 +148,7 @@ class LinkedDataController(Controller):
             raise NotFoundException(detail=f"No flowline for COMID {comid} at {coords}")
 
         nav_url = f"{base_url}/linked-data/comid/{comid}/navigation"
-        feature = Feature(
-            geometry=parse_geometry(str(flowline.shape)) if flowline.shape else None,
-            properties={
-                "identifier": str(comid),
-                "navigation": nav_url,
-                "source": "comid",
-                "sourceName": "NHDPlus comid",
-                "comid": comid,
-            },
-            id=comid,
-        )
+        feature = _build_comid_feature(flowline, base_url)
         return Response(content=FeatureCollection(features=[feature]), status_code=200, media_type=MediaType.GEOJSON)
 
     @get("/{source_name:str}", tags=["by_sourceid"])
@@ -141,48 +167,13 @@ class LinkedDataController(Controller):
 
         if source_name.lower() == "comid":
             items = await flowline_repo.list_all(limit=limit, offset=offset)
-            features = []
-            for fl in items:
-                nav_url = f"{base_url}/linked-data/comid/{fl.nhdplus_comid}/navigation"
-                features.append(
-                    Feature(
-                        geometry=parse_geometry(str(fl.shape)) if fl.shape else None,
-                        properties={
-                            "identifier": str(fl.nhdplus_comid),
-                            "navigation": nav_url,
-                            "source": "comid",
-                            "sourceName": "NHDPlus comid",
-                            "comid": fl.nhdplus_comid,
-                        },
-                        id=fl.nhdplus_comid,
-                    )
-                )
+            features = [_build_comid_feature(fl, base_url) for fl in items]
         else:
             source = await source_repo.get_by_suffix(source_name)
             if not source:
                 raise NotFoundException(detail=f"No such source: {source_name}")
             items = await feature_repo.list_by_source(source_name, limit=limit, offset=offset)
-            features = []
-            for feat in items:
-                nav_url = f"{base_url}/linked-data/{source_name}/{feat.identifier}/navigation"
-                features.append(
-                    Feature(
-                        geometry=parse_geometry(str(feat.location)) if feat.location else None,
-                        properties={
-                            "identifier": feat.identifier,
-                            "navigation": nav_url,
-                            "name": feat.name,
-                            "source": feat.source_suffix_proxy,
-                            "sourceName": feat.source_name_proxy,
-                            "comid": feat.comid if feat.comid else None,
-                            "type": feat.feature_type_proxy,
-                            "uri": feat.uri,
-                            "reachcode": feat.reachcode or None,
-                            "mainstem": feat.mainstem if feat.mainstem and feat.mainstem != "NA" else None,
-                        },
-                        id=feat.identifier,
-                    )
-                )
+            features = [_build_source_feature(feat, base_url, source_name) for feat in items]
 
         fc = FeatureCollection(features=features)
         return Response(content=fc, status_code=200, media_type=MediaType.GEOJSON)
@@ -199,7 +190,6 @@ class LinkedDataController(Controller):
     ) -> Response:
         """Get a single feature by source and ID."""
         base_url = get_base_url()
-        nav_url = f"{base_url}/linked-data/{source_name}/{identifier}/navigation"
 
         if source_name.lower() == "comid":
             try:
@@ -209,17 +199,7 @@ class LinkedDataController(Controller):
             flowline = await flowline_repo.get_one_or_none(nhdplus_comid=comid)
             if not flowline:
                 raise NotFoundException(detail=f"COMID {identifier} not found.")
-            feature = Feature(
-                geometry=parse_geometry(str(flowline.shape)) if flowline.shape else None,
-                properties={
-                    "identifier": str(flowline.nhdplus_comid),
-                    "navigation": nav_url,
-                    "source": "comid",
-                    "sourceName": "NHDPlus comid",
-                    "comid": flowline.nhdplus_comid,
-                },
-                id=flowline.nhdplus_comid,
-            )
+            feature = _build_comid_feature(flowline, base_url)
         else:
             source = await source_repo.get_by_suffix(source_name)
             if not source:
@@ -227,25 +207,9 @@ class LinkedDataController(Controller):
             feat = await feature_repo.feature_lookup(source_name, identifier)
             if not feat:
                 raise NotFoundException(detail=f"Feature {identifier} not found in source {source_name}.")
-            feature = Feature(
-                geometry=parse_geometry(str(feat.location)) if feat.location else None,
-                properties={
-                    "identifier": feat.identifier,
-                    "navigation": nav_url,
-                    "name": feat.name,
-                    "source": feat.source_suffix_proxy,
-                    "sourceName": feat.source_name_proxy,
-                    "comid": feat.comid if feat.comid else None,
-                    "type": feat.feature_type_proxy,
-                    "uri": feat.uri,
-                    "reachcode": feat.reachcode or None,
-                    "mainstem": feat.mainstem if feat.mainstem and feat.mainstem != "NA" else None,
-                },
-                id=feat.identifier,
-            )
+            feature = _build_source_feature(feat, base_url, source_name)
 
-        fc = FeatureCollection(features=[feature])
-        return Response(content=fc, status_code=200, media_type=MediaType.GEOJSON)
+        return Response(content=FeatureCollection(features=[feature]), status_code=200, media_type=MediaType.GEOJSON)
 
     @get("/{source_name:str}/{identifier:str}/basin", tags=["by_sourceid"])
     async def get_basin(self, source_name: str, identifier: str) -> None:
