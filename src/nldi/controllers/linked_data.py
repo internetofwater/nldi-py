@@ -124,7 +124,7 @@ class LinkedDataController(Controller):
                     "navigation": nav_url,
                     "source": "comid",
                     "sourceName": "NHDPlus comid",
-                    "comid": str(flowline.nhdplus_comid),
+                    "comid": flowline.nhdplus_comid,
                 },
             )
         else:
@@ -142,7 +142,7 @@ class LinkedDataController(Controller):
                     "name": feat.name,
                     "source": feat.source_suffix_proxy,
                     "sourceName": feat.source_name_proxy,
-                    "comid": str(feat.comid) if feat.comid else "",
+                    "comid": feat.comid if feat.comid else "",
                     "type": feat.feature_type_proxy,
                     "uri": feat.uri,
                     "reachcode": feat.reachcode or "",
