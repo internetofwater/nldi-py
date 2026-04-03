@@ -42,3 +42,12 @@ DB connection errors and timeouts currently fall through to the catch-all 500 ha
 ## Null vs empty string for missing values
 
 Feature properties use `null` (not empty string) for missing values (comid, reachcode, mainstem). This differs from the Java implementation which uses empty strings in some cases. Follow up with project owner to confirm this is acceptable.
+
+## Phase 3: Navigation CTE readability
+
+The four navigation CTEs (DM, DD, UM, UT) share ~70% of their structure. Port as-is first (working system), then refactor for readability:
+
+- Replace `text(":param")` with `sqlalchemy.bindparam()` — type-safe, cleaner
+- Consider a builder function for the common CTE structure (anchor + recursive step + distance filter)
+- Extract "resolve starting comid" logic shared by `walk_flowlines` and `walk_features`
+- Keep the inline SQL comments showing expected compiled output — they're valuable for debugging
