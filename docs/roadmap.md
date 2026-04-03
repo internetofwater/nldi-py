@@ -25,19 +25,19 @@ All routes respond. Nothing touches the DB.
 | ~~1.5~~ | Route stubs (501), health check, HEAD via `@head` multi-path, wiring | ✅ #162 |
 | ~~1.6~~ | Legacy redirects: `/swagger-ui/index.html` → `/docs`, `/openapi` → `/docs` | ✅ #163 |
 
-## Phase 2: Read-only lookups
+## Phase 2: Read-only lookups ✅
 
 One PR per endpoint or small logical group. Each PR includes integration tests against testcontainers.
 
-| PR | Description | Depends on | Acceptance |
-| --- | --- | --- | --- |
-| ~~2.1~~ | DB engine setup, ORM models, repos, type checking | 1.5 | ✅ #164 |
-| ~~2.2~~ | `GET /linked-data` — list sources, integration test infra, fake repos, DTOs | 2.1 | ✅ #165 |
-| ~~2.3~~ | `GET /linked-data/{source_name}/{identifier}` — single feature (GeoJSON pattern, geometry TODO) | 2.2 | ✅ #166 |
-| ~~2.4~~ | `GET /linked-data/{source_name}` — list features by source + pagination | 2.3 | ✅ #167 |
-| 2.5 | `GET /linked-data/comid/position` — flowline by spatial search | 2.3 | Parity, spatial query correct |
-| 2.6 | `GET /linked-data/{source}/{id}/navigation` — nav modes | 2.3 | Returns correct mode URLs |
-| 2.7 | `GET /linked-data/{source}/{id}/navigation/{nav_mode}` — nav info with mode validation | 2.3 | Parity, invalid mode returns 400 |
+| PR | Description | Status |
+| --- | --- | --- |
+| ~~2.1~~ | DB engine setup, ORM models, repos, type checking | ✅ #164 |
+| ~~2.2~~ | `GET /linked-data` — list sources, integration test infra, fake repos, DTOs | ✅ #165 |
+| ~~2.3~~ | `GET /linked-data/{source_name}/{identifier}` — single feature (GeoJSON pattern) | ✅ #166 |
+| ~~2.4~~ | `GET /linked-data/{source_name}` — list features by source + pagination | ✅ #167 |
+| ~~geo~~ | Geometry serialization via GeoJSONGeometry custom column type | ✅ #168 |
+| ~~2.5~~ | `GET /linked-data/comid/position` — flowline by spatial search | ✅ #169 |
+| ~~2.6+2.7~~ | Navigation modes + navigation info with mode validation | ✅ #170 |
 
 ## Phase 3: Navigation
 
