@@ -45,12 +45,32 @@ class FeatureRepository(SQLAlchemyAsyncRepository[FeatureSourceModel]):
             ),
         )
 
+    async def list_by_source(self, source_suffix: str, limit: int = 0, offset: int = 0) -> list[FeatureSourceModel]:
+        """List features for a source, with optional pagination."""
+        stmt = (
+            sqlalchemy.select(FeatureSourceModel)
+            .join(CrawlerSourceModel, FeatureSourceModel.crawler_source_id == CrawlerSourceModel.crawler_source_id)
+            .where(sqlalchemy.func.lower(CrawlerSourceModel.source_suffix) == source_suffix.lower())
+            .order_by(FeatureSourceModel.identifier)
+            .offset(offset)
+        )
+        if limit > 0:
+            stmt = stmt.limit(limit)
+        return list(await self.list(statement=stmt))
+
 
 class FlowlineRepository(SQLAlchemyAsyncRepository[FlowlineModel]):
     """Repository for flowline lookups."""
 
     model_type = FlowlineModel
     id_attribute = "nhdplus_comid"
+
+    async def list_all(self, limit: int = 0, offset: int = 0) -> list[FlowlineModel]:
+        """List flowlines with optional pagination."""
+        stmt = sqlalchemy.select(FlowlineModel).order_by(FlowlineModel.nhdplus_comid).offset(offset)
+        if limit > 0:
+            stmt = stmt.limit(limit)
+        return list(await self.list(statement=stmt))
 
 
 class CatchmentRepository(SQLAlchemyAsyncRepository[CatchmentModel]):

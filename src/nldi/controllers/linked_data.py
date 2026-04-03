@@ -6,7 +6,7 @@ from typing import Annotated
 
 from litestar import Controller, Response, get, head
 from litestar.exceptions import ClientException, HTTPException, NotFoundException
-from litestar.params import Dependency
+from litestar.params import Dependency, Parameter
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..config import get_base_url
@@ -91,9 +91,66 @@ class LinkedDataController(Controller):
         _not_implemented()
 
     @get("/{source_name:str}", tags=["by_sourceid"])
-    async def list_features_by_source(self, source_name: str, f: str = "") -> None:
+    async def list_features_by_source(
+        self,
+        source_name: str,
+        source_repo: Annotated[CrawlerSourceRepository, Dependency(skip_validation=True)],
+        feature_repo: Annotated[FeatureRepository, Dependency(skip_validation=True)],
+        flowline_repo: Annotated[FlowlineRepository, Dependency(skip_validation=True)],
+        f: str = "",
+        limit: Annotated[int, Parameter(ge=0, description="Max features to return. 0 = no limit.")] = 0,
+        offset: Annotated[int, Parameter(ge=0, description="Number of features to skip.")] = 0,
+    ) -> Response:
         """List all features for a source."""
-        _not_implemented()
+        base_url = get_base_url()
+
+        if source_name.lower() == "comid":
+            items = await flowline_repo.list_all(limit=limit, offset=offset)
+            features = []
+            for fl in items:
+                nav_url = f"{base_url}/linked-data/comid/{fl.nhdplus_comid}/navigation"
+                features.append(
+                    Feature(
+                        geometry=None,
+                        properties={
+                            "identifier": str(fl.nhdplus_comid),
+                            "navigation": nav_url,
+                            "source": "comid",
+                            "sourceName": "NHDPlus comid",
+                            "comid": fl.nhdplus_comid,
+                        },
+                        id=fl.nhdplus_comid,
+                    )
+                )
+        else:
+            source = await source_repo.get_by_suffix(source_name)
+            if not source:
+                raise NotFoundException(detail=f"No such source: {source_name}")
+            items = await feature_repo.list_by_source(source_name, limit=limit, offset=offset)
+            features = []
+            for feat in items:
+                nav_url = f"{base_url}/linked-data/{source_name}/{feat.identifier}/navigation"
+                features.append(
+                    Feature(
+                        geometry=None,
+                        properties={
+                            "identifier": feat.identifier,
+                            "navigation": nav_url,
+                            "name": feat.name,
+                            "source": feat.source_suffix_proxy,
+                            "sourceName": feat.source_name_proxy,
+                            "comid": feat.comid if feat.comid else None,
+                            "type": feat.feature_type_proxy,
+                            "uri": feat.uri,
+                            "reachcode": feat.reachcode or None,
+                            "mainstem": feat.mainstem if feat.mainstem and feat.mainstem != "NA" else None,
+                        },
+                        id=feat.identifier,
+                    )
+                )
+
+        fc = FeatureCollection(features=features)
+        return Response(content=fc, status_code=200, media_type=MediaType.GEOJSON)
 
     @get("/{source_name:str}/{identifier:str}", tags=["by_sourceid"])
     async def get_feature_by_identifier(

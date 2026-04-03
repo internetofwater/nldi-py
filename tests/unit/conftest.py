@@ -81,6 +81,14 @@ class FakeFeatureRepository:
                 return f
         return None
 
+    async def list_by_source(self, source_suffix: str, limit: int = 0, offset: int = 0) -> list:
+        """List features for a source with pagination."""
+        results = [f for f in self._features if f.source_suffix_proxy.lower() == source_suffix.lower()]
+        results = results[offset:]
+        if limit > 0:
+            results = results[:limit]
+        return results
+
 
 class FakeFlowlineRepository:
     """Fake FlowlineRepository for unit tests."""
@@ -104,6 +112,13 @@ class FakeFlowlineRepository:
             if f.nhdplus_comid == int(comid):
                 return f
         return None
+
+    async def list_all(self, limit: int = 0, offset: int = 0) -> list:
+        """List flowlines with pagination."""
+        results = self._flowlines[offset:]
+        if limit > 0:
+            results = results[:limit]
+        return results
 
 
 @pytest.fixture()
