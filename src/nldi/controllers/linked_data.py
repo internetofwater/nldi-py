@@ -10,7 +10,7 @@ from litestar.params import Dependency, Parameter
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..config import get_base_url
-from ..db.repos import CrawlerSourceRepository, FeatureRepository, FlowlineRepository
+from ..db.repos import CatchmentRepository, CrawlerSourceRepository, FeatureRepository, FlowlineRepository
 from ..dto import DataSource
 from ..geojson import Feature, FeatureCollection, parse_geometry
 from ..media import MediaType
@@ -50,6 +50,11 @@ async def provide_flowline_repo(db_session: AsyncSession) -> FlowlineRepository:
     return FlowlineRepository(session=db_session)
 
 
+async def provide_catchment_repo(db_session: AsyncSession) -> CatchmentRepository:
+    """Provide CatchmentRepository via DI."""
+    return CatchmentRepository(session=db_session)
+
+
 class LinkedDataController(Controller):
     """NLDI linked data endpoints."""
 
@@ -86,9 +91,39 @@ class LinkedDataController(Controller):
         _not_implemented()
 
     @get("/comid/position")
-    async def flowline_by_position(self, coords: str = "") -> None:
+    async def flowline_by_position(
+        self,
+        catchment_repo: Annotated[CatchmentRepository, Dependency(skip_validation=True)],
+        flowline_repo: Annotated[FlowlineRepository, Dependency(skip_validation=True)],
+        coords: str = "",
+    ) -> Response:
         """Find flowline by spatial point lookup."""
-        _not_implemented()
+        if not coords:
+            raise ClientException(detail="coords parameter is required.")
+        base_url = get_base_url()
+
+        catchment = await catchment_repo.get_by_point(coords)
+        if not catchment:
+            raise NotFoundException(detail=f"No catchment found at coords {coords}")
+
+        comid = catchment.featureid
+        flowline = await flowline_repo.get_one_or_none(nhdplus_comid=comid)
+        if not flowline:
+            raise NotFoundException(detail=f"No flowline for COMID {comid} at {coords}")
+
+        nav_url = f"{base_url}/linked-data/comid/{comid}/navigation"
+        feature = Feature(
+            geometry=parse_geometry(str(flowline.shape)) if flowline.shape else None,
+            properties={
+                "identifier": str(comid),
+                "navigation": nav_url,
+                "source": "comid",
+                "sourceName": "NHDPlus comid",
+                "comid": comid,
+            },
+            id=comid,
+        )
+        return Response(content=FeatureCollection(features=[feature]), status_code=200, media_type=MediaType.GEOJSON)
 
     @get("/{source_name:str}", tags=["by_sourceid"])
     async def list_features_by_source(
