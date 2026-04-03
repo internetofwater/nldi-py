@@ -102,6 +102,8 @@ class LinkedDataController(Controller):
         offset: int = 0,
     ) -> Response:
         """List all features for a source."""
+        if limit < 0 or offset < 0:
+            raise ClientException(detail="limit and offset must be non-negative integers.")
         base_url = get_base_url()
 
         if source_name.lower() == "comid":

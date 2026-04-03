@@ -74,3 +74,13 @@ class TestListFeatures:
             r = client.get("/api/nldi/linked-data/wqp?limit=2")
             body = r.json()
             assert len(body["features"]) == 2
+
+    def test_negative_limit_returns_400(self, fake_source_repo, make_source, fake_feature_repo, fake_flowline_repo):
+        app = _app_with_fakes(
+            fake_source_repo([make_source("wqp", "WQP")]),
+            fake_feature_repo([]),
+            fake_flowline_repo([]),
+        )
+        with TestClient(app=app) as client:
+            r = client.get("/api/nldi/linked-data/wqp?limit=-1")
+            assert r.status_code == 400
