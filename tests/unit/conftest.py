@@ -67,9 +67,8 @@ class FakeFeatureRepository:
     def __init__(self, features: list | None = None):
         self._features = features or []
 
-    async def get_one_or_none(self, *args, **kwargs) -> FakeFeatureModel | None:
-        """Find a feature by identifier and source."""
-        identifier = kwargs.get("identifier", "")
+    async def feature_lookup(self, source_suffix: str, identifier: str) -> FakeFeatureModel | None:
+        """Find a feature by source and identifier."""
         for f in self._features:
             if f.identifier == identifier:
                 return f

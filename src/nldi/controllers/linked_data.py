@@ -131,7 +131,7 @@ class LinkedDataController(Controller):
             source = await source_repo.get_one_or_none(source_suffix=source_name)
             if not source:
                 raise NotFoundException(detail=f"No such source: {source_name}")
-            feat = await feature_repo.get_one_or_none(identifier=identifier, source_suffix=source_name)
+            feat = await feature_repo.feature_lookup(source_name, identifier)
             if not feat:
                 raise NotFoundException(detail=f"Feature {identifier} not found in source {source_name}.")
             feature = Feature(
