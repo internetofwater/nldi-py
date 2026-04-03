@@ -69,12 +69,15 @@ Endpoints that call pygeoapi. Proper timeout handling.
 
 Decisions to make during implementation, not before:
 
-- **Repo strategy** — working on upstream repo. PRs are the permanent record in the right place.
-- **msgspec** — keep for struct definitions + Litestar integration, or replace with DTOs entirely?
-- **shapely** — can we eliminate direct usage (WKT parsing → regex, `to_shape()` → `ST_AsGeoJSON`)? GeoAlchemy2 transitive dep remains.
 - **JSON-LD** — Jinja template or Python string builder? Decide in Phase 5 based on complexity.
-- **`ST_AsGeoJSON` vs WKB** — benchmark DB-side GeoJSON conversion vs Python-side shapely conversion. Decide in Phase 2.
-- **Content-Type** — `application/json` vs `application/vnd.geo+json` for GeoJSON endpoints. Java uses the latter. Match it?
+
+## Decided
+
+- ~~**Repo strategy**~~ — working on upstream repo. PRs are the permanent record. ✅
+- ~~**msgspec**~~ — keeping for struct definitions (GeoJSON DTOs, DataSource). Works well with Litestar serialization. ✅
+- ~~**shapely**~~ — eliminated from geometry path via `GeoJSONGeometry` custom column type (#168). Still a transitive dep of GeoAlchemy2. Direct usage only remains for WKT parsing in pygeoapi service (Phase 4). ✅
+- ~~**`ST_AsGeoJSON` vs WKB**~~ — `ST_AsGeoJSON` via custom column type. DB does the conversion. No shapely needed. ✅ #168
+- ~~**Content-Type**~~ — `application/geo+json` (RFC 7946 standard). Java uses deprecated `application/vnd.geo+json`. ✅
 
 ## PR size guideline
 
