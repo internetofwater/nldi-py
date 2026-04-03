@@ -38,3 +38,7 @@ a pre-request concern that applies to all linked-data endpoints.
 ## Database error handling
 
 DB connection errors and timeouts currently fall through to the catch-all 500 handler. A dedicated exception handler for `sqlalchemy.exc.OperationalError` should be added to return 503 Service Unavailable with a problem+json response. Register alongside the existing handlers in `create_app`. Cross-cutting — covers all DB-backed endpoints in one place.
+
+## Null vs empty string for missing values
+
+Feature properties use `null` (not empty string) for missing values (comid, reachcode, mainstem). This differs from the Java implementation which uses empty strings in some cases. Follow up with project owner to confirm this is acceptable.
