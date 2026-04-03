@@ -32,9 +32,9 @@ class FakeFeatureModel:
 class FakeFlowlineModel:
     """Minimal stand-in for FlowlineModel."""
 
-    def __init__(self, nhdplus_comid: int, shape_geojson: str = '{"type":"LineString","coordinates":[[-89,43],[-89.1,43.1]]}'):
+    def __init__(self, nhdplus_comid: int, shape: str | None = '{"type":"LineString","coordinates":[[-89,43],[-89.1,43.1]]}'):
         self.nhdplus_comid = nhdplus_comid
-        self.shape_geojson = shape_geojson
+        self.shape = shape
         self.permanent_identifier = str(nhdplus_comid)
         self.reachcode = "00000000000000"
         self.fmeasure = 0.0
@@ -121,6 +121,25 @@ class FakeFlowlineRepository:
         return results
 
 
+class FakeCatchmentModel:
+    """Minimal stand-in for CatchmentModel."""
+
+    def __init__(self, featureid: int):
+        self.featureid = featureid
+        self.the_geom = None
+
+
+class FakeCatchmentRepository:
+    """Fake CatchmentRepository for unit tests."""
+
+    def __init__(self, catchments: list | None = None):
+        self._catchments = catchments or []
+
+    async def get_by_point(self, wkt_point: str) -> FakeCatchmentModel | None:
+        """Return first catchment if any exist."""
+        return self._catchments[0] if self._catchments else None
+
+
 @pytest.fixture()
 def fake_source_repo():
     """Provide a FakeCrawlerSourceRepository factory."""
@@ -155,3 +174,15 @@ def fake_flowline_repo():
 def make_flowline():
     """Provide a FakeFlowlineModel factory."""
     return FakeFlowlineModel
+
+
+@pytest.fixture()
+def fake_catchment_repo():
+    """Provide a FakeCatchmentRepository factory."""
+    return FakeCatchmentRepository
+
+
+@pytest.fixture()
+def make_catchment():
+    """Provide a FakeCatchmentModel factory."""
+    return FakeCatchmentModel

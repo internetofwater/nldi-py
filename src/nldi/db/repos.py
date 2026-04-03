@@ -6,6 +6,7 @@ Thin wrappers around advanced-alchemy's async repository.
 These are the boundary between the data model and the rest of the application.
 """
 
+import geoalchemy2
 import sqlalchemy
 from advanced_alchemy.repository import SQLAlchemyAsyncRepository
 
@@ -78,3 +79,10 @@ class CatchmentRepository(SQLAlchemyAsyncRepository[CatchmentModel]):
 
     model_type = CatchmentModel
     id_attribute = "featureid"
+
+    async def get_by_point(self, wkt_point: str) -> CatchmentModel | None:
+        """Find a catchment by spatial intersection with a WKT point."""
+        point = geoalchemy2.WKTElement(wkt_point, srid=4269)
+        return await self.get_one_or_none(
+            sqlalchemy.func.ST_Intersects(CatchmentModel.the_geom, point),
+        )

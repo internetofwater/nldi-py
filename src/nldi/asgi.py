@@ -15,6 +15,7 @@ from . import __version__
 from .config import get_database_url, get_log_level, get_prefix
 from .controllers.linked_data import (
     LinkedDataController,
+    provide_catchment_repo,
     provide_feature_repo,
     provide_flowline_repo,
     provide_source_repo,
@@ -51,6 +52,7 @@ def create_app(dependencies: dict | None = None) -> Litestar:
         "source_repo": Provide(provide_source_repo),
         "feature_repo": Provide(provide_feature_repo),
         "flowline_repo": Provide(provide_flowline_repo),
+        "catchment_repo": Provide(provide_catchment_repo),
     }
     if dependencies:
         deps.update(dependencies)
