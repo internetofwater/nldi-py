@@ -111,7 +111,7 @@ class LinkedDataController(Controller):
                 nav_url = f"{base_url}/linked-data/comid/{fl.nhdplus_comid}/navigation"
                 features.append(
                     Feature(
-                        geometry=None,
+                        geometry=parse_geometry(str(fl.shape)) if fl.shape else None,
                         properties={
                             "identifier": str(fl.nhdplus_comid),
                             "navigation": nav_url,
@@ -132,7 +132,7 @@ class LinkedDataController(Controller):
                 nav_url = f"{base_url}/linked-data/{source_name}/{feat.identifier}/navigation"
                 features.append(
                     Feature(
-                        geometry=None,
+                        geometry=parse_geometry(str(feat.location)) if feat.location else None,
                         properties={
                             "identifier": feat.identifier,
                             "navigation": nav_url,
@@ -175,7 +175,7 @@ class LinkedDataController(Controller):
             if not flowline:
                 raise NotFoundException(detail=f"COMID {identifier} not found.")
             feature = Feature(
-                geometry=parse_geometry(str(flowline.shape_geojson)) if hasattr(flowline, "shape_geojson") else None,
+                geometry=parse_geometry(str(flowline.shape)) if flowline.shape else None,
                 properties={
                     "identifier": str(flowline.nhdplus_comid),
                     "navigation": nav_url,
@@ -193,7 +193,7 @@ class LinkedDataController(Controller):
             if not feat:
                 raise NotFoundException(detail=f"Feature {identifier} not found in source {source_name}.")
             feature = Feature(
-                geometry=None,  # TODO: geometry serialization from DB in integration
+                geometry=parse_geometry(str(feat.location)) if feat.location else None,
                 properties={
                     "identifier": feat.identifier,
                     "navigation": nav_url,

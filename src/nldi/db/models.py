@@ -9,9 +9,22 @@ Serialization to GeoJSON or other formats belongs in the DTO layer.
 from typing import Any
 
 import geoalchemy2
-from sqlalchemy import Float, ForeignKey, Integer, MetaData, SmallInteger, String, Text
+from sqlalchemy import Float, ForeignKey, Integer, MetaData, SmallInteger, String, Text, func
 from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+
+
+class GeoJSONGeometry(geoalchemy2.Geometry):
+    """Geometry column type that returns GeoJSON strings via ST_AsGeoJSON.
+
+    When SQLAlchemy selects this column, it automatically wraps it in
+    ST_AsGeoJSON(), so the value comes back as a JSON string instead of WKB.
+    """
+
+    def column_expression(self, col):
+        """Override to return ST_AsGeoJSON instead of raw geometry."""
+        return func.ST_AsGeoJSON(col, 9, 0)
+
 
 # ---------------------------------------------------------------------------
 # nldi_data schema
@@ -75,7 +88,7 @@ class FeatureSourceModel(NLDIBaseModel):
     crawler_source_id: Mapped[int] = mapped_column(Integer, ForeignKey("crawler_source.crawler_source_id"))
     name: Mapped[str] = mapped_column(String(256), nullable=True)  # Human-readable feature name
     uri: Mapped[str] = mapped_column(String(256), nullable=True)  # Canonical URI for this feature
-    location: Mapped[Any] = mapped_column(geoalchemy2.Geometry, nullable=True)  # Point geometry (NAD83)
+    location: Mapped[Any] = mapped_column(GeoJSONGeometry, nullable=True)  # Point geometry (NAD83)
     comid: Mapped[int] = mapped_column(Integer, ForeignKey("mainstem_lookup.nhdpv2_comid"), nullable=True)
     reachcode: Mapped[str] = mapped_column(String(14), nullable=True)  # NHD reach code
     measure: Mapped[float] = mapped_column(Float(38), nullable=True)  # Position along reach (0-100)
@@ -121,7 +134,7 @@ class FlowlineModel(NHDBaseModel):
     nhdplus_comid: Mapped[int] = mapped_column(Integer, primary_key=True)  # Unique NHD segment ID
     objectid: Mapped[int] = mapped_column(Integer)  # Internal DB row ID
     permanent_identifier: Mapped[str] = mapped_column(String)  # NHD permanent identifier
-    shape: Mapped[Any] = mapped_column(geoalchemy2.Geometry, nullable=True)  # LineString geometry
+    shape: Mapped[Any] = mapped_column(GeoJSONGeometry, nullable=True)  # LineString geometry
     fmeasure: Mapped[float] = mapped_column(Float)  # From-measure (downstream end, 0-100)
     tmeasure: Mapped[float] = mapped_column(Float)  # To-measure (upstream end, 0-100)
     reachcode: Mapped[str] = mapped_column(String)  # NHD reach code
@@ -167,5 +180,5 @@ class CatchmentModel(NHDBaseModel):
     __tablename__ = "catchmentsp"
 
     ogc_fid: Mapped[int] = mapped_column(Integer, primary_key=True, nullable=True)  # Internal row ID
-    the_geom: Mapped[Any] = mapped_column(geoalchemy2.Geometry, nullable=True)  # Polygon geometry
+    the_geom: Mapped[Any] = mapped_column(GeoJSONGeometry, nullable=True)  # Polygon geometry
     featureid: Mapped[int] = mapped_column(Integer, nullable=True)  # Corresponding NHDPlus COMID

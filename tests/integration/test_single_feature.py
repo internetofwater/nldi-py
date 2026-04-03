@@ -26,3 +26,31 @@ async def test_flowline_lookup_by_comid(db_session):
     row = result.fetchone()
     assert row is not None
     assert row[0] == 13293396
+
+
+@pytest.mark.integration
+async def test_feature_has_geojson_geometry(db_session):
+    """Verify GeoJSONGeometry column returns a parseable GeoJSON string."""
+    result = await db_session.execute(
+        text("SELECT ST_AsGeoJSON(location, 9, 0) FROM nldi_data.feature WHERE identifier = 'USGS-05427930' LIMIT 1")
+    )
+    row = result.fetchone()
+    assert row is not None
+    import json
+    geom = json.loads(row[0])
+    assert geom["type"] == "Point"
+    assert len(geom["coordinates"]) == 2
+
+
+@pytest.mark.integration
+async def test_flowline_has_geojson_geometry(db_session):
+    """Verify GeoJSONGeometry column returns a parseable GeoJSON string for flowlines."""
+    result = await db_session.execute(
+        text("SELECT ST_AsGeoJSON(shape, 9, 0) FROM nhdplus.nhdflowline_np21 WHERE nhdplus_comid = 13293396 LIMIT 1")
+    )
+    row = result.fetchone()
+    assert row is not None
+    import json
+    geom = json.loads(row[0])
+    assert geom["type"] == "LineString"
+    assert len(geom["coordinates"]) > 0
