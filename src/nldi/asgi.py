@@ -13,7 +13,12 @@ from litestar.openapi.plugins import SwaggerRenderPlugin
 
 from . import __version__
 from .config import get_database_url, get_log_level, get_prefix
-from .controllers.linked_data import LinkedDataController, provide_source_repo
+from .controllers.linked_data import (
+    LinkedDataController,
+    provide_feature_repo,
+    provide_flowline_repo,
+    provide_source_repo,
+)
 from .controllers.root import RootController
 from .errors import problem_details_handler, unhandled_exception_handler
 from .middleware import headers_middleware_factory
@@ -42,7 +47,11 @@ def _db_plugin() -> list:
 
 def create_app(dependencies: dict | None = None) -> Litestar:
     """Create and configure the Litestar ASGI application."""
-    deps = {"source_repo": Provide(provide_source_repo)}
+    deps = {
+        "source_repo": Provide(provide_source_repo),
+        "feature_repo": Provide(provide_feature_repo),
+        "flowline_repo": Provide(provide_flowline_repo),
+    }
     if dependencies:
         deps.update(dependencies)
     return Litestar(

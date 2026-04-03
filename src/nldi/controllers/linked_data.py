@@ -4,14 +4,16 @@
 
 from typing import Annotated
 
-from litestar import Controller, get, head
-from litestar.exceptions import HTTPException
+from litestar import Controller, Response, get, head
+from litestar.exceptions import ClientException, HTTPException, NotFoundException
 from litestar.params import Dependency
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..config import get_base_url
-from ..db.repos import CrawlerSourceRepository
+from ..db.repos import CrawlerSourceRepository, FeatureRepository, FlowlineRepository
 from ..dto import DataSource
+from ..geojson import Feature, FeatureCollection, parse_geometry
+from ..media import MediaType
 from ..negotiate import check_format
 
 _ALL_PATHS = [
@@ -36,6 +38,16 @@ def _not_implemented() -> None:
 async def provide_source_repo(db_session: AsyncSession) -> CrawlerSourceRepository:
     """Provide CrawlerSourceRepository via DI."""
     return CrawlerSourceRepository(session=db_session)
+
+
+async def provide_feature_repo(db_session: AsyncSession) -> FeatureRepository:
+    """Provide FeatureRepository via DI."""
+    return FeatureRepository(session=db_session)
+
+
+async def provide_flowline_repo(db_session: AsyncSession) -> FlowlineRepository:
+    """Provide FlowlineRepository via DI."""
+    return FlowlineRepository(session=db_session)
 
 
 class LinkedDataController(Controller):
@@ -84,9 +96,62 @@ class LinkedDataController(Controller):
         _not_implemented()
 
     @get("/{source_name:str}/{identifier:str}", tags=["by_sourceid"])
-    async def get_feature_by_identifier(self, source_name: str, identifier: str, f: str = "") -> None:
+    async def get_feature_by_identifier(
+        self,
+        source_name: str,
+        identifier: str,
+        source_repo: Annotated[CrawlerSourceRepository, Dependency(skip_validation=True)],
+        feature_repo: Annotated[FeatureRepository, Dependency(skip_validation=True)],
+        flowline_repo: Annotated[FlowlineRepository, Dependency(skip_validation=True)],
+        f: str = "",
+    ) -> Response:
         """Get a single feature by source and ID."""
-        _not_implemented()
+        base_url = get_base_url()
+        nav_url = f"{base_url}/linked-data/{source_name}/{identifier}/navigation"
+
+        if source_name.lower() == "comid":
+            try:
+                comid = int(identifier)
+            except ValueError as e:
+                raise ClientException(detail=f"Not a valid comid: {identifier}") from e
+            flowline = await flowline_repo.get(comid)
+            if not flowline:
+                raise NotFoundException(detail=f"COMID {identifier} not found.")
+            feature = Feature(
+                geometry=parse_geometry(str(flowline.shape_geojson)) if hasattr(flowline, "shape_geojson") else None,
+                properties={
+                    "identifier": str(flowline.nhdplus_comid),
+                    "navigation": nav_url,
+                    "source": "comid",
+                    "sourceName": "NHDPlus comid",
+                    "comid": str(flowline.nhdplus_comid),
+                },
+            )
+        else:
+            source = await source_repo.get_one_or_none(source_suffix=source_name)
+            if not source:
+                raise NotFoundException(detail=f"No such source: {source_name}")
+            feat = await feature_repo.get_one_or_none(identifier=identifier, source_suffix=source_name)
+            if not feat:
+                raise NotFoundException(detail=f"Feature {identifier} not found in source {source_name}.")
+            feature = Feature(
+                geometry=None,  # TODO: geometry serialization from DB in integration
+                properties={
+                    "identifier": feat.identifier,
+                    "navigation": nav_url,
+                    "name": feat.name,
+                    "source": feat.source_suffix_proxy,
+                    "sourceName": feat.source_name_proxy,
+                    "comid": str(feat.comid) if feat.comid else "",
+                    "type": feat.feature_type_proxy,
+                    "uri": feat.uri,
+                    "reachcode": feat.reachcode or "",
+                    "mainstem": feat.mainstem if feat.mainstem and feat.mainstem != "NA" else None,
+                },
+            )
+
+        fc = FeatureCollection(features=[feature])
+        return Response(content=fc, status_code=200, media_type=MediaType.GEOJSON)
 
     @get("/{source_name:str}/{identifier:str}/basin", tags=["by_sourceid"])
     async def get_basin(self, source_name: str, identifier: str) -> None:
