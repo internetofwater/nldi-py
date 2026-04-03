@@ -6,6 +6,7 @@ from litestar.di import Provide
 from litestar.testing import TestClient
 
 from nldi.asgi import create_app
+from nldi.dto import DataSource
 
 
 def _app_with_fake_sources(sources, fake_source_repo_cls):
@@ -56,3 +57,10 @@ def test_list_sources_empty_db(fake_source_repo):
         body = r.json()
         assert len(body) == 1
         assert body[0]["source"] == "comid"
+
+
+def test_datasource_dto():
+    ds = DataSource(source="wqp", sourceName="Water Quality Portal", features="https://example.com/linked-data/wqp")
+    assert ds.source == "wqp"
+    assert ds.sourceName == "Water Quality Portal"
+    assert ds.features == "https://example.com/linked-data/wqp"
