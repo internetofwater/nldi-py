@@ -126,6 +126,7 @@ class LinkedDataController(Controller):
                     "sourceName": "NHDPlus comid",
                     "comid": flowline.nhdplus_comid,
                 },
+                id=flowline.nhdplus_comid,
             )
         else:
             source = await source_repo.get_by_suffix(source_name)
@@ -148,6 +149,7 @@ class LinkedDataController(Controller):
                     "reachcode": feat.reachcode or "",
                     "mainstem": feat.mainstem if feat.mainstem and feat.mainstem != "NA" else None,
                 },
+                id=feat.identifier,
             )
 
         fc = FeatureCollection(features=[feature])
