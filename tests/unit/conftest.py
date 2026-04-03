@@ -60,6 +60,13 @@ class FakeCrawlerSourceRepository:
                 return s
         return None
 
+    async def get_by_suffix(self, suffix: str) -> FakeSource | None:
+        """Find a source by suffix, case-insensitive."""
+        for s in self._sources:
+            if s.source_suffix.lower() == suffix.lower():
+                return s
+        return None
+
 
 class FakeFeatureRepository:
     """Fake FeatureRepository for unit tests."""

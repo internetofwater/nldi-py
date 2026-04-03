@@ -18,6 +18,12 @@ class CrawlerSourceRepository(SQLAlchemyAsyncRepository[CrawlerSourceModel]):
     model_type = CrawlerSourceModel
     id_attribute = "crawler_source_id"
 
+    async def get_by_suffix(self, suffix: str) -> CrawlerSourceModel | None:
+        """Look up a source by suffix, case-insensitive."""
+        return await self.get_one_or_none(
+            sqlalchemy.func.lower(CrawlerSourceModel.source_suffix) == suffix.lower(),
+        )
+
 
 class FeatureRepository(SQLAlchemyAsyncRepository[FeatureSourceModel]):
     """Repository for feature lookups."""
