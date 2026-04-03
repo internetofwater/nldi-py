@@ -6,7 +6,7 @@ from typing import Annotated
 
 from litestar import Controller, Response, get, head
 from litestar.exceptions import ClientException, HTTPException, NotFoundException
-from litestar.params import Dependency
+from litestar.params import Dependency, Parameter
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..config import get_base_url
@@ -98,12 +98,10 @@ class LinkedDataController(Controller):
         feature_repo: Annotated[FeatureRepository, Dependency(skip_validation=True)],
         flowline_repo: Annotated[FlowlineRepository, Dependency(skip_validation=True)],
         f: str = "",
-        limit: int = 0,
-        offset: int = 0,
+        limit: Annotated[int, Parameter(ge=0, description="Max features to return. 0 = no limit.")] = 0,
+        offset: Annotated[int, Parameter(ge=0, description="Number of features to skip.")] = 0,
     ) -> Response:
         """List all features for a source."""
-        if limit < 0 or offset < 0:
-            raise ClientException(detail="limit and offset must be non-negative integers.")
         base_url = get_base_url()
 
         if source_name.lower() == "comid":
