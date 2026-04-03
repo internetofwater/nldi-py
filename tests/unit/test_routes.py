@@ -30,8 +30,6 @@ import pytest
 STUB_PATHS = [
     "/api/nldi/linked-data/hydrolocation?coords=POINT(-89 43)",
     "/api/nldi/linked-data/wqp/USGS-01/basin",
-    "/api/nldi/linked-data/wqp/USGS-01/navigation",
-    "/api/nldi/linked-data/wqp/USGS-01/navigation/UM",
     "/api/nldi/linked-data/wqp/USGS-01/navigation/UM/flowlines",
     "/api/nldi/linked-data/wqp/USGS-01/navigation/UM/nwissite",
 ]

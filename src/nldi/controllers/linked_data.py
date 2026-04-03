@@ -253,14 +253,57 @@ class LinkedDataController(Controller):
         _not_implemented()
 
     @get("/{source_name:str}/{identifier:str}/navigation", tags=["by_sourceid"])
-    async def get_navigation_modes(self, source_name: str, identifier: str) -> None:
+    async def get_navigation_modes(
+        self,
+        source_name: str,
+        identifier: str,
+        source_repo: Annotated[CrawlerSourceRepository, Dependency(skip_validation=True)],
+    ) -> dict:
         """Return navigation mode URLs."""
-        _not_implemented()
+        base_url = get_base_url()
+        if source_name.lower() != "comid":
+            source = await source_repo.get_by_suffix(source_name)
+            if not source:
+                raise NotFoundException(detail=f"No such source: {source_name}")
+        nav_url = f"{base_url}/linked-data/{source_name}/{identifier}/navigation"
+        return {
+            "upstreamMain": f"{nav_url}/UM",
+            "upstreamTributaries": f"{nav_url}/UT",
+            "downstreamMain": f"{nav_url}/DM",
+            "downstreamDiversions": f"{nav_url}/DD",
+        }
 
     @get("/{source_name:str}/{identifier:str}/navigation/{nav_mode:str}", tags=["by_sourceid"])
-    async def get_navigation_info(self, source_name: str, identifier: str, nav_mode: str) -> None:
+    async def get_navigation_info(
+        self,
+        source_name: str,
+        identifier: str,
+        nav_mode: str,
+        source_repo: Annotated[CrawlerSourceRepository, Dependency(skip_validation=True)],
+    ) -> list[dict]:
         """List data sources available for navigation."""
-        _not_implemented()
+        valid_modes = {"UM", "UT", "DM", "DD"}
+        if nav_mode.upper() not in valid_modes:
+            raise ClientException(
+                detail=f"Invalid navigation mode: {nav_mode}. Must be one of {', '.join(sorted(valid_modes))}."
+            )
+        base_url = get_base_url()
+        if source_name.lower() != "comid":
+            source = await source_repo.get_by_suffix(source_name)
+            if not source:
+                raise NotFoundException(detail=f"No such source: {source_name}")
+        nav_url = f"{base_url}/linked-data/{source_name}/{identifier}/navigation/{nav_mode}"
+        result = [{"source": "Flowlines", "sourceName": "NHDPlus flowlines", "features": f"{nav_url}/flowlines"}]
+        sources = await source_repo.list()
+        for s in sources:
+            result.append(
+                {
+                    "source": s.source_suffix,
+                    "sourceName": s.source_name,
+                    "features": f"{nav_url}/{s.source_suffix.lower()}",
+                }
+            )
+        return result
 
     @get("/{source_name:str}/{identifier:str}/navigation/{nav_mode:str}/flowlines", tags=["by_sourceid"])
     async def get_flowline_navigation(self, source_name: str, identifier: str, nav_mode: str) -> None:
