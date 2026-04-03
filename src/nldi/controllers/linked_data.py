@@ -114,7 +114,7 @@ class LinkedDataController(Controller):
                 comid = int(identifier)
             except ValueError as e:
                 raise ClientException(detail=f"Not a valid comid: {identifier}") from e
-            flowline = await flowline_repo.get(comid)
+            flowline = await flowline_repo.get_one_or_none(nhdplus_comid=comid)
             if not flowline:
                 raise NotFoundException(detail=f"COMID {identifier} not found.")
             feature = Feature(

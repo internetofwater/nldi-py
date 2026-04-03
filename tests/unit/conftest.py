@@ -95,6 +95,16 @@ class FakeFlowlineRepository:
                 return f
         return None
 
+    async def get_one_or_none(self, *args, **kwargs) -> FakeFlowlineModel | None:
+        """Find a flowline by comid."""
+        comid = kwargs.get("nhdplus_comid")
+        if comid is None:
+            return None
+        for f in self._flowlines:
+            if f.nhdplus_comid == int(comid):
+                return f
+        return None
+
 
 @pytest.fixture()
 def fake_source_repo():
