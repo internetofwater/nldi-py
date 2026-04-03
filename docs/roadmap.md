@@ -34,7 +34,7 @@ One PR per endpoint or small logical group. Each PR includes integration tests a
 | ~~2.1~~ | DB engine setup, ORM models, repos, type checking | 1.5 | ✅ #164 |
 | ~~2.2~~ | `GET /linked-data` — list sources, integration test infra, fake repos, DTOs | 2.1 | ✅ #165 |
 | ~~2.3~~ | `GET /linked-data/{source_name}/{identifier}` — single feature (GeoJSON pattern, geometry TODO) | 2.2 | ✅ #166 |
-| 2.4 | `GET /linked-data/{source_name}` — list features by source + pagination | 2.3 | Parity, pagination works |
+| ~~2.4~~ | `GET /linked-data/{source_name}` — list features by source + pagination | 2.3 | ✅ #167 |
 | 2.5 | `GET /linked-data/comid/position` — flowline by spatial search | 2.3 | Parity, spatial query correct |
 | 2.6 | `GET /linked-data/{source}/{id}/navigation` — nav modes | 2.3 | Returns correct mode URLs |
 | 2.7 | `GET /linked-data/{source}/{id}/navigation/{nav_mode}` — nav info with mode validation | 2.3 | Parity, invalid mode returns 400 |
