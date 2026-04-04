@@ -39,18 +39,16 @@ One PR per endpoint or small logical group. Each PR includes integration tests a
 | ~~2.5~~ | `GET /linked-data/comid/position` — flowline by spatial search | ✅ #169 |
 | ~~2.6+2.7~~ | Navigation modes + navigation info with mode validation | ✅ #170 |
 
-## Phase 3: Navigation
-
-The heavy path. Port SQL queries from pre-refactor, apply resource discipline (one session, release before streaming).
+## Phase 3: Navigation ✅
 
 | PR | Description | Status |
 | --- | --- | --- |
 | ~~3.1~~ | Navigation infrastructure + DM CTE, resolve comid, flowline nav handler | ✅ #172 |
 | ~~3.2~~ | DD, UM, UT modes + navigation_query dispatcher | ✅ #173 |
 | ~~3.3~~ | Feature navigation by data source | ✅ #174 |
-| 3.4 | Trim start/tolerance on flowline navigation (ST_LineSubstring) | 3.2 |
-| 3.5 | excludeGeometry parameter on navigation endpoints | 3.2 |
-| 3.6 | OpenAPI documentation polish pass | 3.3 |
+| ~~3.4~~ | Trim start/tolerance on flowline navigation | ✅ #175 |
+| ~~3.5~~ | excludeGeometry parameter on navigation endpoints | ✅ #176 |
+| ~~3.6~~ | OpenAPI documentation polish pass | ✅ #177 |
 
 ## Phase 4: External services
 
