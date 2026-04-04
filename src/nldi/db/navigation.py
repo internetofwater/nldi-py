@@ -201,3 +201,42 @@ def navigation_query(mode: str, comid: int, distance: float) -> Select:
         msg = f"Invalid navigation mode: {mode}. Must be one of {', '.join(builders)}"
         raise ValueError(msg)
     return builder(comid, distance)
+
+
+def trim_nav_query(nav_mode: str, comid: int, trim_tolerance: float, measure: float) -> Select:
+    """Build a query that produces trimmed geometry for the starting flowline.
+
+    Uses ST_LineSubstring to clip the starting flowline's geometry based on
+    the feature's measure. Only the starting comid gets trimmed; other
+    flowlines get their full geometry via ST_AsGeoJSON.
+
+    For downstream modes (DM, DD): clip from measure to end of line.
+    For upstream modes (UM, UT): clip from start of line to measure.
+    """
+    from sqlalchemy import case, func, text
+
+    from .models import FlowlineModel
+
+    # Scale measure to a 0-1 fraction along the line
+    scaled_measure = 1 - ((measure - FlowlineModel.fmeasure) / (FlowlineModel.tmeasure - FlowlineModel.fmeasure))
+
+    if nav_mode.upper() in ("DM", "DD"):
+        trimmed_geojson = func.ST_AsGeoJSON(func.ST_LineSubstring(FlowlineModel.shape, scaled_measure, 1), 9, 0)
+        should_trim = 100 - measure >= trim_tolerance
+    else:
+        trimmed_geojson = func.ST_AsGeoJSON(func.ST_LineSubstring(FlowlineModel.shape, 0, scaled_measure), 9, 0)
+        should_trim = measure >= trim_tolerance
+
+    full_geojson = func.ST_AsGeoJSON(FlowlineModel.shape, 9, 0)
+
+    if should_trim:
+        geom_expr = case(
+            (FlowlineModel.nhdplus_comid == bindparam("trim_comid"), trimmed_geojson),
+            else_=full_geojson,
+        )
+    else:
+        geom_expr = full_geojson
+
+    return select(FlowlineModel.nhdplus_comid.label("comid"), geom_expr.label("trimmed_geojson")).params(
+        trim_comid=comid
+    )
