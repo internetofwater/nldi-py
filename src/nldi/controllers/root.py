@@ -6,6 +6,7 @@ from litestar import Controller, get, head
 from litestar.response import Redirect
 
 from ..config import get_prefix
+from ..health import health_status
 from ..media import MediaType
 
 
@@ -40,8 +41,8 @@ class RootController(Controller):
 
     @get("/about/health", include_in_schema=False)
     async def health_check(self) -> dict:
-        """Health check."""
-        return {"status": "ok"}
+        """Health check for server and dependent services."""
+        return await health_status()
 
     @get("/swagger-ui/index.html", include_in_schema=False)
     async def swagger_ui_redirect(self) -> Redirect:
