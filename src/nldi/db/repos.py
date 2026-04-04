@@ -90,6 +90,20 @@ class FlowlineRepository(SQLAlchemyAsyncRepository[FlowlineModel]):
         stmt = sqlalchemy.select(FlowlineModel).join(subq, FlowlineModel.nhdplus_comid == subq.c.comid)
         return list(await self.list(statement=stmt))
 
+    async def from_trimmed_nav_query(
+        self, nav_query: sqlalchemy.sql.Select, trim_query: sqlalchemy.sql.Select
+    ) -> list:  # list of (FlowlineModel, geojson_str) tuples
+        """Execute navigation + trim queries, return flowlines with trimmed geometry."""
+        nav_subq = nav_query.subquery()
+        trim_subq = trim_query.subquery()
+        stmt = (
+            sqlalchemy.select(FlowlineModel, trim_subq.c.trimmed_geojson)
+            .join(nav_subq, FlowlineModel.nhdplus_comid == nav_subq.c.comid)
+            .join(trim_subq, FlowlineModel.nhdplus_comid == trim_subq.c.comid)
+        )
+        result = await self.session.execute(stmt)
+        return list(result)
+
 
 class CatchmentRepository(SQLAlchemyAsyncRepository[CatchmentModel]):
     """Repository for catchment lookups."""

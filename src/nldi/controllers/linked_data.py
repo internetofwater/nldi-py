@@ -10,7 +10,7 @@ from litestar.params import Dependency, Parameter
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..config import get_base_url
-from ..db.navigation import NAV_DIST_DEFAULTS, NavigationModes, navigation_query
+from ..db.navigation import NAV_DIST_DEFAULTS, NavigationModes, navigation_query, trim_nav_query
 from ..db.repos import CatchmentRepository, CrawlerSourceRepository, FeatureRepository, FlowlineRepository
 from ..dto import DataSource
 from ..geojson import Feature, FeatureCollection, parse_geometry
@@ -307,6 +307,8 @@ class LinkedDataController(Controller):
         feature_repo: Annotated[FeatureRepository, Dependency(skip_validation=True)],
         flowline_repo: Annotated[FlowlineRepository, Dependency(skip_validation=True)],
         distance: float | None = None,
+        trim_start: Annotated[bool, Parameter(query="trimStart")] = False,
+        trim_tolerance: Annotated[float, Parameter(query="trimTolerance")] = 0.0,
     ) -> Response:
         """Navigate flowlines from a starting point."""
         mode_upper = nav_mode.upper()
@@ -315,12 +317,36 @@ class LinkedDataController(Controller):
                 detail=f"Invalid navigation mode: {nav_mode}. Must be one of {', '.join(NavigationModes)}."
             )
 
+        if trim_start and source_name.lower() == "comid":
+            raise ClientException(detail="Cannot use trimStart with comid source.")
+
         comid = await _resolve_comid(source_name, identifier, source_repo, feature_repo, flowline_repo)
         dist = distance if distance is not None else NAV_DIST_DEFAULTS.get(NavigationModes(mode_upper), 100)
 
         nav_q = navigation_query(mode_upper, comid=comid, distance=dist)
-        flowlines = await flowline_repo.from_nav_query(nav_q)
-        features = [_build_nav_flowline_feature(fl) for fl in flowlines]
+
+        if trim_start:
+            # Get the feature's measure for trimming
+            feat = await feature_repo.feature_lookup(source_name, identifier)
+            measure = float(feat.measure) if feat and feat.measure else 0.0
+            if not measure:
+                # Estimate measure if not available — for now, skip trimming
+                trim_start = False
+
+        if trim_start:
+            trim_q = trim_nav_query(mode_upper, comid, trim_tolerance or 0.0, measure)
+            results = await flowline_repo.from_trimmed_nav_query(nav_q, trim_q)
+            features = []
+            for fl, trimmed_geojson in results:
+                feature = Feature(
+                    geometry=parse_geometry(trimmed_geojson) if trimmed_geojson else None,
+                    properties={"nhdplus_comid": fl.nhdplus_comid},
+                    id=fl.nhdplus_comid,
+                )
+                features.append(feature)
+        else:
+            flowlines = await flowline_repo.from_nav_query(nav_q)
+            features = [_build_nav_flowline_feature(fl) for fl in flowlines]
 
         return Response(content=FeatureCollection(features=features), status_code=200, media_type=MediaType.GEOJSON)
 
