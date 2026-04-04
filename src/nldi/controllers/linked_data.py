@@ -17,6 +17,13 @@ from ..geojson import Feature, FeatureCollection, parse_geometry
 from ..media import MediaType
 from ..negotiate import check_format
 
+# Common parameter annotations for OpenAPI documentation
+SourceName = Annotated[str, Parameter(description="Data source identifier (e.g. 'wqp', 'nwissite', 'comid')")]
+Identifier = Annotated[str, Parameter(description="Feature identifier within the source")]
+NavMode = Annotated[str, Parameter(description="Navigation mode: UM, UT, DM, or DD")]
+DataSourceParam = Annotated[str, Parameter(description="Target data source for navigated features")]
+CoordsParam = Annotated[str, Parameter(description="WKT point geometry, e.g. POINT(-89.509 43.087)")]
+
 _ALL_PATHS = [
     "/",
     "/hydrolocation",
@@ -150,7 +157,7 @@ class LinkedDataController(Controller):
         return result
 
     @get("/hydrolocation")
-    async def get_hydrolocation(self, coords: str = "") -> None:
+    async def get_hydrolocation(self, coords: CoordsParam = "") -> None:
         """Return hydrologic location nearest to coordinates."""
         _not_implemented()
 
@@ -159,7 +166,7 @@ class LinkedDataController(Controller):
         self,
         catchment_repo: Annotated[CatchmentRepository, Dependency(skip_validation=True)],
         flowline_repo: Annotated[FlowlineRepository, Dependency(skip_validation=True)],
-        coords: str = "",
+        coords: CoordsParam = "",
     ) -> Response:
         """Find flowline by spatial point lookup."""
         if not coords:
@@ -182,7 +189,7 @@ class LinkedDataController(Controller):
     @get("/{source_name:str}", tags=["by_sourceid"])
     async def list_features_by_source(
         self,
-        source_name: str,
+        source_name: SourceName,
         source_repo: Annotated[CrawlerSourceRepository, Dependency(skip_validation=True)],
         feature_repo: Annotated[FeatureRepository, Dependency(skip_validation=True)],
         flowline_repo: Annotated[FlowlineRepository, Dependency(skip_validation=True)],
@@ -209,8 +216,8 @@ class LinkedDataController(Controller):
     @get("/{source_name:str}/{identifier:str}", tags=["by_sourceid"])
     async def get_feature_by_identifier(
         self,
-        source_name: str,
-        identifier: str,
+        source_name: SourceName,
+        identifier: Identifier,
         source_repo: Annotated[CrawlerSourceRepository, Dependency(skip_validation=True)],
         feature_repo: Annotated[FeatureRepository, Dependency(skip_validation=True)],
         flowline_repo: Annotated[FlowlineRepository, Dependency(skip_validation=True)],
@@ -240,15 +247,15 @@ class LinkedDataController(Controller):
         return Response(content=FeatureCollection(features=[feature]), status_code=200, media_type=MediaType.GEOJSON)
 
     @get("/{source_name:str}/{identifier:str}/basin", tags=["by_sourceid"])
-    async def get_basin(self, source_name: str, identifier: str) -> None:
+    async def get_basin(self, source_name: SourceName, identifier: str) -> None:
         """Compute upstream basin polygon."""
         _not_implemented()
 
     @get("/{source_name:str}/{identifier:str}/navigation", tags=["by_sourceid"])
     async def get_navigation_modes(
         self,
-        source_name: str,
-        identifier: str,
+        source_name: SourceName,
+        identifier: Identifier,
         source_repo: Annotated[CrawlerSourceRepository, Dependency(skip_validation=True)],
     ) -> dict:
         """Return navigation mode URLs."""
@@ -268,9 +275,9 @@ class LinkedDataController(Controller):
     @get("/{source_name:str}/{identifier:str}/navigation/{nav_mode:str}", tags=["by_sourceid"])
     async def get_navigation_info(
         self,
-        source_name: str,
-        identifier: str,
-        nav_mode: str,
+        source_name: SourceName,
+        identifier: Identifier,
+        nav_mode: NavMode,
         source_repo: Annotated[CrawlerSourceRepository, Dependency(skip_validation=True)],
     ) -> list[dict]:
         """List data sources available for navigation."""
@@ -300,9 +307,9 @@ class LinkedDataController(Controller):
     @get("/{source_name:str}/{identifier:str}/navigation/{nav_mode:str}/flowlines", tags=["by_sourceid"])
     async def get_flowline_navigation(
         self,
-        source_name: str,
-        identifier: str,
-        nav_mode: str,
+        source_name: SourceName,
+        identifier: Identifier,
+        nav_mode: NavMode,
         source_repo: Annotated[CrawlerSourceRepository, Dependency(skip_validation=True)],
         feature_repo: Annotated[FeatureRepository, Dependency(skip_validation=True)],
         flowline_repo: Annotated[FlowlineRepository, Dependency(skip_validation=True)],
@@ -358,10 +365,10 @@ class LinkedDataController(Controller):
     @get("/{source_name:str}/{identifier:str}/navigation/{nav_mode:str}/{data_source:str}", tags=["by_sourceid"])
     async def get_feature_navigation(
         self,
-        source_name: str,
-        identifier: str,
-        nav_mode: str,
-        data_source: str,
+        source_name: SourceName,
+        identifier: Identifier,
+        nav_mode: NavMode,
+        data_source: DataSourceParam,
         source_repo: Annotated[CrawlerSourceRepository, Dependency(skip_validation=True)],
         feature_repo: Annotated[FeatureRepository, Dependency(skip_validation=True)],
         flowline_repo: Annotated[FlowlineRepository, Dependency(skip_validation=True)],
