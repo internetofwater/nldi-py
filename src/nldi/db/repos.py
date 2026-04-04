@@ -73,6 +73,12 @@ class FlowlineRepository(SQLAlchemyAsyncRepository[FlowlineModel]):
             stmt = stmt.limit(limit)
         return list(await self.list(statement=stmt))
 
+    async def from_nav_query(self, nav_query: sqlalchemy.sql.Select) -> list[FlowlineModel]:
+        """Execute a navigation CTE and join to flowlines."""
+        subq = nav_query.subquery()
+        stmt = sqlalchemy.select(FlowlineModel).join(subq, FlowlineModel.nhdplus_comid == subq.c.comid)
+        return list(await self.list(statement=stmt))
+
 
 class CatchmentRepository(SQLAlchemyAsyncRepository[CatchmentModel]):
     """Repository for catchment lookups."""

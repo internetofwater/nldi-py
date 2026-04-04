@@ -120,6 +120,10 @@ class FakeFlowlineRepository:
             results = results[:limit]
         return results
 
+    async def from_nav_query(self, nav_query) -> list:
+        """Fake: return all flowlines (ignores nav query)."""
+        return self._flowlines
+
 
 class FakeCatchmentModel:
     """Minimal stand-in for CatchmentModel."""
