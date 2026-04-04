@@ -28,6 +28,7 @@ def test_health_check():
         assert "db" in body
         assert "pygeoapi" in body
         assert body["server"]["status"] == "online"
+        assert "no-cache" in r.headers.get("cache-control", "")
 
 import pytest
 
