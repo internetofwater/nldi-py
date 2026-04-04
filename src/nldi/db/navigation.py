@@ -222,12 +222,14 @@ def trim_nav_query(nav_mode: str, comid: int, trim_tolerance: float, measure: fl
 
     if nav_mode.upper() in ("DM", "DD"):
         trimmed_geojson = func.ST_AsGeoJSON(func.ST_LineSubstring(FlowlineModel.shape, scaled_measure, 1), 9, 0)
+        should_trim = 100 - measure >= trim_tolerance
     else:
         trimmed_geojson = func.ST_AsGeoJSON(func.ST_LineSubstring(FlowlineModel.shape, 0, scaled_measure), 9, 0)
+        should_trim = measure >= trim_tolerance
 
     full_geojson = func.ST_AsGeoJSON(FlowlineModel.shape, 9, 0)
 
-    if 100 - measure >= trim_tolerance:
+    if should_trim:
         geom_expr = case(
             (FlowlineModel.nhdplus_comid == bindparam("trim_comid"), trimmed_geojson),
             else_=full_geojson,
