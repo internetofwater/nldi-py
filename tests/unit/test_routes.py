@@ -23,7 +23,11 @@ def test_health_check():
     with _client() as client:
         r = client.get("/api/nldi/about/health")
         assert r.status_code == 200
-        assert r.json()["status"] == "ok"
+        body = r.json()
+        assert "server" in body
+        assert "db" in body
+        assert "pygeoapi" in body
+        assert body["server"]["status"] == "online"
 
 import pytest
 
