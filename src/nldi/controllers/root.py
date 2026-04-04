@@ -2,7 +2,7 @@
 # SPDX-FileCopyrightText: 2024-present USGS
 """Root controller — landing page and health check."""
 
-from litestar import Controller, get, head
+from litestar import Controller, Response, get, head
 from litestar.response import Redirect
 
 from ..config import get_prefix
@@ -40,9 +40,10 @@ class RootController(Controller):
         }
 
     @get("/about/health", include_in_schema=False)
-    async def health_check(self) -> dict:
+    async def health_check(self) -> Response:
         """Health check for server and dependent services."""
-        return await health_status()
+        data = await health_status()
+        return Response(content=data, headers={"cache-control": "no-cache, no-store, max-age=0"})
 
     @get("/swagger-ui/index.html", include_in_schema=False)
     async def swagger_ui_redirect(self) -> Redirect:
