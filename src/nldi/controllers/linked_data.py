@@ -309,6 +309,7 @@ class LinkedDataController(Controller):
         distance: float | None = None,
         trim_start: Annotated[bool, Parameter(query="trimStart")] = False,
         trim_tolerance: Annotated[float, Parameter(query="trimTolerance")] = 0.0,
+        exclude_geom: Annotated[bool, Parameter(query="excludeGeometry")] = False,
     ) -> Response:
         """Navigate flowlines from a starting point."""
         mode_upper = nav_mode.upper()
@@ -348,6 +349,10 @@ class LinkedDataController(Controller):
             flowlines = await flowline_repo.from_nav_query(nav_q)
             features = [_build_nav_flowline_feature(fl) for fl in flowlines]
 
+        if exclude_geom:
+            for f in features:
+                f.geometry = None
+
         return Response(content=FeatureCollection(features=features), status_code=200, media_type=MediaType.GEOJSON)
 
     @get("/{source_name:str}/{identifier:str}/navigation/{nav_mode:str}/{data_source:str}", tags=["by_sourceid"])
@@ -361,6 +366,7 @@ class LinkedDataController(Controller):
         feature_repo: Annotated[FeatureRepository, Dependency(skip_validation=True)],
         flowline_repo: Annotated[FlowlineRepository, Dependency(skip_validation=True)],
         distance: float | None = None,
+        exclude_geom: Annotated[bool, Parameter(query="excludeGeometry")] = False,
     ) -> Response:
         """Navigate features of a data source."""
         mode_upper = nav_mode.upper()
@@ -376,5 +382,9 @@ class LinkedDataController(Controller):
         nav_q = navigation_query(mode_upper, comid=comid, distance=dist)
         feats = await feature_repo.from_nav_query(data_source, nav_q)
         features = [_build_source_feature(f, base_url, data_source) for f in feats]
+
+        if exclude_geom:
+            for f in features:
+                f.geometry = None
 
         return Response(content=FeatureCollection(features=features), status_code=200, media_type=MediaType.GEOJSON)
