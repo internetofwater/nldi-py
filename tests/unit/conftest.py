@@ -89,6 +89,10 @@ class FakeFeatureRepository:
             results = results[:limit]
         return results
 
+    async def from_nav_query(self, data_source: str, nav_query) -> list:
+        """Fake: return features matching data_source (ignores nav query)."""
+        return [f for f in self._features if f.source_suffix_proxy.lower() == data_source.lower()]
+
 
 class FakeFlowlineRepository:
     """Fake FlowlineRepository for unit tests."""
