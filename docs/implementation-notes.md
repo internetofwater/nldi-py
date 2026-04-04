@@ -51,3 +51,11 @@ The four navigation CTEs (DM, DD, UM, UT) share ~70% of their structure. Port as
 - Consider a builder function for the common CTE structure (anchor + recursive step + distance filter)
 - Extract "resolve starting comid" logic shared by `walk_flowlines` and `walk_features`
 - Keep the inline SQL comments showing expected compiled output — they're valuable for debugging
+
+## OpenAPI documentation polish
+
+After Phase 3 is complete, do a fit/finish pass on OpenAPI docs:
+- Add `Parameter(description=..., examples=...)` annotations to all handlers
+- Document valid `nav_mode` values (UM, UT, DM, DD) with examples
+- Add response schema descriptions for FeatureCollection endpoints
+- Add meaningful operation summaries where auto-generated ones are insufficient
