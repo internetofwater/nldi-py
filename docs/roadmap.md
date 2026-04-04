@@ -43,11 +43,14 @@ One PR per endpoint or small logical group. Each PR includes integration tests a
 
 The heavy path. Port SQL queries from pre-refactor, apply resource discipline (one session, release before streaming).
 
-| PR | Description | Depends on | Acceptance |
-| --- | --- | --- | --- |
-| 3.1 | Navigation query builder — CTE logic for UM, UT, DM, DD (ported from `NavigationService`) | 2.1 | Unit tests for query construction, integration tests for results |
-| 3.2 | `GET .../navigation/{nav_mode}/flowlines` — flowline navigation | 3.1 | Parity, distance/trim/excludeGeometry params work |
-| 3.3 | `GET .../navigation/{nav_mode}/{data_source}` — feature navigation | 3.1 | Parity, distance/excludeGeometry params work |
+| PR | Description | Status |
+| --- | --- | --- |
+| ~~3.1~~ | Navigation infrastructure + DM CTE, resolve comid, flowline nav handler | ✅ #172 |
+| ~~3.2~~ | DD, UM, UT modes + navigation_query dispatcher | ✅ #173 |
+| ~~3.3~~ | Feature navigation by data source | ✅ #174 |
+| 3.4 | Trim start/tolerance on flowline navigation (ST_LineSubstring) | 3.2 |
+| 3.5 | excludeGeometry parameter on navigation endpoints | 3.2 |
+| 3.6 | OpenAPI documentation polish pass | 3.3 |
 
 ## Phase 4: External services
 
