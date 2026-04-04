@@ -142,7 +142,12 @@ class LinkedDataController(Controller):
     async def list_sources(
         self, source_repo: Annotated[CrawlerSourceRepository, Dependency(skip_validation=True)]
     ) -> list[DataSource]:
-        """List all data sources."""
+        """List all data sources.
+
+        Returns a JSON array of available data sources, including the synthetic
+        ``comid`` source. Each source includes a ``features`` URL for retrieving
+        its features.
+        """
         base_url = get_base_url()
         sources = await source_repo.list()
         result = [DataSource(source="comid", sourceName="NHDPlus comid", features=f"{base_url}/linked-data/comid")]
@@ -158,7 +163,11 @@ class LinkedDataController(Controller):
 
     @get("/hydrolocation")
     async def get_hydrolocation(self, coords: CoordsParam = "") -> None:
-        """Return hydrologic location nearest to coordinates."""
+        """Return hydrologic location nearest to coordinates.
+
+        Accepts a WKT point geometry and returns the nearest hydrologic location.
+        Not yet implemented.
+        """
         _not_implemented()
 
     @get("/comid/position")
@@ -168,7 +177,11 @@ class LinkedDataController(Controller):
         flowline_repo: Annotated[FlowlineRepository, Dependency(skip_validation=True)],
         coords: CoordsParam = "",
     ) -> Response:
-        """Find flowline by spatial point lookup."""
+        """Find flowline by spatial point lookup.
+
+        Accepts a WKT point geometry (NAD83 lon/lat). Locates the catchment
+        containing the point, then returns the corresponding NHD flowline.
+        """
         if not coords:
             raise ClientException(detail="coords parameter is required.")
         base_url = get_base_url()
@@ -197,7 +210,12 @@ class LinkedDataController(Controller):
         limit: Annotated[int, Parameter(ge=0, description="Max features to return. 0 = no limit.")] = 0,
         offset: Annotated[int, Parameter(ge=0, description="Number of features to skip.")] = 0,
     ) -> Response:
-        """List all features for a source."""
+        """List all features for a source.
+
+        Returns a GeoJSON FeatureCollection of all features for the named source.
+        Supports pagination via ``limit`` and ``offset`` query parameters.
+        Use ``comid`` as the source name to list NHD flowlines.
+        """
         base_url = get_base_url()
 
         if source_name.lower() == "comid":
@@ -223,7 +241,11 @@ class LinkedDataController(Controller):
         flowline_repo: Annotated[FlowlineRepository, Dependency(skip_validation=True)],
         f: str = "",
     ) -> Response:
-        """Get a single feature by source and ID."""
+        """Get a single feature by source and identifier.
+
+        Returns a GeoJSON FeatureCollection containing a single feature.
+        For ``comid`` source, the identifier must be a valid NHDPlus COMID integer.
+        """
         base_url = get_base_url()
 
         if source_name.lower() == "comid":
@@ -248,7 +270,11 @@ class LinkedDataController(Controller):
 
     @get("/{source_name:str}/{identifier:str}/basin", tags=["by_sourceid"])
     async def get_basin(self, source_name: SourceName, identifier: str) -> None:
-        """Compute upstream basin polygon."""
+        """Compute upstream basin polygon.
+
+        Returns the aggregated drainage basin for the specified feature.
+        Not yet implemented.
+        """
         _not_implemented()
 
     @get("/{source_name:str}/{identifier:str}/navigation", tags=["by_sourceid"])
@@ -258,7 +284,11 @@ class LinkedDataController(Controller):
         identifier: Identifier,
         source_repo: Annotated[CrawlerSourceRepository, Dependency(skip_validation=True)],
     ) -> dict:
-        """Return navigation mode URLs."""
+        """Return navigation mode URLs.
+
+        Returns a JSON object with URLs for each navigation mode
+        (UM, UT, DM, DD) from the specified starting feature.
+        """
         base_url = get_base_url()
         if source_name.lower() != "comid":
             source = await source_repo.get_by_suffix(source_name)
@@ -280,7 +310,12 @@ class LinkedDataController(Controller):
         nav_mode: NavMode,
         source_repo: Annotated[CrawlerSourceRepository, Dependency(skip_validation=True)],
     ) -> list[dict]:
-        """List data sources available for navigation."""
+        """List data sources available for a navigation mode.
+
+        Returns a JSON array of data sources whose features can be found
+        along the specified navigation. Flowlines are always listed first.
+        The ``nav_mode`` must be one of: UM, UT, DM, DD.
+        """
         valid_modes = {"UM", "UT", "DM", "DD"}
         if nav_mode.upper() not in valid_modes:
             raise ClientException(
@@ -318,7 +353,12 @@ class LinkedDataController(Controller):
         trim_tolerance: Annotated[float, Parameter(query="trimTolerance")] = 0.0,
         exclude_geom: Annotated[bool, Parameter(query="excludeGeometry")] = False,
     ) -> Response:
-        """Navigate flowlines from a starting point."""
+        """Navigate flowlines from a starting point.
+
+        Returns a GeoJSON FeatureCollection of NHD flowlines along the
+        navigation path. Supports ``trimStart`` to clip the starting
+        flowline geometry and ``excludeGeometry`` to omit geometry data.
+        """
         mode_upper = nav_mode.upper()
         if mode_upper not in NavigationModes.__members__:
             raise ClientException(
@@ -375,7 +415,12 @@ class LinkedDataController(Controller):
         distance: float | None = None,
         exclude_geom: Annotated[bool, Parameter(query="excludeGeometry")] = False,
     ) -> Response:
-        """Navigate features of a data source."""
+        """Navigate features of a data source.
+
+        Returns a GeoJSON FeatureCollection of features from the specified
+        data source found along the navigation path. Supports
+        ``excludeGeometry`` to omit geometry data.
+        """
         mode_upper = nav_mode.upper()
         if mode_upper not in NavigationModes.__members__:
             raise ClientException(
