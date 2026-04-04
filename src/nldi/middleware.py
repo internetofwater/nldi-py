@@ -37,7 +37,9 @@ def headers_middleware_factory(app: ASGIApp) -> ASGIApp:
 
         async def send_with_headers(message):
             if message["type"] == "http.response.start":
-                message["headers"] = list(message.get("headers", [])) + STANDARD_HEADERS
+                existing_keys = {k for k, _v in message.get("headers", [])}
+                extra = [h for h in STANDARD_HEADERS if h[0] not in existing_keys]
+                message["headers"] = list(message.get("headers", [])) + extra
             await send(message)
 
         await app(scope, receive, send_with_headers)
