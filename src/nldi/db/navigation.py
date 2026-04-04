@@ -137,7 +137,7 @@ def um(comid: int, distance: float, coastal_fcode: int = COASTAL_FCODE) -> Selec
     )
 
     vaa = aliased(FlowlineVAAModel, name="vaa")
-    nav_um = nav.union(
+    nav_um = nav.union_all(
         select(vaa.comid, vaa.levelpathid, vaa.uphydroseq, vaa.fcode, nav.c.stoplength).where(
             and_(
                 vaa.hydroseq == nav.c.uphydroseq,
