@@ -10,8 +10,7 @@ from litestar.params import Dependency, Parameter
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..config import get_base_url
-from ..db.navigation import NAV_DIST_DEFAULTS, NavigationModes
-from ..db.navigation import dm as dm_query
+from ..db.navigation import NAV_DIST_DEFAULTS, NavigationModes, navigation_query
 from ..db.repos import CatchmentRepository, CrawlerSourceRepository, FeatureRepository, FlowlineRepository
 from ..dto import DataSource
 from ..geojson import Feature, FeatureCollection, parse_geometry
@@ -316,14 +315,11 @@ class LinkedDataController(Controller):
                 detail=f"Invalid navigation mode: {nav_mode}. Must be one of {', '.join(NavigationModes)}."
             )
 
-        if mode_upper != "DM":
-            _not_implemented()  # DD, UM, UT in PR 3.2
-
         comid = await _resolve_comid(source_name, identifier, source_repo, feature_repo, flowline_repo)
         dist = distance if distance is not None else NAV_DIST_DEFAULTS.get(NavigationModes(mode_upper), 100)
 
-        nav_query = dm_query(comid=comid, distance=dist)
-        flowlines = await flowline_repo.from_nav_query(nav_query)
+        nav_q = navigation_query(mode_upper, comid=comid, distance=dist)
+        flowlines = await flowline_repo.from_nav_query(nav_q)
         features = [_build_nav_flowline_feature(fl) for fl in flowlines]
 
         return Response(content=FeatureCollection(features=features), status_code=200, media_type=MediaType.GEOJSON)
