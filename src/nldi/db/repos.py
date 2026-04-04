@@ -59,6 +59,17 @@ class FeatureRepository(SQLAlchemyAsyncRepository[FeatureSourceModel]):
             stmt = stmt.limit(limit)
         return list(await self.list(statement=stmt))
 
+    async def from_nav_query(self, data_source: str, nav_query: sqlalchemy.sql.Select) -> list[FeatureSourceModel]:
+        """Execute a navigation CTE and join to features filtered by data source."""
+        subq = nav_query.subquery()
+        stmt = (
+            sqlalchemy.select(FeatureSourceModel)
+            .join(CrawlerSourceModel, FeatureSourceModel.crawler_source_id == CrawlerSourceModel.crawler_source_id)
+            .join(subq, FeatureSourceModel.comid == subq.c.comid)
+            .where(sqlalchemy.func.lower(CrawlerSourceModel.source_suffix) == data_source.lower())
+        )
+        return list(await self.list(statement=stmt))
+
 
 class FlowlineRepository(SQLAlchemyAsyncRepository[FlowlineModel]):
     """Repository for flowline lookups."""

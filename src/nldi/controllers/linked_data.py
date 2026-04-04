@@ -325,6 +325,30 @@ class LinkedDataController(Controller):
         return Response(content=FeatureCollection(features=features), status_code=200, media_type=MediaType.GEOJSON)
 
     @get("/{source_name:str}/{identifier:str}/navigation/{nav_mode:str}/{data_source:str}", tags=["by_sourceid"])
-    async def get_feature_navigation(self, source_name: str, identifier: str, nav_mode: str, data_source: str) -> None:
+    async def get_feature_navigation(
+        self,
+        source_name: str,
+        identifier: str,
+        nav_mode: str,
+        data_source: str,
+        source_repo: Annotated[CrawlerSourceRepository, Dependency(skip_validation=True)],
+        feature_repo: Annotated[FeatureRepository, Dependency(skip_validation=True)],
+        flowline_repo: Annotated[FlowlineRepository, Dependency(skip_validation=True)],
+        distance: float | None = None,
+    ) -> Response:
         """Navigate features of a data source."""
-        _not_implemented()
+        mode_upper = nav_mode.upper()
+        if mode_upper not in NavigationModes.__members__:
+            raise ClientException(
+                detail=f"Invalid navigation mode: {nav_mode}. Must be one of {', '.join(NavigationModes)}."
+            )
+
+        comid = await _resolve_comid(source_name, identifier, source_repo, feature_repo, flowline_repo)
+        dist = distance if distance is not None else NAV_DIST_DEFAULTS.get(NavigationModes(mode_upper), 100)
+        base_url = get_base_url()
+
+        nav_q = navigation_query(mode_upper, comid=comid, distance=dist)
+        feats = await feature_repo.from_nav_query(data_source, nav_q)
+        features = [_build_source_feature(f, base_url, data_source) for f in feats]
+
+        return Response(content=FeatureCollection(features=features), status_code=200, media_type=MediaType.GEOJSON)
