@@ -10,6 +10,8 @@ from litestar.params import Dependency, Parameter
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..config import get_base_url
+from ..db.navigation import NAV_DIST_DEFAULTS, NavigationModes
+from ..db.navigation import dm as dm_query
 from ..db.repos import CatchmentRepository, CrawlerSourceRepository, FeatureRepository, FlowlineRepository
 from ..dto import DataSource
 from ..geojson import Feature, FeatureCollection, parse_geometry
@@ -53,6 +55,33 @@ async def provide_flowline_repo(db_session: AsyncSession) -> FlowlineRepository:
 async def provide_catchment_repo(db_session: AsyncSession) -> CatchmentRepository:
     """Provide CatchmentRepository via DI."""
     return CatchmentRepository(session=db_session)
+
+
+async def _resolve_comid(source_name, identifier, source_repo, feature_repo, flowline_repo) -> int:
+    """Resolve a source/identifier pair to a COMID."""
+    if source_name.lower() == "comid":
+        try:
+            return int(identifier)
+        except ValueError as e:
+            raise ClientException(detail=f"Not a valid comid: {identifier}") from e
+    source = await source_repo.get_by_suffix(source_name)
+    if not source:
+        raise NotFoundException(detail=f"No such source: {source_name}")
+    feat = await feature_repo.feature_lookup(source_name, identifier)
+    if not feat:
+        raise NotFoundException(detail=f"Feature {identifier} not found in source {source_name}.")
+    if not feat.comid:
+        raise NotFoundException(detail=f"No comid for feature {identifier} in source {source_name}.")
+    return int(feat.comid)
+
+
+def _build_nav_flowline_feature(flowline) -> Feature:
+    """Build a minimal GeoJSON Feature for navigation flowline results."""
+    return Feature(
+        geometry=parse_geometry(str(flowline.shape)) if flowline.shape else None,
+        properties={"nhdplus_comid": flowline.nhdplus_comid},
+        id=flowline.nhdplus_comid,
+    )
 
 
 def _build_comid_feature(flowline, base_url: str) -> Feature:
@@ -270,9 +299,34 @@ class LinkedDataController(Controller):
         return result
 
     @get("/{source_name:str}/{identifier:str}/navigation/{nav_mode:str}/flowlines", tags=["by_sourceid"])
-    async def get_flowline_navigation(self, source_name: str, identifier: str, nav_mode: str) -> None:
-        """Navigate flowlines."""
-        _not_implemented()
+    async def get_flowline_navigation(
+        self,
+        source_name: str,
+        identifier: str,
+        nav_mode: str,
+        source_repo: Annotated[CrawlerSourceRepository, Dependency(skip_validation=True)],
+        feature_repo: Annotated[FeatureRepository, Dependency(skip_validation=True)],
+        flowline_repo: Annotated[FlowlineRepository, Dependency(skip_validation=True)],
+        distance: float | None = None,
+    ) -> Response:
+        """Navigate flowlines from a starting point."""
+        mode_upper = nav_mode.upper()
+        if mode_upper not in NavigationModes.__members__:
+            raise ClientException(
+                detail=f"Invalid navigation mode: {nav_mode}. Must be one of {', '.join(NavigationModes)}."
+            )
+
+        if mode_upper != "DM":
+            _not_implemented()  # DD, UM, UT in PR 3.2
+
+        comid = await _resolve_comid(source_name, identifier, source_repo, feature_repo, flowline_repo)
+        dist = distance if distance is not None else NAV_DIST_DEFAULTS.get(NavigationModes(mode_upper), 100)
+
+        nav_query = dm_query(comid=comid, distance=dist)
+        flowlines = await flowline_repo.from_nav_query(nav_query)
+        features = [_build_nav_flowline_feature(fl) for fl in flowlines]
+
+        return Response(content=FeatureCollection(features=features), status_code=200, media_type=MediaType.GEOJSON)
 
     @get("/{source_name:str}/{identifier:str}/navigation/{nav_mode:str}/{data_source:str}", tags=["by_sourceid"])
     async def get_feature_navigation(self, source_name: str, identifier: str, nav_mode: str, data_source: str) -> None:
