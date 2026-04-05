@@ -11,6 +11,7 @@ from litestar import Request, Response
 from litestar.exceptions import HTTPException
 
 from .media import MediaType
+from .pygeoapi import PyGeoAPITimeoutError
 
 logger = logging.getLogger(__name__)
 
@@ -44,3 +45,17 @@ def unhandled_exception_handler(_request: Request[Any, Any, Any], exc: Exception
         "instance": f"urn:error:{ref}",
     }
     return Response(content=body, status_code=500, media_type=MediaType.PROBLEM_JSON)
+
+
+def gateway_timeout_handler(_request: Request[Any, Any, Any], exc: PyGeoAPITimeoutError) -> Response[dict[str, Any]]:
+    """Return a 504 Gateway Timeout for pygeoapi timeouts."""
+    ref = uuid.uuid4().hex[:8]
+    logger.warning("pygeoapi timeout [%s]: %s", ref, exc)
+    body: dict[str, Any] = {
+        "type": "about:blank",
+        "title": "Gateway Timeout",
+        "status": 504,
+        "detail": "Upstream service timed out.",
+        "instance": f"urn:error:{ref}",
+    }
+    return Response(content=body, status_code=504, media_type=MediaType.PROBLEM_JSON)
