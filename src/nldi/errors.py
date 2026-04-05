@@ -59,3 +59,17 @@ def gateway_timeout_handler(_request: Request[Any, Any, Any], exc: PyGeoAPITimeo
         "instance": f"urn:error:{ref}",
     }
     return Response(content=body, status_code=504, media_type=MediaType.PROBLEM_JSON)
+
+
+def db_unavailable_handler(_request: Request[Any, Any, Any], exc: Exception) -> Response[dict[str, Any]]:
+    """Return a 503 Service Unavailable for database connection errors."""
+    ref = uuid.uuid4().hex[:8]
+    logger.exception("Database unavailable [%s]", ref)
+    body: dict[str, Any] = {
+        "type": "about:blank",
+        "title": "Service Unavailable",
+        "status": 503,
+        "detail": "Database is temporarily unavailable.",
+        "instance": f"urn:error:{ref}",
+    }
+    return Response(content=body, status_code=503, media_type=MediaType.PROBLEM_JSON)
