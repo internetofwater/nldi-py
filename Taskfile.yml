@@ -36,6 +36,13 @@ tasks:
     cmds:
       - uv run ty check src/
 
+  dev:
+    desc: Run app locally with decrypted secrets from ~/.secrets/nldi.env.gpg
+    cmds:
+      - gpg --quiet --decrypt ~/.secrets/nldi.env.gpg > .env.tmp
+      - defer: rm -f .env.tmp
+      - cmd: env $(cat .env.tmp | xargs) uv run uvicorn nldi.asgi:app --reload
+
   check:
     desc: Pre-commit gate — lint, format check, unit tests
     cmds:

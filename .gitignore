@@ -80,6 +80,7 @@ __pypackages__/
 
 # Environments
 .env
+.env.tmp
 .venv
 env/
 venv/
