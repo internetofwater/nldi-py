@@ -13,9 +13,11 @@ from ..config import get_base_url
 from ..db.navigation import NAV_DIST_DEFAULTS, NavigationModes, navigation_query, trim_nav_query
 from ..db.repos import CatchmentRepository, CrawlerSourceRepository, FeatureRepository, FlowlineRepository
 from ..dto import DataSource
-from ..geojson import Feature, FeatureCollection, parse_geometry
+from ..geojson import Feature, FeatureCollection, Point, parse_geometry
 from ..media import MediaType
 from ..negotiate import check_format
+from ..pygeoapi import PyGeoAPIClient
+from ..util import parse_wkt_point
 
 # Common parameter annotations for OpenAPI documentation
 SourceName = Annotated[str, Parameter(description="Data source identifier (e.g. 'wqp', 'nwissite', 'comid')")]
@@ -61,6 +63,14 @@ async def provide_flowline_repo(db_session: AsyncSession) -> FlowlineRepository:
 async def provide_catchment_repo(db_session: AsyncSession) -> CatchmentRepository:
     """Provide CatchmentRepository via DI."""
     return CatchmentRepository(session=db_session)
+
+
+def provide_pygeoapi_client() -> PyGeoAPIClient:
+    """Provide PyGeoAPIClient via DI."""
+    import os
+
+    url = os.getenv("NLDI_PYGEOAPI_URL", "")
+    return PyGeoAPIClient(url)
 
 
 async def _resolve_comid(source_name, identifier, source_repo, feature_repo, flowline_repo) -> int:
@@ -162,13 +172,88 @@ class LinkedDataController(Controller):
         return result
 
     @get("/hydrolocation")
-    async def get_hydrolocation(self, coords: CoordsParam = "") -> None:
+    async def get_hydrolocation(
+        self,
+        catchment_repo: Annotated[CatchmentRepository, Dependency(skip_validation=True)],
+        flowline_repo: Annotated[FlowlineRepository, Dependency(skip_validation=True)],
+        pygeoapi_client: Annotated[PyGeoAPIClient, Dependency(skip_validation=True)],
+        coords: CoordsParam = "",
+    ) -> Response:
         """Return hydrologic location nearest to coordinates.
 
-        Accepts a WKT point geometry and returns the nearest hydrologic location.
-        Not yet implemented.
+        Accepts a WKT point geometry and returns the nearest hydrologic location
+        on the NHD flowline network, plus the original provided point.
         """
-        _not_implemented()
+        if not coords:
+            raise ClientException(detail="coords parameter is required.")
+
+        try:
+            lon, lat = parse_wkt_point(coords)
+        except ValueError as e:
+            raise ClientException(detail=str(e)) from e
+
+        base_url = get_base_url()
+
+        # Call pygeoapi flowtrace
+        payload = {
+            "inputs": [
+                {"id": "lon", "type": "text/plain", "value": str(lon)},
+                {"id": "lat", "type": "text/plain", "value": str(lat)},
+                {"id": "direction", "type": "text/plain", "value": "none"},
+            ]
+        }
+        response = await pygeoapi_client.post("processes/nldi-flowtrace/execution", payload)
+        snap_lon, snap_lat = response["features"][0]["properties"]["intersection_point"]
+        snap_wkt = f"POINT({snap_lon} {snap_lat})"
+
+        # Find catchment at snapped point
+        catchment = await catchment_repo.get_by_point(snap_wkt)
+        if not catchment:
+            raise NotFoundException(detail=f"No catchment found at {coords}")
+        comid = catchment.featureid
+
+        # Compute measure and reachcode
+        measure, reachcode = await flowline_repo.get_measure_and_reachcode(comid, snap_wkt)
+
+        nav_url = f"{base_url}/linked-data/comid/{comid}/navigation"
+
+        indexed_feature = Feature(
+            geometry=Point(coordinates=(snap_lon, snap_lat)),
+            properties={
+                "identifier": "",
+                "navigation": nav_url,
+                "measure": measure,
+                "reachcode": reachcode,
+                "name": "",
+                "source": "indexed",
+                "sourceName": "Automatically indexed by the NLDI",
+                "comid": comid,
+                "type": "hydrolocation",
+                "uri": "",
+            },
+        )
+
+        provided_feature = Feature(
+            geometry=Point(coordinates=(lon, lat)),
+            properties={
+                "identifier": "",
+                "navigation": "",
+                "measure": "",
+                "reachcode": "",
+                "name": "",
+                "source": "provided",
+                "sourceName": "Provided via API call",
+                "comid": "",
+                "type": "point",
+                "uri": "",
+            },
+        )
+
+        return Response(
+            content=FeatureCollection(features=[indexed_feature, provided_feature]),
+            status_code=200,
+            media_type=MediaType.GEOJSON,
+        )
 
     @get("/comid/position")
     async def flowline_by_position(

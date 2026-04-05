@@ -104,6 +104,25 @@ class FlowlineRepository(SQLAlchemyAsyncRepository[FlowlineModel]):
         result = await self.session.execute(stmt)
         return list(result)
 
+    async def get_measure_and_reachcode(self, comid: int, wkt_point: str) -> tuple[float | None, str | None]:
+        """Compute measure and reachcode for a point on a flowline."""
+        measure_expr = (
+            FlowlineModel.fmeasure
+            + (
+                1
+                - sqlalchemy.func.ST_LineLocatePoint(
+                    FlowlineModel.shape, sqlalchemy.func.ST_GeomFromText(wkt_point, 4269)
+                )
+            )
+            * (FlowlineModel.tmeasure - FlowlineModel.fmeasure)
+        ).label("measure")
+        stmt = sqlalchemy.select(measure_expr, FlowlineModel.reachcode).where(FlowlineModel.nhdplus_comid == comid)
+        result = await self.session.execute(stmt)
+        row = result.fetchone()
+        if not row:
+            return None, None
+        return float(row[0]) if row[0] is not None else None, row[1]
+
 
 class CatchmentRepository(SQLAlchemyAsyncRepository[CatchmentModel]):
     """Repository for catchment lookups."""

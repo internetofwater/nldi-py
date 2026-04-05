@@ -128,6 +128,10 @@ class FakeFlowlineRepository:
         """Fake: return all flowlines (ignores nav query)."""
         return self._flowlines
 
+    async def get_measure_and_reachcode(self, comid: int, wkt_point: str) -> tuple:
+        """Fake: return dummy measure and reachcode."""
+        return 50.0, "00000000000000"
+
 
 class FakeCatchmentModel:
     """Minimal stand-in for CatchmentModel."""

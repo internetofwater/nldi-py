@@ -18,6 +18,7 @@ from .controllers.linked_data import (
     provide_catchment_repo,
     provide_feature_repo,
     provide_flowline_repo,
+    provide_pygeoapi_client,
     provide_source_repo,
 )
 from .controllers.root import RootController
@@ -54,6 +55,7 @@ def create_app(dependencies: dict | None = None) -> Litestar:
         "feature_repo": Provide(provide_feature_repo),
         "flowline_repo": Provide(provide_flowline_repo),
         "catchment_repo": Provide(provide_catchment_repo),
+        "pygeoapi_client": Provide(provide_pygeoapi_client),
     }
     if dependencies:
         deps.update(dependencies)
