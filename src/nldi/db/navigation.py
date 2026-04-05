@@ -248,7 +248,20 @@ def basin_query(comid: int) -> Select:
     Returns comids of all upstream flowlines. Join to catchmentsp and
     ST_Union the geometries to get the drainage basin polygon.
 
-    Matches Java mybatis stream.xml basin query.
+    Matches Java mybatis stream.xml basin query. Should compile to::
+
+        WITH RECURSIVE nav(comid, hydroseq, startflag) AS (
+            SELECT comid, hydroseq, startflag
+            FROM nhdplus.plusflowlinevaa_np21
+            WHERE comid = :comid
+            UNION
+            SELECT vaa.comid, vaa.hydroseq, vaa.startflag
+            FROM nhdplus.plusflowlinevaa_np21 vaa, nav
+            WHERE nav.startflag != 1
+              AND (vaa.dnhydroseq = nav.hydroseq
+                   OR (vaa.dnminorhyd != 0 AND vaa.dnminorhyd = nav.hydroseq))
+        )
+        SELECT nav.comid FROM nav
     """
     from sqlalchemy import or_
 
