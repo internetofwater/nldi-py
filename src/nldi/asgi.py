@@ -85,6 +85,7 @@ def create_app(dependencies: dict | None = None) -> Litestar:
             version=__version__,
             path="/docs",
             render_plugins=[SwaggerRenderPlugin()],
+            use_handler_docstrings=True,
         ),
     )
 
