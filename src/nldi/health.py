@@ -40,7 +40,7 @@ async def check_pygeoapi() -> dict:
         return {"name": "pygeoapi", "cfg": "not configured", "status": "n/a"}
     try:
         async with httpx.AsyncClient(verify=False) as client:  # noqa: S501
-            r = await client.get(f"{url}/processes?f=json", timeout=5)
+            r = await client.get(f"{url.rstrip('/')}/processes?f=json", timeout=5)
         status = "online" if r.status_code == 200 else "offline"
         return {"name": "pygeoapi", "cfg": url, "status": status}
     except Exception as e:
