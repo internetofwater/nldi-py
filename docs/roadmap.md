@@ -50,7 +50,7 @@ One PR per endpoint or small logical group. Each PR includes integration tests a
 | ~~3.5~~ | excludeGeometry parameter on navigation endpoints | ✅ #176 |
 | ~~3.6~~ | OpenAPI documentation polish pass | ✅ #177 |
 
-## Phase 4: External services
+## Phase 4: External services ✅
 
 Endpoints that call pygeoapi. Proper timeout handling.
 
@@ -60,7 +60,8 @@ Endpoints that call pygeoapi. Proper timeout handling.
 | ~~health~~ | Enhanced health check (DB + pygeoapi status, no-cache) | ✅ #178, #179 |
 | ~~4.2~~ | `GET /linked-data/hydrolocation` | ✅ #181 |
 | ~~4.3~~ | `GET /linked-data/{source}/{id}/basin` (simple path) | ✅ #182 |
-| 4.4 | Basin split catchment (pygeoapi splitcatchment + fallback strategies) | 4.3 |
+| ~~4.4a~~ | FlowlineRepository spatial methods + splitcatchment client | ✅ #183 |
+| ~~4.4b~~ | Basin split catchment (Plan A/B/C fallback + pygeoapi) | ✅ #184 |
 
 ## Phase 5: JSON-LD
 
