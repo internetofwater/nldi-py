@@ -63,7 +63,7 @@ def create_app(dependencies: dict | None = None) -> Litestar:
         "feature_repo": Provide(provide_feature_repo),
         "flowline_repo": Provide(provide_flowline_repo),
         "catchment_repo": Provide(provide_catchment_repo),
-        "pygeoapi_client": Provide(provide_pygeoapi_client),
+        "pygeoapi_client": Provide(provide_pygeoapi_client, sync_to_thread=False),
     }
     if dependencies:
         deps.update(dependencies)
