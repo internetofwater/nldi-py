@@ -14,11 +14,11 @@ class FakeSource:
 class FakeFeatureModel:
     """Minimal stand-in for FeatureSourceModel."""
 
-    def __init__(self, identifier: str, source_suffix: str, source_name: str, name: str, uri: str):
+    def __init__(self, identifier: str, source_suffix: str, source_name: str, name: str, uri: str, comid: int | None = None):
         self.identifier = identifier
         self.name = name
         self.uri = uri
-        self.comid = None
+        self.comid = comid
         self.reachcode = None
         self.measure = None
         self.location = None
@@ -131,6 +131,20 @@ class FakeFlowlineRepository:
     async def get_measure_and_reachcode(self, comid: int, wkt_point: str) -> tuple:
         """Fake: return dummy measure and reachcode."""
         return 50.0, "00000000000000"
+
+    async def feat_get_point_along_flowline(self, feature_id: str, feature_source: str):
+        """Fake: return a point if flowlines exist, else None."""
+        if self._flowlines:
+            return (-89.47, 43.09)
+        return None
+
+    async def feat_get_distance_from_flowline(self, feature_id: str, feature_source: str):
+        """Fake: return None."""
+        return None
+
+    async def feat_get_nearest_point_on_flowline(self, feature_id: str, feature_source: str):
+        """Fake: return None."""
+        return None
 
 
 class FakeCatchmentModel:
