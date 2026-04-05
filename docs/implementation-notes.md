@@ -59,3 +59,7 @@ After Phase 3 is complete, do a fit/finish pass on OpenAPI docs:
 - Document valid `nav_mode` values (UM, UT, DM, DD) with examples
 - Add response schema descriptions for FeatureCollection endpoints
 - Add meaningful operation summaries where auto-generated ones are insufficient
+
+## pygeoapi test URL
+
+Integration and system tests should use `https://nhgf.dev-wma.chs.usgs.gov/api/nldi/pygeoapi/` as `NLDI_PYGEOAPI_URL`. This is the dev instance — do not use production pygeoapi for testing.
