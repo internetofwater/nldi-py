@@ -40,9 +40,17 @@ class TestFlowlineNavigation:
             r = client.get("/api/nldi/linked-data/comid/123/navigation/BOGUS/flowlines?distance=10")
             assert r.status_code == 400
 
-    def test_unsupported_mode_returns_501(self, fake_source_repo, fake_feature_repo, fake_flowline_repo):
-        """All modes now supported — this test verifies they don't 501."""
-        pass  # Removed: all modes implemented in 3.2
+    def test_all_modes_supported(self, fake_source_repo, fake_feature_repo, fake_flowline_repo, make_flowline):
+        """All nav modes are now implemented."""
+        app = _app_with_fakes(
+            fake_source_repo([]),
+            fake_feature_repo([]),
+            fake_flowline_repo([make_flowline(123)]),
+        )
+        with TestClient(app=app) as client:
+            for mode in ("DM", "DD", "UM", "UT"):
+                r = client.get(f"/api/nldi/linked-data/comid/123/navigation/{mode}/flowlines?distance=10")
+                assert r.status_code == 200, f"{mode} returned {r.status_code}"
 
     def test_invalid_comid_returns_400(self, fake_source_repo, fake_feature_repo, fake_flowline_repo):
         app = _app_with_fakes(fake_source_repo([]), fake_feature_repo([]), fake_flowline_repo([]))
