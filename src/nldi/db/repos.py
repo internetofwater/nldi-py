@@ -127,6 +127,15 @@ class FlowlineRepository(SQLAlchemyAsyncRepository[FlowlineModel]):
         """Interpolate a point along the flowline using the feature's measure.
 
         Returns (lon, lat) or None if the feature has no measure.
+
+        Should compile to::
+
+            SELECT ST_X(ST_LineInterpolatePoint(shape, scaled)), ST_Y(...)
+            FROM nhdplus.nhdflowline_np21
+            JOIN nldi_data.feature ON feature.comid = nhdflowline_np21.nhdplus_comid
+              AND feature.identifier = :feature_id
+            JOIN nldi_data.crawler_source ON lower(source_suffix) = :feature_source
+              AND feature.crawler_source_id = crawler_source.crawler_source_id
         """
         scaled = 1 - (
             (FeatureSourceModel.measure - FlowlineModel.fmeasure) / (FlowlineModel.tmeasure - FlowlineModel.fmeasure)
@@ -160,7 +169,17 @@ class FlowlineRepository(SQLAlchemyAsyncRepository[FlowlineModel]):
         return (float(row[0]), float(row[1]))
 
     async def feat_get_distance_from_flowline(self, feature_id: str, feature_source: str) -> float | None:
-        """Compute distance (meters) between a feature and its flowline."""
+        """Compute distance (meters) between a feature and its flowline.
+
+        Should compile to::
+
+            SELECT ST_Distance(feature.location, nhdflowline_np21.shape, false)
+            FROM nhdplus.nhdflowline_np21
+            JOIN nldi_data.feature ON feature.comid = nhdflowline_np21.nhdplus_comid
+              AND feature.identifier = :feature_id
+            JOIN nldi_data.crawler_source ON lower(source_suffix) = :feature_source
+              AND feature.crawler_source_id = crawler_source.crawler_source_id
+        """
         shapes = (
             sqlalchemy.select(
                 FlowlineModel.shape.label("shape"),
@@ -192,7 +211,17 @@ class FlowlineRepository(SQLAlchemyAsyncRepository[FlowlineModel]):
     async def feat_get_nearest_point_on_flowline(
         self, feature_id: str, feature_source: str
     ) -> tuple[float, float] | None:
-        """Find the closest point on the flowline to the feature location."""
+        """Find the closest point on the flowline to the feature location.
+
+        Should compile to::
+
+            SELECT ST_X(ST_ClosestPoint(shape, location)), ST_Y(...)
+            FROM nhdplus.nhdflowline_np21
+            JOIN nldi_data.feature ON feature.comid = nhdflowline_np21.nhdplus_comid
+              AND feature.identifier = :feature_id
+            JOIN nldi_data.crawler_source ON lower(source_suffix) = :feature_source
+              AND feature.crawler_source_id = crawler_source.crawler_source_id
+        """
         shapes = (
             sqlalchemy.select(
                 FlowlineModel.shape.label("shape"),
