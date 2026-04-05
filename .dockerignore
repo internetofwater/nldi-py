@@ -1,0 +1,11 @@
+tests/
+docs/
+.git/
+.gitignore
+.venv/
+__pycache__/
+*.pyc
+*.md
+Taskfile.yml
+header-comparison.md
+ISSUES.md
