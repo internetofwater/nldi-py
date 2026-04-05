@@ -54,11 +54,13 @@ One PR per endpoint or small logical group. Each PR includes integration tests a
 
 Endpoints that call pygeoapi. Proper timeout handling.
 
-| PR | Description | Depends on | Acceptance |
-| --- | --- | --- | --- |
-| 4.1 | pygeoapi client (httpx) with timeout handling — distinct exception for timeouts → 504 | 1.3 | Unit tests with mocked responses, timeout returns 504 |
-| 4.2 | `GET /linked-data/hydrolocation` | 4.1, 2.1 | Parity with Java |
-| 4.3 | `GET /linked-data/{source}/{id}/basin` — including split catchment | 4.1, 2.1 | Parity, split catchment works, timeout → 504 |
+| PR | Description | Status |
+| --- | --- | --- |
+| ~~4.1~~ | pygeoapi client with timeout handling → 504 | ✅ #180 |
+| ~~health~~ | Enhanced health check (DB + pygeoapi status, no-cache) | ✅ #178, #179 |
+| ~~4.2~~ | `GET /linked-data/hydrolocation` | ✅ #181 |
+| ~~4.3~~ | `GET /linked-data/{source}/{id}/basin` (simple path) | ✅ #182 |
+| 4.4 | Basin split catchment (pygeoapi splitcatchment + fallback strategies) | 4.3 |
 
 ## Phase 5: JSON-LD
 
