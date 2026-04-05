@@ -4,11 +4,13 @@
 
 from typing import Annotated
 
+import msgspec
 from litestar import Controller, Response, get, head
 from litestar.exceptions import ClientException
 from litestar.params import Dependency, Parameter
 
 from ...db.navigation import NAV_DIST_DEFAULTS, NavigationModes, navigation_query, trim_nav_query
+from ...jsonld import to_jsonld_graph
 from . import (
     CrawlerSourceRepository,
     DataSourceParam,
@@ -188,6 +190,7 @@ class NavigationController(Controller):
         flowline_repo: Annotated[FlowlineRepository, Dependency(skip_validation=True)],
         distance: float | None = None,
         exclude_geom: Annotated[bool, Parameter(query="excludeGeometry")] = False,
+        f: str = "",
     ) -> Response:
         """Navigate features of a data source.
 
@@ -207,10 +210,13 @@ class NavigationController(Controller):
 
         nav_q = navigation_query(mode_upper, comid=comid, distance=dist)
         feats = await feature_repo.from_nav_query(data_source, nav_q)
-        features = [_build_source_feature(f, base_url, data_source) for f in feats]
+        features = [_build_source_feature(f_item, base_url, data_source) for f_item in feats]
 
         if exclude_geom:
-            for f in features:
-                f.geometry = None
+            for feat in features:
+                feat.geometry = None
 
+        if f == "jsonld":
+            feature_dicts = [msgspec.to_builtins(feat) for feat in features]
+            return Response(content=to_jsonld_graph(feature_dicts), status_code=200, media_type=MediaType.JSONLD)
         return Response(content=FeatureCollection(features=features), status_code=200, media_type=MediaType.GEOJSON)
