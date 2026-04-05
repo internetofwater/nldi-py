@@ -63,17 +63,15 @@ Endpoints that call pygeoapi. Proper timeout handling.
 | ~~4.4a~~ | FlowlineRepository spatial methods + splitcatchment client | ✅ #183 |
 | ~~4.4b~~ | Basin split catchment (Plan A/B/C fallback + pygeoapi) | ✅ #184 |
 
-## Phase 5: JSON-LD
+## Phase 5: JSON-LD ✅
 
-| PR | Description | Depends on | Acceptance |
-| --- | --- | --- | --- |
-| 5.1 | `f=jsonld` support — evaluate build approach (Jinja vs Python builder), correct `application/ld+json` content type | 2.2–2.4, 3.2–3.3 | JSON-LD output matches expected graph structure |
+| PR | Description | Status |
+| --- | --- | --- |
+| ~~5.1~~ | `f=jsonld` support — Python builder, `application/ld+json` | ✅ #188 |
 
 ## Open questions
 
-Decisions to make during implementation, not before:
-
-- **JSON-LD** — Jinja template or Python string builder? Decide in Phase 5 based on complexity.
+All resolved.
 
 ## Decided
 
