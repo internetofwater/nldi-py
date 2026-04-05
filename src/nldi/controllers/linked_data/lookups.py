@@ -4,11 +4,13 @@
 
 from typing import Annotated
 
+import msgspec
 from litestar import Controller, Response, get, head
 from litestar.params import Dependency, Parameter
 
 from ...dto import DataSource
 from ...geojson import Feature, FeatureCollection, Point, parse_geometry
+from ...jsonld import to_jsonld_graph, to_jsonld_single
 from ...util import parse_wkt_point
 from . import (
     CatchmentRepository,
@@ -26,6 +28,19 @@ from . import (
     check_format,
     get_base_url,
 )
+
+
+def _respond_features(features: list[Feature], f: str = "") -> Response:
+    """Return features as GeoJSON or JSON-LD depending on f parameter."""
+    if f == "jsonld":
+        feature_dicts = [msgspec.to_builtins(feat) for feat in features]
+        if len(feature_dicts) == 1:
+            content = to_jsonld_single(feature_dicts[0])
+        else:
+            content = to_jsonld_graph(feature_dicts)
+        return Response(content=content, status_code=200, media_type=MediaType.JSONLD)
+    return Response(content=FeatureCollection(features=features), status_code=200, media_type=MediaType.GEOJSON)
+
 
 _LOOKUP_PATHS = [
     "/",
@@ -215,7 +230,7 @@ class LookupController(Controller):
                 raise NotFoundException(detail=f"No such source: {source_name}")
             items = await feature_repo.list_by_source(source_name, limit=limit, offset=offset)
             features = [_build_source_feature(feat, base_url, source_name) for feat in items]
-        return Response(content=FeatureCollection(features=features), status_code=200, media_type=MediaType.GEOJSON)
+        return _respond_features(features, f)
 
     @get("/{source_name:str}/{identifier:str}", tags=["by_sourceid"])
     async def get_feature_by_identifier(
@@ -258,4 +273,4 @@ class LookupController(Controller):
 
                 raise NotFoundException(detail=f"Feature {identifier} not found in source {source_name}.")
             feature = _build_source_feature(feat, base_url, source_name)
-        return Response(content=FeatureCollection(features=[feature]), status_code=200, media_type=MediaType.GEOJSON)
+        return _respond_features([feature], f)
