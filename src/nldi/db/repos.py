@@ -123,6 +123,139 @@ class FlowlineRepository(SQLAlchemyAsyncRepository[FlowlineModel]):
             return None, None
         return float(row[0]) if row[0] is not None else None, row[1]
 
+    async def feat_get_point_along_flowline(self, feature_id: str, feature_source: str) -> tuple[float, float] | None:
+        """Interpolate a point along the flowline using the feature's measure.
+
+        Returns (lon, lat) or None if the feature has no measure.
+
+        Should compile to::
+
+            SELECT ST_X(ST_LineInterpolatePoint(shape, scaled)), ST_Y(...)
+            FROM nhdplus.nhdflowline_np21
+            JOIN nldi_data.feature ON feature.comid = nhdflowline_np21.nhdplus_comid
+              AND feature.identifier = :feature_id
+            JOIN nldi_data.crawler_source ON lower(source_suffix) = :feature_source
+              AND feature.crawler_source_id = crawler_source.crawler_source_id
+        """
+        scaled = 1 - (
+            (FeatureSourceModel.measure - FlowlineModel.fmeasure) / (FlowlineModel.tmeasure - FlowlineModel.fmeasure)
+        )
+        point = sqlalchemy.func.ST_LineInterpolatePoint(FlowlineModel.shape, scaled)
+        stmt = (
+            sqlalchemy.select(
+                sqlalchemy.func.ST_X(point).label("lon"),
+                sqlalchemy.func.ST_Y(point).label("lat"),
+            )
+            .join(
+                FeatureSourceModel,
+                sqlalchemy.and_(
+                    FeatureSourceModel.comid == FlowlineModel.nhdplus_comid,
+                    FeatureSourceModel.identifier == sqlalchemy.bindparam("feature_id"),
+                ),
+            )
+            .join(
+                CrawlerSourceModel,
+                sqlalchemy.and_(
+                    sqlalchemy.func.lower(CrawlerSourceModel.source_suffix) == sqlalchemy.bindparam("feature_source"),
+                    FeatureSourceModel.crawler_source_id == CrawlerSourceModel.crawler_source_id,
+                ),
+            )
+            .params(feature_id=feature_id, feature_source=feature_source.lower())
+        )
+        result = await self.session.execute(stmt)
+        row = result.fetchone()
+        if not row or None in row:
+            return None
+        return (float(row[0]), float(row[1]))
+
+    async def feat_get_distance_from_flowline(self, feature_id: str, feature_source: str) -> float | None:
+        """Compute distance (meters) between a feature and its flowline.
+
+        Should compile to::
+
+            SELECT ST_Distance(feature.location, nhdflowline_np21.shape, false)
+            FROM nhdplus.nhdflowline_np21
+            JOIN nldi_data.feature ON feature.comid = nhdflowline_np21.nhdplus_comid
+              AND feature.identifier = :feature_id
+            JOIN nldi_data.crawler_source ON lower(source_suffix) = :feature_source
+              AND feature.crawler_source_id = crawler_source.crawler_source_id
+        """
+        shapes = (
+            sqlalchemy.select(
+                FlowlineModel.shape.label("shape"),
+                FeatureSourceModel.location.label("location"),
+            )
+            .join(
+                FeatureSourceModel,
+                sqlalchemy.and_(
+                    FeatureSourceModel.comid == FlowlineModel.nhdplus_comid,
+                    FeatureSourceModel.identifier == sqlalchemy.bindparam("feature_id"),
+                ),
+            )
+            .join(
+                CrawlerSourceModel,
+                sqlalchemy.and_(
+                    sqlalchemy.func.lower(CrawlerSourceModel.source_suffix) == sqlalchemy.bindparam("feature_source"),
+                    FeatureSourceModel.crawler_source_id == CrawlerSourceModel.crawler_source_id,
+                ),
+            )
+            .alias("shapes")
+        )
+        stmt = sqlalchemy.select(sqlalchemy.func.ST_Distance(shapes.c.location, shapes.c.shape, False)).params(
+            feature_id=feature_id, feature_source=feature_source.lower()
+        )
+        result = await self.session.execute(stmt)
+        dist = result.scalar()
+        return float(dist) if dist is not None else None
+
+    async def feat_get_nearest_point_on_flowline(
+        self, feature_id: str, feature_source: str
+    ) -> tuple[float, float] | None:
+        """Find the closest point on the flowline to the feature location.
+
+        Should compile to::
+
+            SELECT ST_X(ST_ClosestPoint(shape, location)), ST_Y(...)
+            FROM nhdplus.nhdflowline_np21
+            JOIN nldi_data.feature ON feature.comid = nhdflowline_np21.nhdplus_comid
+              AND feature.identifier = :feature_id
+            JOIN nldi_data.crawler_source ON lower(source_suffix) = :feature_source
+              AND feature.crawler_source_id = crawler_source.crawler_source_id
+        """
+        shapes = (
+            sqlalchemy.select(
+                FlowlineModel.shape.label("shape"),
+                FeatureSourceModel.location.label("location"),
+            )
+            .join(
+                FeatureSourceModel,
+                sqlalchemy.and_(
+                    FeatureSourceModel.comid == FlowlineModel.nhdplus_comid,
+                    FeatureSourceModel.identifier == sqlalchemy.bindparam("feature_id"),
+                ),
+            )
+            .join(
+                CrawlerSourceModel,
+                sqlalchemy.and_(
+                    sqlalchemy.func.lower(CrawlerSourceModel.source_suffix) == sqlalchemy.bindparam("feature_source"),
+                    FeatureSourceModel.crawler_source_id == CrawlerSourceModel.crawler_source_id,
+                ),
+            )
+            .alias("shapes")
+        )
+        point = sqlalchemy.select(
+            sqlalchemy.func.ST_ClosestPoint(shapes.c.shape, shapes.c.location).label("point")
+        ).alias("point")
+        stmt = sqlalchemy.select(
+            sqlalchemy.func.ST_X(point.c.point).label("lon"),
+            sqlalchemy.func.ST_Y(point.c.point).label("lat"),
+        ).params(feature_id=feature_id, feature_source=feature_source.lower())
+        result = await self.session.execute(stmt)
+        row = result.fetchone()
+        if not row or None in row:
+            return None
+        return (float(row[0]), float(row[1]))
+
 
 class CatchmentRepository(SQLAlchemyAsyncRepository[CatchmentModel]):
     """Repository for catchment lookups."""
