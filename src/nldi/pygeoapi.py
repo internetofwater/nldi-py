@@ -51,3 +51,23 @@ class PyGeoAPIClient:
             raise PyGeoAPIError(f"HTTP error from {url}: {e}") from e
         except json.JSONDecodeError as e:
             raise PyGeoAPIError(f"Invalid JSON from {url}: {e}") from e
+
+    async def splitcatchment(self, lon: float, lat: float) -> dict | None:
+        """Call pygeoapi splitcatchment service. Returns the merged catchment feature or None."""
+        payload = {
+            "inputs": [
+                {"id": "lon", "type": "text/plain", "value": str(lon)},
+                {"id": "lat", "type": "text/plain", "value": str(lat)},
+                {"id": "upstream", "type": "text/plain", "value": "true"},
+            ]
+        }
+        response = await self.post(
+            "processes/nldi-splitcatchment/execution",
+            payload,
+            timeout=self.timeout * 2,  # split is slow
+        )
+        for feature in response.get("features", []):
+            if feature.get("id") in ("mergedCatchment", "drainageBasin"):
+                feature.pop("id", None)
+                return feature
+        return None
