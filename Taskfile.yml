@@ -31,6 +31,11 @@ tasks:
     cmds:
       - uv run pytest tests/integration
 
+  test:system:
+    desc: Run system tests (requires running app — task dev)
+    cmds:
+      - uv run pytest tests/system -m system -v
+
   typecheck:
     desc: Run type checker
     cmds:
