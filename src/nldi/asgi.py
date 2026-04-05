@@ -21,8 +21,9 @@ from .controllers.linked_data import (
     provide_source_repo,
 )
 from .controllers.root import RootController
-from .errors import problem_details_handler, unhandled_exception_handler
+from .errors import gateway_timeout_handler, problem_details_handler, unhandled_exception_handler
 from .middleware import headers_middleware_factory
+from .pygeoapi import PyGeoAPITimeoutError
 
 
 def _db_plugin() -> list:
@@ -64,6 +65,7 @@ def create_app(dependencies: dict | None = None) -> Litestar:
         logging_config=LoggingConfig(root={"level": get_log_level(), "handlers": ["queue_listener"]}),
         exception_handlers={  # ty: ignore[invalid-argument-type]
             HTTPException: problem_details_handler,
+            PyGeoAPITimeoutError: gateway_timeout_handler,
             Exception: unhandled_exception_handler,
         },
         middleware=[headers_middleware_factory],
