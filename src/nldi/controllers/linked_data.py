@@ -10,7 +10,7 @@ from litestar.params import Dependency, Parameter
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..config import get_base_url
-from ..db.navigation import NAV_DIST_DEFAULTS, NavigationModes, navigation_query, trim_nav_query
+from ..db.navigation import NAV_DIST_DEFAULTS, NavigationModes, basin_query, navigation_query, trim_nav_query
 from ..db.repos import CatchmentRepository, CrawlerSourceRepository, FeatureRepository, FlowlineRepository
 from ..dto import DataSource
 from ..geojson import Feature, FeatureCollection, Point, parse_geometry
@@ -354,13 +354,33 @@ class LinkedDataController(Controller):
         return Response(content=FeatureCollection(features=[feature]), status_code=200, media_type=MediaType.GEOJSON)
 
     @get("/{source_name:str}/{identifier:str}/basin", tags=["by_sourceid"])
-    async def get_basin(self, source_name: SourceName, identifier: str) -> None:
+    async def get_basin(
+        self,
+        source_name: SourceName,
+        identifier: Identifier,
+        source_repo: Annotated[CrawlerSourceRepository, Dependency(skip_validation=True)],
+        feature_repo: Annotated[FeatureRepository, Dependency(skip_validation=True)],
+        flowline_repo: Annotated[FlowlineRepository, Dependency(skip_validation=True)],
+        catchment_repo: Annotated[CatchmentRepository, Dependency(skip_validation=True)],
+        simplified: Annotated[bool, Parameter(description="Simplify basin geometry")] = True,
+    ) -> Response:
         """Compute upstream basin polygon.
 
-        Returns the aggregated drainage basin for the specified feature.
-        Not yet implemented.
+        Returns the aggregated drainage basin for the specified feature
+        as a GeoJSON FeatureCollection with a single Polygon/MultiPolygon.
         """
-        _not_implemented()
+        comid = await _resolve_comid(source_name, identifier, source_repo, feature_repo, flowline_repo)
+        nav_q = basin_query(comid)
+        geojson_str = await catchment_repo.get_drainage_basin(nav_q, simplified=simplified)
+        if not geojson_str:
+            raise NotFoundException(detail=f"No basin found for {source_name}/{identifier}")
+
+        feature = Feature(
+            geometry=parse_geometry(geojson_str),
+            properties={},
+            id=0,
+        )
+        return Response(content=FeatureCollection(features=[feature]), status_code=200, media_type=MediaType.GEOJSON)
 
     @get("/{source_name:str}/{identifier:str}/navigation", tags=["by_sourceid"])
     async def get_navigation_modes(

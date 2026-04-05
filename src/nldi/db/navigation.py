@@ -240,3 +240,52 @@ def trim_nav_query(nav_mode: str, comid: int, trim_tolerance: float, measure: fl
     return select(FlowlineModel.nhdplus_comid.label("comid"), geom_expr.label("trimmed_geojson")).params(
         trim_comid=comid
     )
+
+
+def basin_query(comid: int) -> Select:
+    """Upstream basin CTE — walks all tributaries with no distance limit.
+
+    Returns comids of all upstream flowlines. Join to catchmentsp and
+    ST_Union the geometries to get the drainage basin polygon.
+
+    Matches Java mybatis stream.xml basin query. Should compile to::
+
+        WITH RECURSIVE nav(comid, hydroseq, startflag) AS (
+            SELECT comid, hydroseq, startflag
+            FROM nhdplus.plusflowlinevaa_np21
+            WHERE comid = :comid
+            UNION
+            SELECT vaa.comid, vaa.hydroseq, vaa.startflag
+            FROM nhdplus.plusflowlinevaa_np21 vaa, nav
+            WHERE nav.startflag != 1
+              AND (vaa.dnhydroseq = nav.hydroseq
+                   OR (vaa.dnminorhyd != 0 AND vaa.dnminorhyd = nav.hydroseq))
+        )
+        SELECT nav.comid FROM nav
+    """
+    from sqlalchemy import or_
+
+    nav = (
+        select(
+            FlowlineVAAModel.comid,
+            FlowlineVAAModel.hydroseq,
+            FlowlineVAAModel.startflag,
+        )
+        .where(FlowlineVAAModel.comid == bindparam("comid"))
+        .cte("nav", recursive=True)
+    )
+
+    vaa = aliased(FlowlineVAAModel, name="vaa")
+    nav_basin = nav.union(
+        select(vaa.comid, vaa.hydroseq, vaa.startflag).where(
+            and_(
+                nav.c.startflag != 1,
+                or_(
+                    vaa.dnhydroseq == nav.c.hydroseq,
+                    and_(vaa.dnminorhyd != 0, vaa.dnminorhyd == nav.c.hydroseq),
+                ),
+            )
+        )
+    )
+
+    return select(nav_basin.c.comid).select_from(nav_basin).params(comid=comid)
