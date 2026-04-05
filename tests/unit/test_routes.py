@@ -32,17 +32,6 @@ def test_health_check():
 
 import pytest
 
-STUB_PATHS = [
-    "/api/nldi/linked-data/wqp/USGS-01/basin",
-]
-
-
-@pytest.mark.parametrize("path", STUB_PATHS)
-def test_linked_data_stubs_return_501(path):
-    with _client() as client:
-        r = client.get(path)
-        assert r.status_code == 501
-
 
 def test_cors_headers_on_response():
     with _client() as client:

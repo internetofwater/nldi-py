@@ -151,6 +151,12 @@ class FakeCatchmentRepository:
         """Return first catchment if any exist."""
         return self._catchments[0] if self._catchments else None
 
+    async def get_drainage_basin(self, nav_query, simplified: bool = True) -> str | None:
+        """Fake: return a simple polygon GeoJSON string."""
+        if not self._catchments:
+            return None
+        return '{"type":"Polygon","coordinates":[[[-89,43],[-89,44],[-88,44],[-88,43],[-89,43]]]}'
+
 
 @pytest.fixture()
 def fake_source_repo():

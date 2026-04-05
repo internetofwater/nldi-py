@@ -136,3 +136,27 @@ class CatchmentRepository(SQLAlchemyAsyncRepository[CatchmentModel]):
         return await self.get_one_or_none(
             sqlalchemy.func.ST_Intersects(CatchmentModel.the_geom, point),
         )
+
+    async def get_drainage_basin(self, basin_nav_query: sqlalchemy.sql.Select, simplified: bool = True) -> str | None:
+        """Aggregate upstream catchment polygons into a basin geometry.
+
+        Returns GeoJSON string of the unioned polygon, optionally simplified.
+        """
+        subq = basin_nav_query.subquery()
+        if simplified:
+            geom = sqlalchemy.func.ST_AsGeoJSON(
+                sqlalchemy.func.ST_Simplify(sqlalchemy.func.ST_Union(CatchmentModel.the_geom), 0.001), 9, 0
+            )
+        else:
+            geom = sqlalchemy.func.ST_AsGeoJSON(sqlalchemy.func.ST_Union(CatchmentModel.the_geom), 9, 0)
+
+        stmt = (
+            sqlalchemy.select(geom.label("shape"))
+            .select_from(subq)
+            .join(CatchmentModel, subq.c.comid == CatchmentModel.featureid)
+        )
+        result = await self.session.execute(stmt)
+        row = result.fetchone()
+        if not row or not row[0]:
+            return None
+        return str(row[0])
