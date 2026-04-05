@@ -63,3 +63,13 @@ After Phase 3 is complete, do a fit/finish pass on OpenAPI docs:
 ## pygeoapi test URL
 
 Integration and system tests should use `https://nhgf.dev-wma.chs.usgs.gov/api/nldi/pygeoapi/` as `NLDI_PYGEOAPI_URL`. This is the dev instance — do not use production pygeoapi for testing.
+
+## Split linked_data.py into sub-controllers
+
+`linked_data.py` is growing large. Natural split:
+- `controllers/linked_data/lookups.py` — sources, features, position, hydrolocation
+- `controllers/linked_data/navigation.py` — modes, info, flowline nav, feature nav
+- `controllers/linked_data/basin.py` — basin endpoint
+- `controllers/linked_data/__init__.py` — shared helpers, DI providers, re-exports
+
+Do as a cleanup PR after Phase 4.
