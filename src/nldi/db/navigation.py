@@ -41,6 +41,22 @@ def dm(comid: int, distance: float, coastal_fcode: int = COASTAL_FCODE) -> Selec
 
     Walks downstream following the main channel (dnhydroseq) on the same
     terminal path. Stops when distance is exceeded or coastal fcode is reached.
+
+    Should compile to::
+
+        WITH RECURSIVE nav(comid, terminalpathid, dnhydroseq, fcode, stoplength) AS (
+            SELECT comid, terminalpathid, dnhydroseq, fcode,
+                   pathlength + lengthkm - :distance AS stoplength
+            FROM nhdplus.plusflowlinevaa_np21 WHERE comid = :comid
+            UNION
+            SELECT vaa.comid, vaa.terminalpathid, vaa.dnhydroseq, vaa.fcode, nav.stoplength
+            FROM nhdplus.plusflowlinevaa_np21 vaa, nav
+            WHERE vaa.hydroseq = nav.dnhydroseq
+              AND vaa.terminalpathid = nav.terminalpathid
+              AND vaa.fcode != :coastal_fcode
+              AND vaa.pathlength + vaa.lengthkm >= nav.stoplength
+        )
+        SELECT nav.comid FROM nav
     """
     nav = (
         select(
@@ -82,6 +98,24 @@ def dd(comid: int, distance: float, coastal_fcode: int = COASTAL_FCODE) -> Selec
 
     Walks downstream following both main channel (dnhydroseq) and diversions
     (dnminorhyd). Stops at distance, coastal fcode, or terminal flag.
+
+    Should compile to::
+
+        WITH RECURSIVE nav(comid, dnhydroseq, dnminorhyd, fcode, stoplength, terminalflag) AS (
+            SELECT comid, dnhydroseq, dnminorhyd, fcode,
+                   pathlength + lengthkm - :distance AS stoplength, terminalflag
+            FROM nhdplus.plusflowlinevaa_np21 WHERE comid = :comid
+            UNION
+            SELECT vaa.comid, vaa.dnhydroseq, vaa.dnminorhyd, vaa.fcode,
+                   nav.stoplength, vaa.terminalflag
+            FROM nhdplus.plusflowlinevaa_np21 vaa, nav
+            WHERE (vaa.hydroseq = nav.dnhydroseq
+                   OR (nav.dnminorhyd != 0 AND vaa.hydroseq = nav.dnminorhyd))
+              AND vaa.fcode != :coastal_fcode
+              AND nav.terminalflag != 1
+              AND vaa.pathlength + vaa.lengthkm >= nav.stoplength
+        )
+        SELECT nav.comid FROM nav
     """
     nav = (
         select(
@@ -123,6 +157,22 @@ def um(comid: int, distance: float, coastal_fcode: int = COASTAL_FCODE) -> Selec
 
     Walks upstream following the main channel (uphydroseq) on the same
     level path. Stops when distance is exceeded or coastal fcode is reached.
+
+    Should compile to::
+
+        WITH RECURSIVE nav(comid, levelpathid, uphydroseq, fcode, stoplength) AS (
+            SELECT comid, levelpathid, uphydroseq, fcode,
+                   pathlength + :distance AS stoplength
+            FROM nhdplus.plusflowlinevaa_np21 WHERE comid = :comid
+            UNION ALL
+            SELECT vaa.comid, vaa.levelpathid, vaa.uphydroseq, vaa.fcode, nav.stoplength
+            FROM nhdplus.plusflowlinevaa_np21 vaa, nav
+            WHERE vaa.hydroseq = nav.uphydroseq
+              AND vaa.levelpathid = nav.levelpathid
+              AND vaa.fcode != :coastal_fcode
+              AND vaa.pathlength <= nav.stoplength
+        )
+        SELECT nav.comid FROM nav
     """
     nav = (
         select(
@@ -158,6 +208,23 @@ def ut(comid: int, distance: float, coastal_fcode: int = COASTAL_FCODE) -> Selec
 
     Walks upstream following all tributaries (any segment whose dnhydroseq
     matches the current hydroseq). Stops at distance, coastal fcode, or startflag.
+
+    Should compile to::
+
+        WITH RECURSIVE nav(comid, hydroseq, startflag, fcode, stoplength) AS (
+            SELECT comid, hydroseq, startflag, fcode,
+                   pathlength + :distance AS stoplength
+            FROM nhdplus.plusflowlinevaa_np21 WHERE comid = :comid
+            UNION
+            SELECT vaa.comid, vaa.hydroseq, vaa.startflag, vaa.fcode, nav.stoplength
+            FROM nhdplus.plusflowlinevaa_np21 vaa, nav
+            WHERE nav.startflag != 1
+              AND (vaa.dnhydroseq = nav.hydroseq
+                   OR (vaa.dnminorhyd != 0 AND vaa.dnminorhyd = nav.hydroseq))
+              AND vaa.fcode != :coastal_fcode
+              AND vaa.pathlength <= nav.stoplength
+        )
+        SELECT nav.comid FROM nav
     """
     from sqlalchemy import or_
 
