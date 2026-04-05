@@ -12,7 +12,7 @@ from litestar.logging import LoggingConfig
 from litestar.openapi.config import OpenAPIConfig
 from litestar.openapi.plugins import SwaggerRenderPlugin
 
-from . import __version__
+from . import __description__, __title__, __version__
 from .config import get_database_url, get_log_level, get_prefix
 from .controllers.linked_data import (
     provide_catchment_repo,
@@ -81,7 +81,7 @@ def create_app(dependencies: dict | None = None) -> Litestar:
         },
         middleware=[headers_middleware_factory],
         openapi_config=OpenAPIConfig(
-            title="Network Linked Data Index API",
+            title=__title__,
             version=__version__,
             path="/docs",
             render_plugins=[SwaggerRenderPlugin()],

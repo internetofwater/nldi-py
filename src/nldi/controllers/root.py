@@ -5,6 +5,7 @@
 from litestar import Controller, Response, get, head
 from litestar.response import Redirect
 
+from .. import __description__, __title__
 from ..config import get_prefix
 from ..health import health_status
 from ..media import MediaType
@@ -25,8 +26,8 @@ class RootController(Controller):
     async def landing_page(self) -> dict:
         """Landing page."""
         return {
-            "title": "Network Linked Data Index API",
-            "description": "NLDI API",
+            "title": __title__,
+            "description": __description__,
             "links": [
                 {"rel": "data", "type": MediaType.JSON, "title": "Sources", "href": "linked-data"},
                 {"rel": "service-doc", "type": MediaType.HTML, "title": "API docs", "href": "docs"},

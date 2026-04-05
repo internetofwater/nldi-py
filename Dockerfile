@@ -20,6 +20,6 @@ WORKDIR /nldi
 
 RUN pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org --prefer-binary --no-cache-dir /nldi  && rm -rf /root/.cache/pip
 
-RUN mv /nldi/tests/data/nldi_server_config.yml /nldi/local.source.yml
+#RUN mv /nldi/tests/data/nldi_server_config.yml /nldi/local.source.yml
 
 ENTRYPOINT ["/nldi/start_nldi_server.sh"]
