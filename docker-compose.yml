@@ -34,7 +34,7 @@ services:
       NLDI_DB_NAME: nldi
       NLDI_DB_USERNAME: nldi
       NLDI_DB_PASSWORD: changeMe
-      NLDI_PYGEOAPI_URL: https://labs.waterdata.usgs.gov/api/nldi/pygeoapi/
+      PYGEOAPI_URL: https://labs.waterdata.usgs.gov/api/nldi/pygeoapi/
       NLDI_LOG_LEVEL: INFO
     networks:
       - nldi

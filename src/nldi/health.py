@@ -35,7 +35,7 @@ async def check_db() -> dict:
 
 async def check_pygeoapi() -> dict:
     """Check pygeoapi service reachability."""
-    url = os.getenv("NLDI_PYGEOAPI_URL", "")
+    url = os.getenv("PYGEOAPI_URL", "")
     if not url:
         return {"name": "pygeoapi", "cfg": "not configured", "status": "n/a"}
     try:

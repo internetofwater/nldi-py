@@ -44,7 +44,7 @@ def provide_pygeoapi_client() -> PyGeoAPIClient:
     """Provide PyGeoAPIClient via DI."""
     import os
 
-    url = os.getenv("NLDI_PYGEOAPI_URL", "")
+    url = os.getenv("PYGEOAPI_URL", "")
     return PyGeoAPIClient(url)
 
 
