@@ -15,13 +15,15 @@ from litestar.openapi.plugins import SwaggerRenderPlugin
 from . import __version__
 from .config import get_database_url, get_log_level, get_prefix
 from .controllers.linked_data import (
-    LinkedDataController,
     provide_catchment_repo,
     provide_feature_repo,
     provide_flowline_repo,
     provide_pygeoapi_client,
     provide_source_repo,
 )
+from .controllers.linked_data.basin import BasinController
+from .controllers.linked_data.lookups import LookupController
+from .controllers.linked_data.navigation import NavigationController
 from .controllers.root import RootController
 from .errors import (
     db_unavailable_handler,
@@ -66,7 +68,7 @@ def create_app(dependencies: dict | None = None) -> Litestar:
     if dependencies:
         deps.update(dependencies)
     return Litestar(
-        route_handlers=[RootController, LinkedDataController],
+        route_handlers=[RootController, LookupController, NavigationController, BasinController],
         path=get_prefix(),
         plugins=_db_plugin(),
         dependencies=deps,
