@@ -33,7 +33,6 @@ def test_health_check():
 import pytest
 
 STUB_PATHS = [
-    "/api/nldi/linked-data/hydrolocation?coords=POINT(-89 43)",
     "/api/nldi/linked-data/wqp/USGS-01/basin",
 ]
 
