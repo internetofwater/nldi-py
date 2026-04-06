@@ -9,11 +9,11 @@ from nldi.config import get_base_url, get_database_url, get_log_level, get_prefi
 
 class TestPrefix:
     def test_default(self):
-        os.environ.pop("NLDI_PREFIX", None)
+        os.environ.pop("NLDI_PATH", None)
         assert get_prefix() == "/api/nldi"
 
     def test_custom(self, monkeypatch):
-        monkeypatch.setenv("NLDI_PREFIX", "/custom")
+        monkeypatch.setenv("NLDI_PATH", "/custom")
         assert get_prefix() == "/custom"
 
 
@@ -59,10 +59,16 @@ class TestDatabaseUrl:
 
 class TestBaseUrl:
     def test_from_env(self, monkeypatch):
-        monkeypatch.setenv("NLDI_BASE_URL", "https://api.water.usgs.gov/nldi")
+        monkeypatch.setenv("NLDI_URL", "https://api.water.usgs.gov")
+        monkeypatch.setenv("NLDI_PATH", "/nldi")
         assert get_base_url() == "https://api.water.usgs.gov/nldi"
 
-    def test_missing_raises(self, monkeypatch):
-        monkeypatch.delenv("NLDI_BASE_URL", raising=False)
-        with pytest.raises(RuntimeError, match="NLDI_BASE_URL"):
-            get_base_url()
+    def test_strips_trailing_slash(self, monkeypatch):
+        monkeypatch.setenv("NLDI_URL", "https://api.water.usgs.gov/")
+        monkeypatch.setenv("NLDI_PATH", "/nldi")
+        assert get_base_url() == "https://api.water.usgs.gov/nldi"
+
+    def test_falls_back_to_localhost(self, monkeypatch):
+        monkeypatch.delenv("NLDI_URL", raising=False)
+        monkeypatch.delenv("NLDI_PATH", raising=False)
+        assert get_base_url() == "http://localhost:8000/api/nldi"

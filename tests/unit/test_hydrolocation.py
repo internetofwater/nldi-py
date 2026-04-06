@@ -30,7 +30,7 @@ class FakePyGeoAPIClientTimeout:
 
 
 def _app_with_fakes(catchment_repo, flowline_repo, pygeoapi_client):
-    os.environ.setdefault("NLDI_BASE_URL", "https://test.example.com/nldi")
+    os.environ.setdefault("NLDI_URL", "https://test.example.com")
     return create_app(dependencies={
         "catchment_repo": Provide(lambda: catchment_repo, sync_to_thread=False),
         "flowline_repo": Provide(lambda: flowline_repo, sync_to_thread=False),

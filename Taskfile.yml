@@ -31,6 +31,15 @@ tasks:
     cmds:
       - uv run pytest tests/integration
 
+  test:system:
+    desc: Run system tests (requires running app — task dev)
+    cmds:
+      - uv run pytest tests/system -m system -v
+    env:
+      NLDI_TEST_URL: "{{.NLDI_TEST_URL}}"
+    vars:
+      NLDI_TEST_URL: '{{.NLDI_TEST_URL | default "http://localhost:8000/api/nldi"}}'
+
   typecheck:
     desc: Run type checker
     cmds:
@@ -39,9 +48,7 @@ tasks:
   dev:
     desc: Run app locally with decrypted secrets from ~/.secrets/nldi.env.gpg
     cmds:
-      - gpg --quiet --decrypt ~/.secrets/nldi.env.gpg > .env.tmp
-      - defer: rm -f .env.tmp
-      - cmd: env $(cat .env.tmp | xargs) uv run uvicorn nldi.asgi:app --reload
+      - env $(gpg --quiet --decrypt ~/.secrets/nldi.env.gpg | xargs) uv run uvicorn nldi.asgi:app --reload
 
   check:
     desc: Pre-commit gate — lint, format check, unit tests

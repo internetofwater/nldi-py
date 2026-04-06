@@ -11,6 +11,7 @@ from litestar.exceptions import HTTPException
 from litestar.logging import LoggingConfig
 from litestar.openapi.config import OpenAPIConfig
 from litestar.openapi.plugins import SwaggerRenderPlugin
+from litestar.router import Router
 
 from . import __description__, __title__, __version__
 from .config import get_database_url, get_log_level, get_prefix
@@ -31,7 +32,7 @@ from .errors import (
     problem_details_handler,
     unhandled_exception_handler,
 )
-from .middleware import headers_middleware_factory
+from .middleware import headers_middleware_factory, timing_middleware_factory
 from .pygeoapi import PyGeoAPITimeoutError
 
 
@@ -67,8 +68,13 @@ def create_app(dependencies: dict | None = None) -> Litestar:
     }
     if dependencies:
         deps.update(dependencies)
+    linked_data_router = Router(
+        path="/",
+        route_handlers=[LookupController, NavigationController, BasinController],
+        middleware=[timing_middleware_factory],
+    )
     return Litestar(
-        route_handlers=[RootController, LookupController, NavigationController, BasinController],
+        route_handlers=[RootController, linked_data_router],
         path=get_prefix(),
         plugins=_db_plugin(),
         dependencies=deps,

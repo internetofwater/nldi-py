@@ -7,13 +7,17 @@ import os
 
 
 def get_prefix() -> str:
-    """Return the URL path prefix for the application."""
-    return os.getenv("NLDI_PREFIX", "/api/nldi")
+    """Return the URL path prefix from NLDI_PATH env var."""
+    return os.getenv("NLDI_PATH", "/api/nldi")
 
 
 def get_log_level() -> str:
-    """Return the configured log level name from NLDI_LOG_LEVEL env var."""
-    name = os.getenv("NLDI_LOG_LEVEL", "WARNING").upper()
+    """Return the configured log level name.
+
+    Checks NLDI_LOG_LEVEL first, then springFrameworkLogLevel for
+    legacy compatibility. Defaults to WARNING.
+    """
+    name = (os.getenv("NLDI_LOG_LEVEL") or os.getenv("springFrameworkLogLevel") or "WARNING").upper()
     if name not in logging.getLevelNamesMapping():
         return "WARNING"
     return name
@@ -48,8 +52,10 @@ def get_database_url() -> str:
 
 
 def get_base_url() -> str:
-    """Return the public-facing base URL from NLDI_BASE_URL env var."""
-    url = os.getenv("NLDI_BASE_URL")
-    if not url:
-        raise RuntimeError("NLDI_BASE_URL environment variable is required but not set.")
-    return url
+    """Build the public-facing base URL from NLDI_URL + NLDI_PATH.
+
+    Falls back to http://localhost:8000 + prefix for local dev.
+    """
+    url = os.getenv("NLDI_URL", "http://localhost:8000").rstrip("/")
+    path = get_prefix()
+    return f"{url}{path}"

@@ -9,7 +9,7 @@ from nldi.asgi import create_app
 
 
 def _app_with_fakes(source_repo, feature_repo, flowline_repo, catchment_repo):
-    os.environ.setdefault("NLDI_BASE_URL", "https://test.example.com/nldi")
+    os.environ.setdefault("NLDI_URL", "https://test.example.com")
     return create_app(dependencies={
         "source_repo": Provide(lambda: source_repo, sync_to_thread=False),
         "feature_repo": Provide(lambda: feature_repo, sync_to_thread=False),
