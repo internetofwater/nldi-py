@@ -1,0 +1,20 @@
+{
+  "endpoint": "/linked-data/comid/13293396/navigation/DM/flowlines?distance=10&f=json",
+  "captured": "2026-04-06T02:10:19.921642+00:00",
+  "feature_count": 6,
+  "content_type": "application/geo+json",
+  "property_keys": [
+    "nhdplus_comid"
+  ],
+  "geometry_types": [
+    "LineString"
+  ],
+  "sources_present": [],
+  "first_feature": {
+    "type": "Feature",
+    "geometry": null,
+    "properties": {
+      "nhdplus_comid": "13293396"
+    }
+  }
+}

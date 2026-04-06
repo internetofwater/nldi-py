@@ -1,0 +1,6 @@
+{
+  "upstreamMain": "https://api.water.usgs.gov/nldi/linked-data/comid/13293396/navigation/UM",
+  "upstreamTributaries": "https://api.water.usgs.gov/nldi/linked-data/comid/13293396/navigation/UT",
+  "downstreamMain": "https://api.water.usgs.gov/nldi/linked-data/comid/13293396/navigation/DM",
+  "downstreamDiversions": "https://api.water.usgs.gov/nldi/linked-data/comid/13293396/navigation/DD"
+}

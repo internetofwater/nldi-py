@@ -1,0 +1,38 @@
+{
+  "endpoint": "/linked-data/nwissite?f=json",
+  "captured": "2026-04-06T02:10:19.131847+00:00",
+  "feature_count": 200879,
+  "content_type": "application/geo+json",
+  "property_keys": [
+    "comid",
+    "identifier",
+    "measure",
+    "name",
+    "navigation",
+    "reachcode",
+    "source",
+    "sourceName",
+    "type",
+    "uri"
+  ],
+  "geometry_types": [
+    "Point"
+  ],
+  "sources_present": [
+    "nwissite"
+  ],
+  "first_feature": {
+    "type": "Feature",
+    "geometry": null,
+    "properties": {
+      "type": "hydrolocation",
+      "source": "nwissite",
+      "sourceName": "NWIS Surface Water Sites",
+      "identifier": "USGS-08329873",
+      "name": "HOFFMANTOWN CHURCH OUTLET NO. 1 AT ALBQ., NM",
+      "uri": "https://waterdata.usgs.gov/monitoring-location/USGS-08329873",
+      "comid": "",
+      "navigation": "https://api.water.usgs.gov/nldi/linked-data/nwissite/USGS-08329873/navigation"
+    }
+  }
+}
