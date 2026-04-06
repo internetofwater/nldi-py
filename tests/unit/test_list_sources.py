@@ -11,7 +11,7 @@ from nldi.dto import DataSource
 
 def _app_with_fake_sources(sources, fake_source_repo_cls):
     """Create app with fake source repo injected at app level."""
-    os.environ.setdefault("NLDI_BASE_URL", "https://test.example.com/nldi")
+    os.environ.setdefault("NLDI_URL", "https://test.example.com")
     fake = fake_source_repo_cls(sources)
     return create_app(dependencies={"source_repo": Provide(lambda: fake, sync_to_thread=False)})
 
@@ -41,13 +41,13 @@ def test_list_sources_includes_db_sources(fake_source_repo, make_source):
 
 
 def test_list_sources_features_urls_use_base_url(monkeypatch, fake_source_repo, make_source):
-    monkeypatch.setenv("NLDI_BASE_URL", "https://custom.example.com/api")
+    monkeypatch.setenv("NLDI_URL", "https://custom.example.com")
     app = _app_with_fake_sources([make_source("wqp", "WQP")], fake_source_repo)
     with TestClient(app=app) as client:
         r = client.get("/api/nldi/linked-data/")
         body = r.json()
-        assert body[0]["features"] == "https://custom.example.com/api/linked-data/comid"
-        assert body[1]["features"] == "https://custom.example.com/api/linked-data/wqp"
+        assert body[0]["features"] == "https://custom.example.com/api/nldi/linked-data/comid"
+        assert body[1]["features"] == "https://custom.example.com/api/nldi/linked-data/wqp"
 
 
 def test_list_sources_empty_db(fake_source_repo):

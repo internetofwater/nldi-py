@@ -15,5 +15,5 @@ def base_url():
 
 @pytest.fixture(scope="session")
 def client():
-    with httpx.Client(base_url=BASE_URL, timeout=30) as c:
+    with httpx.Client(base_url=BASE_URL + "/", timeout=30) as c:
         yield c

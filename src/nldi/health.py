@@ -19,8 +19,8 @@ logger = logging.getLogger(__name__)
 async def check_db() -> dict:
     """Check database connectivity. Returns sanitized status."""
     host = os.getenv("NLDI_DB_HOST", "unknown")
-    # Sanitize: show only domain suffix, no credentials
-    sanitized_host = ".".join(host.split(".")[-2:]) if "." in host else host
+    # Sanitize: strip hostname, keep rest of FQDN
+    sanitized_host = ".".join(host.split(".")[1:]) if "." in host else host
     try:
         url = get_database_url()
         engine = create_async_engine(url, connect_args={"timeout": 3})
