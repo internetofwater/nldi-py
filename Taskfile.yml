@@ -31,6 +31,15 @@ tasks:
     cmds:
       - uv run pytest tests/integration
 
+  test:parity:
+    desc: Run parity tests (requires running app — task dev)
+    cmds:
+      - uv run pytest tests/parity -m parity -v
+    env:
+      NLDI_TEST_URL: "{{.NLDI_TEST_URL}}"
+    vars:
+      NLDI_TEST_URL: '{{.NLDI_TEST_URL | default "http://localhost:8000/api/nldi"}}'
+
   test:system:
     desc: Run system tests (requires running app — task dev)
     cmds:
