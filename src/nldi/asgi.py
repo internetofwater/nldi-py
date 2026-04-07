@@ -85,6 +85,7 @@ def create_app(dependencies: dict | None = None) -> Litestar:
             HTTPException: problem_details_handler,
             PyGeoAPITimeoutError: gateway_timeout_handler,
             sqlalchemy.exc.OperationalError: db_unavailable_handler,
+            sqlalchemy.exc.TimeoutError: db_unavailable_handler,
             Exception: unhandled_exception_handler,
         },
         middleware=[headers_middleware_factory],
