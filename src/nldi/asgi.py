@@ -3,6 +3,7 @@
 """ASGI application factory."""
 
 import sqlalchemy.exc
+from advanced_alchemy.exceptions import RepositoryError
 from advanced_alchemy.extensions.litestar import SQLAlchemyAsyncConfig, SQLAlchemyPlugin
 from advanced_alchemy.extensions.litestar.plugins.init.config.engine import EngineConfig
 from litestar import Litestar
@@ -47,12 +48,13 @@ def _db_plugin() -> list:
             config=SQLAlchemyAsyncConfig(
                 connection_string=url,
                 create_all=False,
-                before_send_handler="autocommit",
+                set_default_exception_handler=False,
                 engine_config=EngineConfig(
                     pool_pre_ping=True,
                     pool_size=10,
                     max_overflow=10,
                     pool_timeout=60,
+                    connect_args={"server_settings": {"statement_timeout": "120000"}},
                 ),
             )
         )
@@ -84,8 +86,10 @@ def create_app(dependencies: dict | None = None) -> Litestar:
         exception_handlers={  # ty: ignore[invalid-argument-type]
             HTTPException: problem_details_handler,
             PyGeoAPITimeoutError: gateway_timeout_handler,
+            RepositoryError: db_unavailable_handler,
             sqlalchemy.exc.OperationalError: db_unavailable_handler,
             sqlalchemy.exc.TimeoutError: db_unavailable_handler,
+            TimeoutError: db_unavailable_handler,
             Exception: unhandled_exception_handler,
         },
         middleware=[headers_middleware_factory],
