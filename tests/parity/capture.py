@@ -23,7 +23,7 @@ from pathlib import Path
 import httpx
 
 JAVA_BASE = "https://api.water.usgs.gov/nldi"
-FIXTURES = Path(__file__).resolve().parent.parent / "tests" / "parity" / "fixtures"
+FIXTURES = Path(__file__).resolve().parent / "fixtures"
 
 # ---------------------------------------------------------------------------
 # Tier 1: Full golden files (geometry stripped)

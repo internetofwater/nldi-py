@@ -117,3 +117,6 @@ scratch.ipynb
 
 tests/load/?/
 tests/load/out*
+
+# Load test results
+tests/load/results/

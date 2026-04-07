@@ -31,6 +31,23 @@ tasks:
     cmds:
       - uv run pytest tests/integration
 
+  test:load:
+    desc: Run load test (requires running app — task dev)
+    cmds:
+      - mkdir -p tests/load/results
+      - >
+        uv run locust
+        -f tests/load/locustfile.py
+        --host {{.NLDI_TEST_URL}}
+        --users 20
+        --spawn-rate 5
+        --run-time 2m
+        --headless
+        --csv tests/load/results/report
+        --html tests/load/results/report.html
+    vars:
+      NLDI_TEST_URL: '{{.NLDI_TEST_URL | default "http://localhost:8000/api/nldi"}}'
+
   test:parity:
     desc: Run parity tests (requires running app — task dev)
     cmds:
