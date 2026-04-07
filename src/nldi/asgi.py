@@ -47,6 +47,7 @@ def _db_plugin() -> list:
             config=SQLAlchemyAsyncConfig(
                 connection_string=url,
                 create_all=False,
+                before_send_handler="autocommit",
                 engine_config=EngineConfig(
                     pool_pre_ping=True,
                     pool_size=10,
