@@ -21,6 +21,8 @@ class GeoJSONGeometry(geoalchemy2.Geometry):
     ST_AsGeoJSON(), so the value comes back as a JSON string instead of WKB.
     """
 
+    cache_ok = True
+
     def column_expression(self, col):
         """Override to return ST_AsGeoJSON instead of raw geometry."""
         return func.ST_AsGeoJSON(col, 9, 0)

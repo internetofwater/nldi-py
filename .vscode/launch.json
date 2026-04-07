@@ -11,11 +11,28 @@
             "args": [
                 "--host", "0.0.0.0",
                 "--port", "8000",
-                "--workers",
-                "1",
+                "--workers", "1",
                 "--reload",
                 "nldi.asgi:app",
             ]
+        },
+
+        {
+            "name": "uvicorn (with secrets)",
+            "type": "debugpy",
+            "justMyCode": false,
+            "request": "launch",
+            "program": "${workspaceFolder}/.venv/bin/uvicorn",
+            "args": [
+                "--host", "0.0.0.0",
+                "--port", "8000",
+                "--workers", "1",
+                "--reload",
+                "nldi.asgi:app",
+            ],
+            "preLaunchTask": "decrypt-secrets",
+            "postDebugTask": "cleanup-secrets",
+            "envFile": "${userHome}/.secrets/nldi.env.tmp"
         }
 
     ]

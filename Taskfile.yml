@@ -19,7 +19,7 @@ tasks:
   test:
     desc: Run all tests
     cmds:
-      - uv run pytest tests/unit tests/integration tests/parity
+      - uv run pytest tests/unit tests/integration # tests/parity
 
   test:unit:
     desc: Run unit tests only
@@ -30,6 +30,24 @@ tasks:
     desc: Run integration tests (requires Docker)
     cmds:
       - uv run pytest tests/integration
+
+  test:load:
+    desc: Run load test (requires running app — task dev)
+    cmds:
+      - mkdir -p tests/load/results
+      - >
+        uv run locust
+        -f tests/load/locustfile.py
+        --host {{.NLDI_TEST_URL}}
+        --users 20
+        --spawn-rate 5
+        --run-time {{.DURATION}}
+        --headless
+        --csv tests/load/results/report
+        --html tests/load/results/report.html
+    vars:
+      NLDI_TEST_URL: '{{.NLDI_TEST_URL | default "http://localhost:8000/api/nldi"}}'
+      DURATION: '{{.DURATION | default "5m"}}'
 
   test:parity:
     desc: Run parity tests (requires running app — task dev)
