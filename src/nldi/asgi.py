@@ -49,8 +49,10 @@ def _db_plugin() -> list:
                 create_all=False,
                 engine_config=EngineConfig(
                     pool_pre_ping=True,
-                    pool_size=10,
+                    pool_size=5,
                     max_overflow=10,
+                    pool_recycle=3600,
+                    pool_timeout=60,
                 ),
             )
         )
