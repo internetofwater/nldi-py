@@ -73,8 +73,7 @@ def create_app(dependencies: dict | None = None) -> Litestar:
         exception_handlers={  # ty: ignore[invalid-argument-type]
             HTTPException: problem_details_handler,
             PyGeoAPITimeoutError: gateway_timeout_handler,
-            sqlalchemy.exc.DBAPIError: db_unavailable_handler,
-            sqlalchemy.exc.TimeoutError: db_unavailable_handler,
+            sqlalchemy.exc.SQLAlchemyError: db_unavailable_handler,
             TimeoutError: db_unavailable_handler,
             Exception: unhandled_exception_handler,
         },
