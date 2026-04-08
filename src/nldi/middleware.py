@@ -95,32 +95,33 @@ def disconnect_guard_factory(app: ASGIApp) -> ASGIApp:
             return
 
         scope["_repos"] = []  # ty: ignore[invalid-key]
-        disconnect = asyncio.Event()
 
-        async def guarded_receive() -> dict:
-            msg = await receive()
-            if msg["type"] == "http.disconnect":
-                disconnect.set()
-            return msg
+        handler = asyncio.create_task(app(scope, receive, send))
 
-        handler = asyncio.create_task(app(scope, guarded_receive, send))
+        async def watch_disconnect() -> None:
+            """Poll receive for client disconnect."""
+            while True:
+                msg = await receive()
+                if msg["type"] == "http.disconnect":
+                    for repo in scope.get("_repos", []):
+                        try:
+                            await repo.cancel_running_query()
+                        except Exception:  # noqa: S110
+                            pass
+                    handler.cancel()
+                    return
 
-        async def watch() -> None:
-            await disconnect.wait()
-            for repo in scope.get("_repos", []):
-                try:
-                    await repo.cancel_running_query()
-                except Exception:  # noqa: S110
-                    pass
-            handler.cancel()
-
-        watcher = asyncio.create_task(watch())
+        watcher = asyncio.create_task(watch_disconnect())
 
         try:
             await handler
         except asyncio.CancelledError:
-            logger.info("Request cancelled by client disconnect")
+            logger.warning("Request cancelled by client disconnect")
         finally:
             watcher.cancel()
+            try:
+                await watcher
+            except asyncio.CancelledError:
+                pass
 
     return middleware
