@@ -17,10 +17,22 @@ class AsyncRepository:
     """Minimal async repository base with list and get_one_or_none."""
 
     model_type: type
+    _cancel_pid: int | None = None
 
     def __init__(self, session: AsyncSession):
         """Initialize with an async session."""
         self.session = session
+
+    async def cancel_running_query(self) -> None:
+        """Cancel the in-flight query via pg_cancel_backend, if any."""
+        pid = self._cancel_pid
+        if not pid:
+            return
+        from . import get_engine
+
+        async with get_engine().connect() as conn:
+            await conn.execute(sqlalchemy.text("SELECT pg_cancel_backend(:pid)"), {"pid": pid})
+            await conn.commit()
 
     async def list(self, statement: sqlalchemy.sql.Select | None = None) -> list:
         """Execute a SELECT and return all model instances."""
@@ -83,14 +95,18 @@ class FeatureRepository(AsyncRepository):
 
     async def from_nav_query(self, data_source: str, nav_query: sqlalchemy.sql.Select) -> list[FeatureSourceModel]:
         """Execute a navigation CTE and join to features filtered by data source."""
-        subq = nav_query.subquery()
-        stmt = (
-            sqlalchemy.select(FeatureSourceModel)
-            .join(CrawlerSourceModel, FeatureSourceModel.crawler_source_id == CrawlerSourceModel.crawler_source_id)
-            .join(subq, FeatureSourceModel.comid == subq.c.comid)
-            .where(sqlalchemy.func.lower(CrawlerSourceModel.source_suffix) == data_source.lower())
-        )
-        return list(await self.list(statement=stmt))
+        self._cancel_pid = await self.session.scalar(sqlalchemy.text("SELECT pg_backend_pid()"))
+        try:
+            subq = nav_query.subquery()
+            stmt = (
+                sqlalchemy.select(FeatureSourceModel)
+                .join(CrawlerSourceModel, FeatureSourceModel.crawler_source_id == CrawlerSourceModel.crawler_source_id)
+                .join(subq, FeatureSourceModel.comid == subq.c.comid)
+                .where(sqlalchemy.func.lower(CrawlerSourceModel.source_suffix) == data_source.lower())
+            )
+            return list(await self.list(statement=stmt))
+        finally:
+            self._cancel_pid = None
 
 
 class FlowlineRepository(AsyncRepository):
@@ -111,23 +127,31 @@ class FlowlineRepository(AsyncRepository):
 
     async def from_nav_query(self, nav_query: sqlalchemy.sql.Select) -> list[FlowlineModel]:
         """Execute a navigation CTE and join to flowlines."""
-        subq = nav_query.subquery()
-        stmt = sqlalchemy.select(FlowlineModel).join(subq, FlowlineModel.nhdplus_comid == subq.c.comid)
-        return list(await self.list(statement=stmt))
+        self._cancel_pid = await self.session.scalar(sqlalchemy.text("SELECT pg_backend_pid()"))
+        try:
+            subq = nav_query.subquery()
+            stmt = sqlalchemy.select(FlowlineModel).join(subq, FlowlineModel.nhdplus_comid == subq.c.comid)
+            return list(await self.list(statement=stmt))
+        finally:
+            self._cancel_pid = None
 
     async def from_trimmed_nav_query(
         self, nav_query: sqlalchemy.sql.Select, trim_query: sqlalchemy.sql.Select
     ) -> list:  # list of (FlowlineModel, geojson_str) tuples
         """Execute navigation + trim queries, return flowlines with trimmed geometry."""
-        nav_subq = nav_query.subquery()
-        trim_subq = trim_query.subquery()
-        stmt = (
-            sqlalchemy.select(FlowlineModel, trim_subq.c.trimmed_geojson)
-            .join(nav_subq, FlowlineModel.nhdplus_comid == nav_subq.c.comid)
-            .join(trim_subq, FlowlineModel.nhdplus_comid == trim_subq.c.comid)
-        )
-        result = await self.session.execute(stmt)
-        return list(result)
+        self._cancel_pid = await self.session.scalar(sqlalchemy.text("SELECT pg_backend_pid()"))
+        try:
+            nav_subq = nav_query.subquery()
+            trim_subq = trim_query.subquery()
+            stmt = (
+                sqlalchemy.select(FlowlineModel, trim_subq.c.trimmed_geojson)
+                .join(nav_subq, FlowlineModel.nhdplus_comid == nav_subq.c.comid)
+                .join(trim_subq, FlowlineModel.nhdplus_comid == trim_subq.c.comid)
+            )
+            result = await self.session.execute(stmt)
+            return list(result)
+        finally:
+            self._cancel_pid = None
 
     async def get_measure_and_reachcode(self, comid: int, wkt_point: str) -> tuple[float | None, str | None]:
         """Compute measure and reachcode for a point on a flowline."""
@@ -299,21 +323,25 @@ class CatchmentRepository(AsyncRepository):
 
         Returns GeoJSON string of the unioned polygon, optionally simplified.
         """
-        subq = basin_nav_query.subquery()
-        if simplified:
-            geom = sqlalchemy.func.ST_AsGeoJSON(
-                sqlalchemy.func.ST_Simplify(sqlalchemy.func.ST_Union(CatchmentModel.the_geom), 0.001), 9, 0
-            )
-        else:
-            geom = sqlalchemy.func.ST_AsGeoJSON(sqlalchemy.func.ST_Union(CatchmentModel.the_geom), 9, 0)
+        self._cancel_pid = await self.session.scalar(sqlalchemy.text("SELECT pg_backend_pid()"))
+        try:
+            subq = basin_nav_query.subquery()
+            if simplified:
+                geom = sqlalchemy.func.ST_AsGeoJSON(
+                    sqlalchemy.func.ST_Simplify(sqlalchemy.func.ST_Union(CatchmentModel.the_geom), 0.001), 9, 0
+                )
+            else:
+                geom = sqlalchemy.func.ST_AsGeoJSON(sqlalchemy.func.ST_Union(CatchmentModel.the_geom), 9, 0)
 
-        stmt = (
-            sqlalchemy.select(geom.label("shape"))
-            .select_from(subq)
-            .join(CatchmentModel, subq.c.comid == CatchmentModel.featureid)
-        )
-        result = await self.session.execute(stmt)
-        row = result.fetchone()
-        if not row or not row[0]:
-            return None
-        return str(row[0])
+            stmt = (
+                sqlalchemy.select(geom.label("shape"))
+                .select_from(subq)
+                .join(CatchmentModel, subq.c.comid == CatchmentModel.featureid)
+            )
+            result = await self.session.execute(stmt)
+            row = result.fetchone()
+            if not row or not row[0]:
+                return None
+            return str(row[0])
+        finally:
+            self._cancel_pid = None
