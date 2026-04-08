@@ -22,9 +22,10 @@ class AsyncRepository:
         """Initialize with an async session."""
         self.session = session
 
-    async def list(self, statement: sqlalchemy.sql.Select) -> list:
+    async def list(self, statement: sqlalchemy.sql.Select | None = None) -> list:
         """Execute a SELECT and return all model instances."""
-        result = await self.session.execute(statement)
+        stmt = statement if statement is not None else sqlalchemy.select(self.model_type)
+        result = await self.session.execute(stmt)
         return list(result.scalars())
 
     async def get_one_or_none(self, *filters: sqlalchemy.ColumnElement, statement: sqlalchemy.sql.Select | None = None):

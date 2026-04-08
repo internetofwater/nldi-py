@@ -84,3 +84,27 @@ async def db_session(db_url):
     async with session_factory() as session:
         yield session
     await engine.dispose()
+
+
+@pytest.fixture()
+def app_client(db_url):
+    """Provide a TestClient wired to the real containerized DB."""
+    import os
+
+    from litestar.testing import TestClient
+
+    from nldi.asgi import create_app
+    from nldi.db import get_engine, provide_db_session
+
+    # Point engine at the test container
+    os.environ["NLDI_DB_HOST"] = "unused"  # get_engine won't be called — we override
+    import nldi.db as db_mod
+
+    db_mod._engine = create_async_engine(db_url, pool_pre_ping=True)
+
+    app = create_app()
+    with TestClient(app=app) as client:
+        yield client
+
+    # Reset engine singleton
+    db_mod._engine = None

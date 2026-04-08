@@ -148,3 +148,7 @@ class TestHydrolocation:
         assert r.status_code == 200
         body = r.json()
         assert body["type"] == "FeatureCollection"
+
+    def test_comid_position_nebraska(self, client):
+        r = client.get("linked-data/comid/position?coords=POINT(-101.6 41.58)&f=json")
+        assert r.status_code == 404
