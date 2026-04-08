@@ -89,3 +89,19 @@ Replaced with:
   `list(statement)` and `get_one_or_none(*filters, statement=)`.
 - `statement_timeout=120s` on all Postgres connections as a server-side
   safety net for runaway queries.
+
+## Disconnect guard (PR #193)
+
+Navigation and basin queries record the Postgres backend PID before
+executing expensive CTEs. If the client disconnects mid-query, the
+`disconnect_guard_factory` middleware detects the ASGI disconnect event
+and issues `SELECT pg_cancel_backend(pid)` from a separate connection.
+This immediately frees the pool connection instead of waiting for
+`statement_timeout` (120s).
+
+Repos tracked: `FlowlineRepository.from_nav_query`,
+`from_trimmed_nav_query`, `FeatureRepository.from_nav_query`,
+`CatchmentRepository.get_drainage_basin`.
+
+Health endpoint now reports pool stats (size, checked_in, checked_out,
+overflow) for monitoring pool exhaustion.

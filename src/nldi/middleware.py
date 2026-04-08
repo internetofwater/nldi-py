@@ -94,7 +94,7 @@ def disconnect_guard_factory(app: ASGIApp) -> ASGIApp:
             await app(scope, receive, send)
             return
 
-        scope["_repos"] = []
+        scope["_repos"] = []  # ty: ignore[invalid-key]
         disconnect = asyncio.Event()
 
         async def guarded_receive() -> dict:

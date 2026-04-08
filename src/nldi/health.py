@@ -38,10 +38,10 @@ async def check_db() -> dict:
 
         pool = get_engine().pool
         result["pool"] = {
-            "size": pool.size(),
-            "checked_in": pool.checkedin(),
-            "checked_out": pool.checkedout(),
-            "overflow": pool.overflow(),
+            "size": pool.size(),  # ty: ignore[unresolved-attribute]
+            "checked_in": pool.checkedin(),  # ty: ignore[unresolved-attribute]
+            "checked_out": pool.checkedout(),  # ty: ignore[unresolved-attribute]
+            "overflow": pool.overflow(),  # ty: ignore[unresolved-attribute]
         }
     except Exception:  # noqa: S110
         pass  # Engine not initialized (e.g., no DB env vars)

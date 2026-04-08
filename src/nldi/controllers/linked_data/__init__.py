@@ -20,7 +20,7 @@ from ...pygeoapi import PyGeoAPIClient
 
 def _register_repo(request: Request, repo):
     """Register a repo in scope for disconnect guard tracking."""
-    request.scope.setdefault("_repos", []).append(repo)
+    request.scope.setdefault("_repos", []).append(repo)  # ty: ignore[invalid-key]
     return repo
 
 
