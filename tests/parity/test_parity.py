@@ -10,7 +10,6 @@ from .conftest import (
     JAVA_BASE,
     PY_BASE,
     load_fixture,
-    normalize_comid,
     normalize_urls,
     strip_geometry,
     summarize_collection,

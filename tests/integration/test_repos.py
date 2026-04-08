@@ -5,9 +5,8 @@ only tested with fakes.
 """
 
 import pytest
-import sqlalchemy
 
-from nldi.db.models import CatchmentModel, CrawlerSourceModel, FlowlineModel
+from nldi.db.models import FlowlineModel
 from nldi.db.repos import (
     CatchmentRepository,
     CrawlerSourceRepository,

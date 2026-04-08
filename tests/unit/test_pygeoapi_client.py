@@ -4,7 +4,7 @@ import pytest
 
 
 def test_client_imports():
-    from nldi.pygeoapi import PyGeoAPIClient, PyGeoAPIError, PyGeoAPITimeoutError
+    from nldi.pygeoapi import PyGeoAPIClient
 
     assert PyGeoAPIClient is not None
 

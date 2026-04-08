@@ -6,7 +6,7 @@ import msgspec
 
 
 def test_feature_serializes():
-    from nldi.geojson import Feature, FeatureCollection, Point
+    from nldi.geojson import Feature, Point
 
     f = Feature(
         geometry=Point(coordinates=(-89.509, 43.087)),

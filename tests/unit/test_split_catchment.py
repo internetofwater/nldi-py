@@ -1,6 +1,5 @@
 """Unit tests for split catchment building blocks."""
 
-import pytest
 
 
 async def test_splitcatchment_client_returns_feature(monkeypatch):

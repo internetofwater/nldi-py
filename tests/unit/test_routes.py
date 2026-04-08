@@ -30,7 +30,6 @@ def test_health_check():
         assert body["server"]["status"] == "online"
         assert "no-cache" in r.headers.get("cache-control", "")
 
-import pytest
 
 
 def test_cors_headers_on_response():

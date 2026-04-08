@@ -94,7 +94,6 @@ def app_client(db_url):
     from litestar.testing import TestClient
 
     from nldi.asgi import create_app
-    from nldi.db import get_engine, provide_db_session
 
     # Point engine at the test container
     os.environ["NLDI_DB_HOST"] = "unused"  # get_engine won't be called — we override
