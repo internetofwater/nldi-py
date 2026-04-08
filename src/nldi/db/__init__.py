@@ -26,7 +26,12 @@ def get_engine() -> AsyncEngine:
             pool_size=10,
             max_overflow=30,
             pool_timeout=60,
-            connect_args={"server_settings": {"statement_timeout": "120s"}},
+            connect_args={
+                "server_settings": {
+                    "statement_timeout": "120s",
+                    "idle_in_transaction_session_timeout": "30s",
+                }
+            },
         )
     return _engine
 

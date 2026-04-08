@@ -2,6 +2,9 @@
 # SPDX-FileCopyrightText: 2024-present USGS
 """ASGI application factory."""
 
+import asyncio
+import logging
+
 import sqlalchemy.exc
 from litestar import Litestar
 from litestar.di import Provide
@@ -34,6 +37,16 @@ from .errors import (
 from .middleware import headers_middleware_factory, timing_middleware_factory
 from .pygeoapi import PyGeoAPITimeoutError
 
+_logger = logging.getLogger(__name__)
+
+
+async def _log_pending_tasks() -> None:
+    """Log any tasks still running at shutdown."""
+    current = asyncio.current_task()
+    pending = [t for t in asyncio.all_tasks() if not t.done() and t is not current]
+    if pending:
+        _logger.warning("Shutdown: %d pending task(s)", len(pending))
+
 
 def create_app(dependencies: dict | None = None) -> Litestar:
     """Create and configure the Litestar ASGI application."""
@@ -60,12 +73,13 @@ def create_app(dependencies: dict | None = None) -> Litestar:
         exception_handlers={  # ty: ignore[invalid-argument-type]
             HTTPException: problem_details_handler,
             PyGeoAPITimeoutError: gateway_timeout_handler,
-            sqlalchemy.exc.OperationalError: db_unavailable_handler,
+            sqlalchemy.exc.DBAPIError: db_unavailable_handler,
             sqlalchemy.exc.TimeoutError: db_unavailable_handler,
             TimeoutError: db_unavailable_handler,
             Exception: unhandled_exception_handler,
         },
         middleware=[headers_middleware_factory],
+        on_shutdown=[_log_pending_tasks],
         openapi_config=OpenAPIConfig(
             title=__title__,
             version=__version__,
