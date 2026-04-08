@@ -13,6 +13,7 @@ multi-path arrays, excluded from the OpenAPI schema.
 See docs/principles.md #3: "Explicit over magical."
 """
 
+import asyncio
 import logging
 import uuid
 from time import perf_counter
@@ -73,5 +74,53 @@ def timing_middleware_factory(app: ASGIApp) -> ASGIApp:
         finally:
             elapsed = perf_counter() - start
             logger.info("[%s] %s %s: %.3fs", req_id, scope["method"], scope["path"], elapsed)
+
+    return middleware
+
+
+def disconnect_guard_factory(app: ASGIApp) -> ASGIApp:
+    """Cancel in-flight DB queries when the client disconnects.
+
+    Monitors the ASGI ``receive`` channel for ``http.disconnect``. When
+    detected, calls ``cancel_running_query()`` on any repos registered
+    in ``scope["_repos"]``, then cancels the handler task.
+
+    Only effective for navigation/basin queries that set ``_cancel_pid``
+    in the repo before executing expensive CTEs.
+    """
+
+    async def middleware(scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http":
+            await app(scope, receive, send)
+            return
+
+        scope["_repos"] = []
+        disconnect = asyncio.Event()
+
+        async def guarded_receive() -> dict:
+            msg = await receive()
+            if msg["type"] == "http.disconnect":
+                disconnect.set()
+            return msg
+
+        handler = asyncio.create_task(app(scope, guarded_receive, send))
+
+        async def watch() -> None:
+            await disconnect.wait()
+            for repo in scope.get("_repos", []):
+                try:
+                    await repo.cancel_running_query()
+                except Exception:  # noqa: S110
+                    pass
+            handler.cancel()
+
+        watcher = asyncio.create_task(watch())
+
+        try:
+            await handler
+        except asyncio.CancelledError:
+            logger.info("Request cancelled by client disconnect")
+        finally:
+            watcher.cancel()
 
     return middleware

@@ -34,7 +34,7 @@ from .errors import (
     problem_details_handler,
     unhandled_exception_handler,
 )
-from .middleware import headers_middleware_factory, timing_middleware_factory
+from .middleware import disconnect_guard_factory, headers_middleware_factory, timing_middleware_factory
 from .pygeoapi import PyGeoAPITimeoutError
 
 _logger = logging.getLogger(__name__)
@@ -63,7 +63,7 @@ def create_app(dependencies: dict | None = None) -> Litestar:
     linked_data_router = Router(
         path="/",
         route_handlers=[LookupController, NavigationController, BasinController],
-        middleware=[timing_middleware_factory],
+        middleware=[disconnect_guard_factory, timing_middleware_factory],
     )
     return Litestar(
         route_handlers=[RootController, linked_data_router],
