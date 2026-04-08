@@ -24,9 +24,9 @@ def get_engine() -> AsyncEngine:
             get_database_url(),
             pool_pre_ping=True,
             pool_size=10,
-            max_overflow=10,
+            max_overflow=30,
             pool_timeout=60,
-            connect_args={"server_settings": {"statement_timeout": "120000"}},
+            connect_args={"server_settings": {"statement_timeout": "120s"}},
         )
     return _engine
 
