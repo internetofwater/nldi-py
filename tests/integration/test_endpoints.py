@@ -102,3 +102,13 @@ class TestEndpointIntegration:
         assert "application/ld+json" in r.headers["content-type"]
         body = r.json()
         assert "@context" in body
+
+    def test_health_pool_stats(self, app_client):
+        r = app_client.get("/api/nldi/about/health")
+        assert r.status_code == 200
+        body = r.json()
+        pool = body["db"]["pool"]
+        assert "size" in pool
+        assert "checked_in" in pool
+        assert "checked_out" in pool
+        assert "overflow" in pool
