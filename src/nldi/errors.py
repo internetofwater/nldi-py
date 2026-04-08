@@ -3,6 +3,7 @@
 """RFC 9457 Problem Details error handlers."""
 
 import logging
+import traceback
 import uuid
 from http import HTTPStatus
 from typing import Any
@@ -61,10 +62,16 @@ def gateway_timeout_handler(_request: Request[Any, Any, Any], exc: PyGeoAPITimeo
     return Response(content=body, status_code=504, media_type=MediaType.PROBLEM_JSON)
 
 
+def _short_tb(exc: Exception, frames: int = 3) -> str:
+    """Format a short traceback: last N frames + exception line."""
+    tb = traceback.format_tb(exc.__traceback__)
+    return "".join(tb[-frames:]) + "".join(traceback.format_exception_only(type(exc), exc))
+
+
 def db_unavailable_handler(_request: Request[Any, Any, Any], exc: Exception) -> Response[dict[str, Any]]:
     """Return a 503 Service Unavailable for database connection errors."""
     ref = uuid.uuid4().hex[:8]
-    logger.exception("Database unavailable [%s]", ref)
+    logger.error("Database unavailable [%s]\n%s", ref, _short_tb(exc))
     body: dict[str, Any] = {
         "type": "about:blank",
         "title": "Service Unavailable",

@@ -14,4 +14,5 @@ exec uvicorn \
         --host ${CONTAINER_HOST} \
         --port ${CONTAINER_PORT} \
         --workers ${WSGI_WORKERS} \
+        --timeout-graceful-shutdown 5 \
         nldi.asgi:app

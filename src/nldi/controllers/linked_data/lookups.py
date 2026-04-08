@@ -185,6 +185,12 @@ class LookupController(Controller):
             from litestar.exceptions import ClientException
 
             raise ClientException(detail="coords parameter is required.")
+        try:
+            parse_wkt_point(coords)
+        except ValueError as e:
+            from litestar.exceptions import ClientException
+
+            raise ClientException(detail=str(e))
         base_url = get_base_url()
         catchment = await catchment_repo.get_by_point(coords)
         if not catchment:
@@ -192,7 +198,7 @@ class LookupController(Controller):
 
             raise NotFoundException(detail=f"No catchment found at coords {coords}")
         comid = catchment.featureid
-        flowline = await flowline_repo.get_one_or_none(nhdplus_comid=comid)
+        flowline = await flowline_repo.get_by_comid(comid)
         if not flowline:
             from litestar.exceptions import NotFoundException
 
@@ -255,7 +261,7 @@ class LookupController(Controller):
                 from litestar.exceptions import ClientException
 
                 raise ClientException(detail=f"Not a valid comid: {identifier}") from e
-            flowline = await flowline_repo.get_one_or_none(nhdplus_comid=comid)
+            flowline = await flowline_repo.get_by_comid(comid)
             if not flowline:
                 from litestar.exceptions import NotFoundException
 

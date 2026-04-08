@@ -20,7 +20,7 @@
 
 | Dependency | Role | Decision |
 | --- | --- | --- |
-| advanced-alchemy | ORM repository layer | Keep for now. Provides familiar repository pattern (`get`, `list`, `get_one_or_none`) for simple Phase 2 lookups. Repos are the formal boundary between data/object models (Amundsen's Maxim). Phase 3 complex queries (navigation CTEs) may bypass repos. Decision is reversible — repos are thin, controllers never import advanced-alchemy directly. |
+| advanced-alchemy | ORM repository layer | **Removed.** Replaced with a minimal `AsyncRepository` base class (~15 lines) and explicit session lifecycle management via `provide_db_session()`. Gives us full control over connection cleanup on client disconnect, eliminating zombie DB connections under load. |
 
 ## Evaluate
 

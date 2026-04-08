@@ -1,6 +1,5 @@
 """Integration tests for GET /linked-data/{source}/{identifier} (single feature)."""
 
-import os
 
 import pytest
 from sqlalchemy import text

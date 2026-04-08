@@ -23,7 +23,6 @@ classifiers = [
 dependencies = [
   "litestar[standard]>=2.21.0,<3",
   "uvicorn>=0.34.0,<0.35",
-  "advanced-alchemy>=1.8.0,<2",
   "sqlalchemy[asyncio]>=2.0,<3",
   "asyncpg>=0.30.0,<1",
   "geoalchemy2>=0.16.0,<0.17",

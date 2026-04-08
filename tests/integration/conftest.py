@@ -84,3 +84,28 @@ async def db_session(db_url):
     async with session_factory() as session:
         yield session
     await engine.dispose()
+
+
+@pytest.fixture()
+def app_client(db_url):
+    """Provide a TestClient wired to the real containerized DB."""
+    import os
+
+    from litestar.testing import TestClient
+
+    from nldi.asgi import create_app
+    from nldi.db import get_engine
+
+    # Point engine at the test container
+    get_engine.cache_clear()
+    os.environ["NLDI_DB_HOST"] = db_url.split("@")[1].split(":")[0]
+    os.environ["NLDI_DB_PORT"] = db_url.split(":")[-1].split("/")[0]
+    os.environ["NLDI_DB_NAME"] = db_url.split("/")[-1]
+    os.environ["NLDI_DB_USERNAME"] = db_url.split("//")[1].split(":")[0]
+    os.environ["NLDI_DB_PASSWORD"] = db_url.split("//")[1].split(":")[1].split("@")[0]
+
+    app = create_app()
+    with TestClient(app=app) as client:
+        yield client
+
+    get_engine.cache_clear()

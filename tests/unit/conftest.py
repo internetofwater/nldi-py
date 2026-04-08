@@ -110,8 +110,17 @@ class FakeFlowlineRepository:
     async def get_one_or_none(self, *args, **kwargs) -> FakeFlowlineModel | None:
         """Find a flowline by comid."""
         comid = kwargs.get("nhdplus_comid")
-        if comid is None:
-            return None
+        if comid is not None:
+            for f in self._flowlines:
+                if f.nhdplus_comid == int(comid):
+                    return f
+        # Positional filter: return first flowline if any exist
+        if args and self._flowlines:
+            return self._flowlines[0]
+        return None
+
+    async def get_by_comid(self, comid: int) -> FakeFlowlineModel | None:
+        """Find a flowline by comid."""
         for f in self._flowlines:
             if f.nhdplus_comid == int(comid):
                 return f

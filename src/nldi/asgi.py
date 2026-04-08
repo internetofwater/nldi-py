@@ -2,10 +2,10 @@
 # SPDX-FileCopyrightText: 2024-present USGS
 """ASGI application factory."""
 
+import asyncio
+import logging
+
 import sqlalchemy.exc
-from advanced_alchemy.exceptions import RepositoryError
-from advanced_alchemy.extensions.litestar import SQLAlchemyAsyncConfig, SQLAlchemyPlugin
-from advanced_alchemy.extensions.litestar.plugins.init.config.engine import EngineConfig
 from litestar import Litestar
 from litestar.di import Provide
 from litestar.exceptions import HTTPException
@@ -15,7 +15,7 @@ from litestar.openapi.plugins import SwaggerRenderPlugin
 from litestar.router import Router
 
 from . import __description__, __title__, __version__
-from .config import get_database_url, get_log_level, get_prefix
+from .config import get_log_level, get_prefix
 from .controllers.linked_data import (
     provide_catchment_repo,
     provide_feature_repo,
@@ -27,6 +27,7 @@ from .controllers.linked_data.basin import BasinController
 from .controllers.linked_data.lookups import LookupController
 from .controllers.linked_data.navigation import NavigationController
 from .controllers.root import RootController
+from .db import provide_db_session
 from .errors import (
     db_unavailable_handler,
     gateway_timeout_handler,
@@ -36,34 +37,21 @@ from .errors import (
 from .middleware import headers_middleware_factory, timing_middleware_factory
 from .pygeoapi import PyGeoAPITimeoutError
 
+_logger = logging.getLogger(__name__)
 
-def _db_plugin() -> list:
-    """Return SQLAlchemy plugin if DB env vars are set, else empty list."""
-    try:
-        url = get_database_url()
-    except RuntimeError:
-        return []
-    return [
-        SQLAlchemyPlugin(
-            config=SQLAlchemyAsyncConfig(
-                connection_string=url,
-                create_all=False,
-                set_default_exception_handler=False,
-                engine_config=EngineConfig(
-                    pool_pre_ping=True,
-                    pool_size=10,
-                    max_overflow=10,
-                    pool_timeout=60,
-                    connect_args={"server_settings": {"statement_timeout": "120000"}},
-                ),
-            )
-        )
-    ]
+
+async def _log_pending_tasks() -> None:
+    """Log any tasks still running at shutdown."""
+    current = asyncio.current_task()
+    pending = [t for t in asyncio.all_tasks() if not t.done() and t is not current]
+    if pending:
+        _logger.warning("Shutdown: %d pending task(s)", len(pending))
 
 
 def create_app(dependencies: dict | None = None) -> Litestar:
     """Create and configure the Litestar ASGI application."""
     deps = {
+        "db_session": Provide(provide_db_session),
         "source_repo": Provide(provide_source_repo),
         "feature_repo": Provide(provide_feature_repo),
         "flowline_repo": Provide(provide_flowline_repo),
@@ -80,19 +68,17 @@ def create_app(dependencies: dict | None = None) -> Litestar:
     return Litestar(
         route_handlers=[RootController, linked_data_router],
         path=get_prefix(),
-        plugins=_db_plugin(),
         dependencies=deps,
         logging_config=LoggingConfig(root={"level": get_log_level(), "handlers": ["queue_listener"]}),
         exception_handlers={  # ty: ignore[invalid-argument-type]
             HTTPException: problem_details_handler,
             PyGeoAPITimeoutError: gateway_timeout_handler,
-            RepositoryError: db_unavailable_handler,
-            sqlalchemy.exc.OperationalError: db_unavailable_handler,
-            sqlalchemy.exc.TimeoutError: db_unavailable_handler,
+            sqlalchemy.exc.SQLAlchemyError: db_unavailable_handler,
             TimeoutError: db_unavailable_handler,
             Exception: unhandled_exception_handler,
         },
         middleware=[headers_middleware_factory],
+        on_shutdown=[_log_pending_tasks],
         openapi_config=OpenAPIConfig(
             title=__title__,
             version=__version__,

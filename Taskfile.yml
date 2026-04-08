@@ -75,7 +75,7 @@ tasks:
   dev:
     desc: Run app locally with decrypted secrets from ~/.secrets/nldi.env.gpg
     cmds:
-      - env $(gpg --quiet --decrypt ~/.secrets/nldi.env.gpg | xargs) uv run uvicorn nldi.asgi:app --reload
+      - env $(gpg --quiet --decrypt ~/.secrets/nldi.env.gpg | xargs) uv run uvicorn nldi.asgi:app --reload --timeout-graceful-shutdown 5 
 
   check:
     desc: Pre-commit gate — lint, format check, unit tests

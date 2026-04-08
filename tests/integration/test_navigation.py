@@ -1,7 +1,6 @@
 """Integration tests for flowline navigation."""
 
 import pytest
-from sqlalchemy import text
 
 
 @pytest.mark.integration
