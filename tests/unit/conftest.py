@@ -119,6 +119,13 @@ class FakeFlowlineRepository:
             return self._flowlines[0]
         return None
 
+    async def get_by_comid(self, comid: int) -> FakeFlowlineModel | None:
+        """Find a flowline by comid."""
+        for f in self._flowlines:
+            if f.nhdplus_comid == int(comid):
+                return f
+        return None
+
     async def list_all(self, limit: int = 0, offset: int = 0) -> list:
         """List flowlines with pagination."""
         results = self._flowlines[offset:]

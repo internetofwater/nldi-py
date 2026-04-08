@@ -8,7 +8,6 @@ import msgspec
 from litestar import Controller, Response, get, head
 from litestar.params import Dependency, Parameter
 
-from ...db.models import FlowlineModel
 from ...dto import DataSource
 from ...geojson import Feature, FeatureCollection, Point, parse_geometry
 from ...jsonld import to_jsonld_graph, to_jsonld_single
@@ -199,7 +198,7 @@ class LookupController(Controller):
 
             raise NotFoundException(detail=f"No catchment found at coords {coords}")
         comid = catchment.featureid
-        flowline = await flowline_repo.get_one_or_none(FlowlineModel.nhdplus_comid == comid)
+        flowline = await flowline_repo.get_by_comid(comid)
         if not flowline:
             from litestar.exceptions import NotFoundException
 
@@ -262,7 +261,7 @@ class LookupController(Controller):
                 from litestar.exceptions import ClientException
 
                 raise ClientException(detail=f"Not a valid comid: {identifier}") from e
-            flowline = await flowline_repo.get_one_or_none(FlowlineModel.nhdplus_comid == comid)
+            flowline = await flowline_repo.get_by_comid(comid)
             if not flowline:
                 from litestar.exceptions import NotFoundException
 

@@ -98,6 +98,10 @@ class FlowlineRepository(AsyncRepository):
 
     model_type = FlowlineModel
 
+    async def get_by_comid(self, comid: int) -> FlowlineModel | None:
+        """Look up a flowline by comid."""
+        return await self.get_one_or_none(FlowlineModel.nhdplus_comid == comid)
+
     async def list_all(self, limit: int = 0, offset: int = 0) -> list[FlowlineModel]:
         """List flowlines with optional pagination."""
         stmt = sqlalchemy.select(FlowlineModel).order_by(FlowlineModel.nhdplus_comid).offset(offset)
