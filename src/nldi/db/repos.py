@@ -2,22 +2,44 @@
 # SPDX-FileCopyrightText: 2024-present USGS
 """Repositories for NLDI data access.
 
-Thin wrappers around advanced-alchemy's async repository.
+Thin wrappers around plain SQLAlchemy async sessions.
 These are the boundary between the data model and the rest of the application.
 """
 
 import geoalchemy2
 import sqlalchemy
-from advanced_alchemy.repository import SQLAlchemyAsyncRepository
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from .models import CatchmentModel, CrawlerSourceModel, FeatureSourceModel, FlowlineModel
 
 
-class CrawlerSourceRepository(SQLAlchemyAsyncRepository[CrawlerSourceModel]):
+class AsyncRepository:
+    """Minimal async repository base with list and get_one_or_none."""
+
+    model_type: type
+
+    def __init__(self, session: AsyncSession):
+        """Initialize with an async session."""
+        self.session = session
+
+    async def list(self, statement: sqlalchemy.sql.Select) -> list:
+        """Execute a SELECT and return all model instances."""
+        result = await self.session.execute(statement)
+        return list(result.scalars())
+
+    async def get_one_or_none(self, *filters: sqlalchemy.ColumnElement, statement: sqlalchemy.sql.Select | None = None):
+        """Execute a filtered SELECT and return one result or None."""
+        stmt = statement if statement is not None else sqlalchemy.select(self.model_type)
+        for f in filters:
+            stmt = stmt.where(f)
+        result = await self.session.execute(stmt)
+        return result.scalars().one_or_none()
+
+
+class CrawlerSourceRepository(AsyncRepository):
     """Repository for crawler source lookups."""
 
     model_type = CrawlerSourceModel
-    id_attribute = "crawler_source_id"
 
     async def get_by_suffix(self, suffix: str) -> CrawlerSourceModel | None:
         """Look up a source by suffix, case-insensitive."""
@@ -26,11 +48,10 @@ class CrawlerSourceRepository(SQLAlchemyAsyncRepository[CrawlerSourceModel]):
         )
 
 
-class FeatureRepository(SQLAlchemyAsyncRepository[FeatureSourceModel]):
+class FeatureRepository(AsyncRepository):
     """Repository for feature lookups."""
 
     model_type = FeatureSourceModel
-    id_attribute = "identifier"
 
     async def feature_lookup(self, source_suffix: str, identifier: str) -> FeatureSourceModel | None:
         """Look up a feature by source suffix and identifier.
@@ -71,11 +92,10 @@ class FeatureRepository(SQLAlchemyAsyncRepository[FeatureSourceModel]):
         return list(await self.list(statement=stmt))
 
 
-class FlowlineRepository(SQLAlchemyAsyncRepository[FlowlineModel]):
+class FlowlineRepository(AsyncRepository):
     """Repository for flowline lookups."""
 
     model_type = FlowlineModel
-    id_attribute = "nhdplus_comid"
 
     async def list_all(self, limit: int = 0, offset: int = 0) -> list[FlowlineModel]:
         """List flowlines with optional pagination."""
@@ -257,11 +277,10 @@ class FlowlineRepository(SQLAlchemyAsyncRepository[FlowlineModel]):
         return (float(row[0]), float(row[1]))
 
 
-class CatchmentRepository(SQLAlchemyAsyncRepository[CatchmentModel]):
+class CatchmentRepository(AsyncRepository):
     """Repository for catchment lookups."""
 
     model_type = CatchmentModel
-    id_attribute = "featureid"
 
     async def get_by_point(self, wkt_point: str) -> CatchmentModel | None:
         """Find a catchment by spatial intersection with a WKT point."""
