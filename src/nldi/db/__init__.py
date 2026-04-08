@@ -8,32 +8,29 @@ zombie connections in the pool.
 """
 
 from collections.abc import AsyncGenerator
+from functools import lru_cache
 
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, create_async_engine
 
 from ..config import get_database_url
 
-_engine: AsyncEngine | None = None
 
-
+@lru_cache(maxsize=1)
 def get_engine() -> AsyncEngine:
     """Return the shared async engine, creating it on first call."""
-    global _engine  # noqa: PLW0603
-    if _engine is None:
-        _engine = create_async_engine(
-            get_database_url(),
-            pool_pre_ping=True,
-            pool_size=10,
-            max_overflow=30,
-            pool_timeout=60,
-            connect_args={
-                "server_settings": {
-                    "statement_timeout": "120s",
-                    "idle_in_transaction_session_timeout": "30s",
-                }
-            },
-        )
-    return _engine
+    return create_async_engine(
+        get_database_url(),
+        pool_pre_ping=True,
+        pool_size=10,
+        max_overflow=30,
+        pool_timeout=60,
+        connect_args={
+            "server_settings": {
+                "statement_timeout": "120s",
+                "idle_in_transaction_session_timeout": "30s",
+            }
+        },
+    )
 
 
 async def provide_db_session() -> AsyncGenerator[AsyncSession, None]:

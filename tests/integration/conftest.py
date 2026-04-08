@@ -94,16 +94,18 @@ def app_client(db_url):
     from litestar.testing import TestClient
 
     from nldi.asgi import create_app
+    from nldi.db import get_engine
 
     # Point engine at the test container
-    os.environ["NLDI_DB_HOST"] = "unused"  # get_engine won't be called — we override
-    import nldi.db as db_mod
-
-    db_mod._engine = create_async_engine(db_url, pool_pre_ping=True)
+    get_engine.cache_clear()
+    os.environ["NLDI_DB_HOST"] = db_url.split("@")[1].split(":")[0]
+    os.environ["NLDI_DB_PORT"] = db_url.split(":")[-1].split("/")[0]
+    os.environ["NLDI_DB_NAME"] = db_url.split("/")[-1]
+    os.environ["NLDI_DB_USERNAME"] = db_url.split("//")[1].split(":")[0]
+    os.environ["NLDI_DB_PASSWORD"] = db_url.split("//")[1].split(":")[1].split("@")[0]
 
     app = create_app()
     with TestClient(app=app) as client:
         yield client
 
-    # Reset engine singleton
-    db_mod._engine = None
+    get_engine.cache_clear()
