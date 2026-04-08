@@ -1,6 +1,7 @@
 """Integration tests for GET /linked-data (list sources)."""
 
 import pytest
+import sqlalchemy
 from sqlalchemy import text
 
 
@@ -15,10 +16,11 @@ async def test_sources_table_has_data(db_session):
 @pytest.mark.integration
 async def test_list_sources_from_repo(db_session):
     """Verify CrawlerSourceRepository returns sources with expected shape."""
+    from nldi.db.models import CrawlerSourceModel
     from nldi.db.repos import CrawlerSourceRepository
 
     repo = CrawlerSourceRepository(session=db_session)
-    sources = await repo.list()
+    sources = await repo.list(sqlalchemy.select(CrawlerSourceModel))
     assert len(sources) > 0
     for s in sources:
         assert s.source_suffix is not None

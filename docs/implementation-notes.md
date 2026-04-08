@@ -73,3 +73,19 @@ Integration and system tests should use `https://nhgf.dev-wma.chs.usgs.gov/api/n
 - `controllers/linked_data/__init__.py` — shared helpers, DI providers, re-exports
 
 Do as a cleanup PR after Phase 4.
+
+## Session lifecycle (PR #192)
+
+Advanced-alchemy was removed because it wrapped SQLAlchemy exceptions
+(hiding `TimeoutError` behind `RepositoryError`), owned the session
+lifecycle, and installed its own exception handler. Under load, client
+disconnects left DB connections checked out ("zombie connections").
+
+Replaced with:
+- `db/__init__.py`: `get_engine()` singleton with pool config +
+  `provide_db_session()` async generator with `try/except/finally`
+  guaranteeing rollback+close on error or client disconnect.
+- `db/repos.py`: `AsyncRepository` base class (~15 lines) providing
+  `list(statement)` and `get_one_or_none(*filters, statement=)`.
+- `statement_timeout=120s` on all Postgres connections as a server-side
+  safety net for runaway queries.
