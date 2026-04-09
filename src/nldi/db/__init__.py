@@ -7,7 +7,6 @@ guarantees rollback+close on error or client disconnect, preventing
 zombie connections in the pool.
 """
 
-import asyncio
 from collections.abc import AsyncGenerator
 from functools import lru_cache
 
@@ -47,17 +46,8 @@ def get_cancel_engine() -> AsyncEngine:
 async def provide_db_session() -> AsyncGenerator[AsyncSession, None]:
     """Provide an async session with guaranteed cleanup.
 
-    On success the session is committed. On any exception — including
-    ``asyncio.CancelledError`` from a client disconnect — the session
-    is rolled back. The connection is always returned to the pool.
-
-    ``asyncio.shield`` prevents CancelledError from interrupting the
-    rollback awaitable so the pool connection is recycled rather than
-    dropped when the handler task is cancelled by the disconnect guard.
+    SQLAlchemy's AsyncSession.__aexit__ handles cancellation-safe close
+    internally via asyncio.shield. We let it do that and stay out of the way.
     """
     async with AsyncSession(get_engine()) as session:
-        try:
-            yield session
-        except BaseException:
-            await asyncio.shield(session.rollback())
-            raise
+        yield session
