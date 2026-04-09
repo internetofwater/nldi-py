@@ -7,6 +7,7 @@ guarantees rollback+close on error or client disconnect, preventing
 zombie connections in the pool.
 """
 
+import asyncio
 from collections.abc import AsyncGenerator
 from functools import lru_cache
 
@@ -49,10 +50,14 @@ async def provide_db_session() -> AsyncGenerator[AsyncSession, None]:
     On success the session is committed. On any exception — including
     ``asyncio.CancelledError`` from a client disconnect — the session
     is rolled back. The connection is always returned to the pool.
+
+    ``asyncio.shield`` prevents CancelledError from interrupting the
+    rollback awaitable so the pool connection is recycled rather than
+    dropped when the handler task is cancelled by the disconnect guard.
     """
     async with AsyncSession(get_engine()) as session:
         try:
             yield session
-        except Exception:
-            await session.rollback()
+        except BaseException:
+            await asyncio.shield(session.rollback())
             raise
