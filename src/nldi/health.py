@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 
 async def check_db() -> dict:
-    """Check database connectivity. Returns sanitized status."""
+    """Check database connectivity. Returns sanitized status and pool stats."""
     host = os.getenv("NLDI_DB_HOST", "unknown")
     # Sanitize: strip hostname, keep rest of FQDN
     sanitized_host = ".".join(host.split(".")[1:]) if "." in host else host
@@ -27,10 +27,26 @@ async def check_db() -> dict:
         async with engine.connect() as conn:
             await conn.execute(text("SELECT 1"))
         await engine.dispose()
-        return {"name": "db", "cfg": sanitized_host, "status": "online"}
+        result: dict = {"name": "db", "cfg": sanitized_host, "status": "online"}
     except Exception as e:
         logger.warning("DB health check failed: %s", e)
         return {"name": "db", "cfg": sanitized_host, "status": "offline", "msg": str(e)}
+
+    # Pool stats from the shared engine (not the throwaway health check engine)
+    try:
+        from .db import get_engine
+
+        pool = get_engine().pool
+        result["pool"] = {
+            "size": pool.size(),  # ty: ignore[unresolved-attribute]
+            "checked_in": pool.checkedin(),  # ty: ignore[unresolved-attribute]
+            "checked_out": pool.checkedout(),  # ty: ignore[unresolved-attribute]
+            "overflow": pool.overflow(),  # ty: ignore[unresolved-attribute]
+        }
+    except Exception:  # noqa: S110
+        pass  # Engine not initialized (e.g., no DB env vars)
+
+    return result
 
 
 async def check_pygeoapi() -> dict:

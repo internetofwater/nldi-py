@@ -5,7 +5,7 @@
 import json
 from typing import Annotated
 
-from litestar import Response
+from litestar import Request, Response
 from litestar.exceptions import ClientException, NotFoundException
 from litestar.params import Dependency, Parameter
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -17,6 +17,13 @@ from ...media import MediaType
 from ...negotiate import check_format
 from ...pygeoapi import PyGeoAPIClient
 
+
+def _register_repo(request: Request, repo):
+    """Register a repo in scope for disconnect guard tracking."""
+    request.scope.setdefault("_repos", []).append(repo)  # ty: ignore[invalid-key]
+    return repo
+
+
 # DI providers
 
 
@@ -25,19 +32,19 @@ async def provide_source_repo(db_session: AsyncSession) -> CrawlerSourceReposito
     return CrawlerSourceRepository(session=db_session)
 
 
-async def provide_feature_repo(db_session: AsyncSession) -> FeatureRepository:
+async def provide_feature_repo(db_session: AsyncSession, request: Request) -> FeatureRepository:
     """Provide FeatureRepository via DI."""
-    return FeatureRepository(session=db_session)
+    return _register_repo(request, FeatureRepository(session=db_session))
 
 
-async def provide_flowline_repo(db_session: AsyncSession) -> FlowlineRepository:
+async def provide_flowline_repo(db_session: AsyncSession, request: Request) -> FlowlineRepository:
     """Provide FlowlineRepository via DI."""
-    return FlowlineRepository(session=db_session)
+    return _register_repo(request, FlowlineRepository(session=db_session))
 
 
-async def provide_catchment_repo(db_session: AsyncSession) -> CatchmentRepository:
+async def provide_catchment_repo(db_session: AsyncSession, request: Request) -> CatchmentRepository:
     """Provide CatchmentRepository via DI."""
-    return CatchmentRepository(session=db_session)
+    return _register_repo(request, CatchmentRepository(session=db_session))
 
 
 def provide_pygeoapi_client() -> PyGeoAPIClient:
