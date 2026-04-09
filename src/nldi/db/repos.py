@@ -28,9 +28,9 @@ class AsyncRepository:
         pid = self._cancel_pid
         if not pid:
             return
-        from . import get_engine
+        from . import get_cancel_engine
 
-        async with get_engine().connect() as conn:
+        async with get_cancel_engine().connect() as conn:
             await conn.execute(sqlalchemy.text("SELECT pg_cancel_backend(:pid)"), {"pid": pid})
             await conn.commit()
 
