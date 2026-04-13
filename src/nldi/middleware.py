@@ -99,7 +99,14 @@ def disconnect_guard_factory(app: ASGIApp) -> ASGIApp:
         handler = asyncio.create_task(app(scope, receive, send))
 
         async def watch_disconnect() -> None:
-            """Poll receive for client disconnect."""
+            """Poll receive for client disconnect.
+
+            Calls pg_cancel_backend to interrupt the in-flight DB query, then
+            returns. Does NOT cancel the handler task — the QueryCanceledError
+            raised by Postgres propagates naturally through SQLAlchemy and
+            Litestar's error handler, allowing the session to close via the
+            normal error path and return the connection to the pool cleanly.
+            """
             while True:
                 msg = await receive()
                 if msg["type"] == "http.disconnect":
@@ -108,15 +115,12 @@ def disconnect_guard_factory(app: ASGIApp) -> ASGIApp:
                             await repo.cancel_running_query()
                         except Exception:  # noqa: S110
                             pass
-                    handler.cancel()
                     return
 
         watcher = asyncio.create_task(watch_disconnect())
 
         try:
             await handler
-        except asyncio.CancelledError:
-            logger.warning("Request cancelled by client disconnect")
         finally:
             watcher.cancel()
             try:
