@@ -65,15 +65,15 @@ def timing_middleware_factory(app: ASGIApp) -> ASGIApp:
         req_id = uuid.uuid4().hex[:8]
         qs = scope.get("query_string", b"").decode()
         path = f"{scope['path']}?{qs}" if qs else scope["path"]
-        logger.info("[%s] %s %s - started", req_id, scope["method"], path)
+        logger.info("[%s] %s %s - started", req_id, scope["method"], path)  # ty: ignore[invalid-key]
         start = perf_counter()
         try:
             await app(scope, receive, send)
         except (ConnectionError, TimeoutError, OSError) as e:
-            logger.warning("[%s] Connection lost during %s %s: %s", req_id, scope["method"], scope["path"], e)
+            logger.warning("[%s] Connection lost during %s %s: %s", req_id, scope["method"], scope["path"], e)  # ty: ignore[invalid-key]
         finally:
             elapsed = perf_counter() - start
-            logger.info("[%s] %s %s: %.3fs", req_id, scope["method"], scope["path"], elapsed)
+            logger.info("[%s] %s %s: %.3fs", req_id, scope["method"], scope["path"], elapsed)  # ty: ignore[invalid-key]
 
     return middleware
 
@@ -96,7 +96,7 @@ def disconnect_guard_factory(app: ASGIApp) -> ASGIApp:
 
         scope["_repos"] = []  # ty: ignore[invalid-key]
 
-        handler = asyncio.create_task(app(scope, receive, send))
+        handler = asyncio.create_task(app(scope, receive, send))  # ty: ignore[invalid-argument-type]
 
         async def watch_disconnect() -> None:
             """Poll receive for client disconnect."""
