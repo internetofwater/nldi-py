@@ -60,4 +60,8 @@ async def provide_db_session() -> AsyncGenerator[AsyncSession, None]:
     try:
         yield session
     finally:
-        await asyncio.shield(asyncio.ensure_future(session.close()))
+        # Fire-and-forget: schedule close on the event loop without awaiting.
+        # CancelledError cannot interrupt task creation, so the close is
+        # guaranteed to run on the next event loop iteration regardless of
+        # whether this generator was cancelled or completed normally.
+        asyncio.ensure_future(session.close())
