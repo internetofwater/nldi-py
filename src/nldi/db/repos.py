@@ -314,23 +314,25 @@ class CatchmentRepository(AsyncRepository):
     model_type = CatchmentModel
 
     async def cancel_running_query(self) -> None:
-        """Terminate the in-flight basin query via pg_terminate_backend.
+        """Close the underlying connection to force-kill the basin query.
 
-        Uses terminate instead of cancel because GEOS geometry operations
-        (ST_Union, ST_Simplify) are slow to respond to pg_cancel_backend.
-        Terminate is immediate — the connection is discarded by the pool,
-        but checked_out is decremented right away.
+        pg_terminate_backend is insufficient — GEOS geometry operations
+        (ST_Union, ST_Simplify) ignore Postgres interrupt signals for minutes.
+        Closing the TCP connection causes Postgres to detect a lost client and
+        kill the backend at the OS level immediately, the same mechanism Java's
+        thread-interrupt model uses.
         """
-        pid = self._cancel_pid
-        if not pid:
+        if not self._cancel_pid:
             return
         import logging
-        logging.getLogger(__name__).info("Terminating basin query on backend PID %s", pid)
-        from . import get_cancel_engine
-
-        async with get_cancel_engine().connect() as conn:
-            await conn.execute(sqlalchemy.text("SELECT pg_terminate_backend(:pid)"), {"pid": pid})
-            await conn.commit()
+        logger = logging.getLogger(__name__)
+        logger.info("Closing connection for basin PID %s", self._cancel_pid)
+        try:
+            conn = await self.session.connection()
+            raw = await conn.get_raw_connection()
+            await raw.driver_connection.close()
+        except Exception as e:
+            logger.warning("Failed to close basin connection: %s", e)
 
     async def get_by_point(self, wkt_point: str) -> CatchmentModel | None:
         """Find a catchment by spatial intersection with a WKT point."""
