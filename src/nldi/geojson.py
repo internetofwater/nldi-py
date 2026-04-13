@@ -8,6 +8,8 @@ Adapted from https://github.com/jcrist/msgspec/blob/main/examples/geojson/msgspe
 
 from __future__ import annotations
 
+from collections.abc import Iterator
+
 import msgspec
 
 Position = tuple[float, float]
@@ -78,3 +80,17 @@ _geometry_decoder = msgspec.json.Decoder(Geometry)
 def parse_geometry(geojson_str: str) -> Geometry:
     """Parse a GeoJSON geometry string (from ST_AsGeoJSON) into a Geometry struct."""
     return _geometry_decoder.decode(geojson_str)
+
+
+def stream_feature_collection(features: list[Feature]) -> Iterator[bytes]:
+    """Yield a GeoJSON FeatureCollection incrementally.
+
+    The DB query is complete before this is called — no connection is held
+    during streaming. A client hangup mid-stream has no effect on the pool.
+    """
+    yield b'{"type":"FeatureCollection","features":['
+    for i, feat in enumerate(features):
+        if i > 0:
+            yield b","
+        yield msgspec.json.encode(feat)
+    yield b"]}"
