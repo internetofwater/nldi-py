@@ -23,7 +23,7 @@ async def check_db() -> dict:
     sanitized_host = ".".join(host.split(".")[1:]) if "." in host else host
     try:
         url = get_database_url()
-        engine = create_async_engine(url, connect_args={"timeout": 3})
+        engine = create_async_engine(url, connect_args={"connect_timeout": 3})
         async with engine.connect() as conn:
             await conn.execute(text("SELECT 1"))
         await engine.dispose()

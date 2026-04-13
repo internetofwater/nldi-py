@@ -38,7 +38,7 @@ class TestDatabaseUrl:
         monkeypatch.setenv("NLDI_DB_NAME", "mydb")
         monkeypatch.setenv("NLDI_DB_USERNAME", "user")
         monkeypatch.setenv("NLDI_DB_PASSWORD", "secret")
-        assert get_database_url() == "postgresql+asyncpg://user:secret@dbhost:5433/mydb"
+        assert get_database_url() == "postgresql+psycopg://user:secret@dbhost:5433/mydb"
 
     def test_default_port(self, monkeypatch):
         monkeypatch.setenv("NLDI_DB_HOST", "dbhost")
