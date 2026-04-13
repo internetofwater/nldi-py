@@ -47,21 +47,16 @@ def get_cancel_engine() -> AsyncEngine:
 async def provide_db_session() -> AsyncGenerator[AsyncSession, None]:
     """Provide an async session with guaranteed cleanup.
 
-    Bypasses AsyncSession.__aexit__ for the close call. When a handler task
-    is cancelled (client disconnect), Litestar throws CancelledError into this
-    generator via athrow(). AsyncSession.__aexit__ creates a close task and
-    shields it, but the CancelledError propagates out before the task runs,
-    orphaning it. The connection is never returned to the pool.
-
-    By owning the close in a finally block with asyncio.shield, we ensure the
-    connection is returned even when CancelledError is in flight.
+    On cancellation (client disconnect), the session connection may be in an
+    unknown state after pg_cancel_backend fires. We invalidate it so the pool
+    discards it and decrements checked_out, rather than attempting a clean
+    return that may silently fail.
     """
     session = AsyncSession(get_engine())
     try:
         yield session
+    except asyncio.CancelledError:
+        asyncio.ensure_future(session.invalidate())
+        raise
     finally:
-        # Fire-and-forget: schedule close on the event loop without awaiting.
-        # CancelledError cannot interrupt task creation, so the close is
-        # guaranteed to run on the next event loop iteration regardless of
-        # whether this generator was cancelled or completed normally.
         asyncio.ensure_future(session.close())
