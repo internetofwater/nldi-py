@@ -115,8 +115,8 @@ def disconnect_guard_factory(app: ASGIApp) -> ASGIApp:
                             "Pool on disconnect: size=%d in=%d out=%d overflow=%d",
                             pool.size(), pool.checkedin(), pool.checkedout(), pool.overflow(),  # ty: ignore[unresolved-attribute]
                         )
-                    except Exception:  # noqa: S110
-                        pass
+                    except Exception as e:
+                        logger.warning("Pool stats unavailable on disconnect: %s", e)
                     handler.cancel()
                     return
 
