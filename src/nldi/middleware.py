@@ -103,6 +103,8 @@ def disconnect_guard_factory(app: ASGIApp) -> ASGIApp:
             while True:
                 msg = await receive()
                 if msg["type"] == "http.disconnect":
+                    if handler.done():
+                        return  # normal end-of-response disconnect, not a client hangup
                     for repo in scope.get("_repos", []):
                         try:
                             await repo.cancel_running_query()
