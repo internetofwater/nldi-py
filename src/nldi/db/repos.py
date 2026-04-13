@@ -28,6 +28,8 @@ class AsyncRepository:
         pid = self._cancel_pid
         if not pid:
             return
+        import logging
+        logging.getLogger(__name__).info("Cancelling query on backend PID %s", pid)
         from . import get_cancel_engine
 
         async with get_cancel_engine().connect() as conn:
