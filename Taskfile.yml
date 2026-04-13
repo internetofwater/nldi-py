@@ -49,6 +49,25 @@ tasks:
       NLDI_TEST_URL: '{{.NLDI_TEST_URL | default "http://localhost:8000/api/nldi"}}'
       DURATION: '{{.DURATION | default "5m"}}'
 
+  test:load:clean:
+    desc: Run load test with reduced users and longer timeout — minimizes mid-request cancellations
+    cmds:
+      - mkdir -p tests/load/results
+      - >
+        uv run locust
+        -f tests/load/locustfile.py
+        --host {{.NLDI_TEST_URL}}
+        --users 10
+        --spawn-rate 1
+        --run-time {{.DURATION}}
+        --stop-timeout 120
+        --headless
+        --csv tests/load/results/report-clean
+        --html tests/load/results/report-clean.html
+    vars:
+      NLDI_TEST_URL: '{{.NLDI_TEST_URL | default "http://localhost:8000/api/nldi"}}'
+      DURATION: '{{.DURATION | default "2m"}}'
+
   test:parity:
     desc: Run parity tests (requires running app — task dev)
     cmds:

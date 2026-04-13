@@ -7,6 +7,7 @@ guarantees rollback+close on error or client disconnect, preventing
 zombie connections in the pool.
 """
 
+import asyncio
 from collections.abc import AsyncGenerator
 from functools import lru_cache
 
@@ -46,8 +47,17 @@ def get_cancel_engine() -> AsyncEngine:
 async def provide_db_session() -> AsyncGenerator[AsyncSession, None]:
     """Provide an async session with guaranteed cleanup.
 
-    SQLAlchemy's AsyncSession.__aexit__ handles cancellation-safe close
-    internally via asyncio.shield. We let it do that and stay out of the way.
+    Bypasses AsyncSession.__aexit__ for the close call. When a handler task
+    is cancelled (client disconnect), Litestar throws CancelledError into this
+    generator via athrow(). AsyncSession.__aexit__ creates a close task and
+    shields it, but the CancelledError propagates out before the task runs,
+    orphaning it. The connection is never returned to the pool.
+
+    By owning the close in a finally block with asyncio.shield, we ensure the
+    connection is returned even when CancelledError is in flight.
     """
-    async with AsyncSession(get_engine()) as session:
+    session = AsyncSession(get_engine())
+    try:
         yield session
+    finally:
+        await asyncio.shield(asyncio.ensure_future(session.close()))
