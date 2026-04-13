@@ -313,6 +313,25 @@ class CatchmentRepository(AsyncRepository):
 
     model_type = CatchmentModel
 
+    async def cancel_running_query(self) -> None:
+        """Terminate the in-flight basin query via pg_terminate_backend.
+
+        Uses terminate instead of cancel because GEOS geometry operations
+        (ST_Union, ST_Simplify) are slow to respond to pg_cancel_backend.
+        Terminate is immediate — the connection is discarded by the pool,
+        but checked_out is decremented right away.
+        """
+        pid = self._cancel_pid
+        if not pid:
+            return
+        import logging
+        logging.getLogger(__name__).info("Terminating basin query on backend PID %s", pid)
+        from . import get_cancel_engine
+
+        async with get_cancel_engine().connect() as conn:
+            await conn.execute(sqlalchemy.text("SELECT pg_terminate_backend(:pid)"), {"pid": pid})
+            await conn.commit()
+
     async def get_by_point(self, wkt_point: str) -> CatchmentModel | None:
         """Find a catchment by spatial intersection with a WKT point."""
         point = geoalchemy2.WKTElement(wkt_point, srid=4269)
