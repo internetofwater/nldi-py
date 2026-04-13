@@ -95,16 +95,23 @@ def disconnect_guard_factory(app: ASGIApp) -> ASGIApp:
             return
 
         scope["_repos"] = []  # ty: ignore[invalid-key]
+        response_started = False
 
-        handler = asyncio.create_task(app(scope, receive, send))  # ty: ignore[invalid-argument-type]
+        async def guarded_send(message) -> None:
+            nonlocal response_started
+            if message["type"] == "http.response.start":
+                response_started = True
+            await send(message)
+
+        handler = asyncio.create_task(app(scope, receive, guarded_send))  # ty: ignore[invalid-argument-type]
 
         async def watch_disconnect() -> None:
             """Poll receive for client disconnect."""
             while True:
                 msg = await receive()
                 if msg["type"] == "http.disconnect":
-                    if handler.done():
-                        return  # normal end-of-response disconnect, not a client hangup
+                    if response_started:
+                        return  # response already sent — normal end-of-stream, not a client hangup
                     for repo in scope.get("_repos", []):
                         try:
                             await repo.cancel_running_query()
