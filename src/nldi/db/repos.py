@@ -24,7 +24,18 @@ class AsyncRepository:
         self.session = session
 
     async def cancel_running_query(self) -> None:
-        """Cancel the in-flight query via pg_cancel_backend, if any."""
+        """Cancel the in-flight query via pg_cancel_backend, if any.
+
+        Uses pg_cancel_backend rather than closing the connection directly.
+        For pure SQL queries (navigation CTEs), pg_cancel_backend responds in
+        milliseconds and allows the connection to recover and be returned to
+        the pool for reuse. Closing the connection would also work but discards
+        it, forcing a new connection on next checkout — expensive under load.
+
+        CatchmentRepository overrides this with a direct connection close
+        because GEOS geometry operations (ST_Union) ignore pg_cancel_backend
+        for minutes and require OS-level termination.
+        """
         pid = self._cancel_pid
         if not pid:
             return
@@ -316,11 +327,17 @@ class CatchmentRepository(AsyncRepository):
     async def cancel_running_query(self) -> None:
         """Close the underlying connection to force-kill the basin query.
 
-        pg_terminate_backend is insufficient — GEOS geometry operations
-        (ST_Union, ST_Simplify) ignore Postgres interrupt signals for minutes.
+        Overrides the base pg_cancel_backend approach because GEOS geometry
+        operations (ST_Union, ST_Simplify) ignore Postgres interrupt signals
+        for minutes — making pg_cancel_backend ineffective for basin queries.
+
         Closing the TCP connection causes Postgres to detect a lost client and
-        kill the backend at the OS level immediately, the same mechanism Java's
-        thread-interrupt model uses.
+        kill the backend at the OS level immediately. This is the same mechanism
+        the Java implementation relies on: a thread interrupt closes the JDBC
+        socket, which Postgres detects and uses to terminate the backend.
+
+        The connection is discarded rather than returned to the pool, but that
+        is acceptable — a new connection is cheaper than holding a stuck one.
         """
         if not self._cancel_pid:
             return
