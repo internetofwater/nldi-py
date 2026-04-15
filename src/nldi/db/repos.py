@@ -40,7 +40,7 @@ class AsyncRepository:
         if not pid:
             return
         import logging
-        logging.getLogger(__name__).info("Cancelling query on backend PID %s", pid)
+        logging.getLogger(__name__).debug("Cancelling query on backend PID %s", pid)
         from . import get_cancel_engine
 
         async with get_cancel_engine().connect() as conn:
@@ -343,7 +343,7 @@ class CatchmentRepository(AsyncRepository):
             return
         import logging
         logger = logging.getLogger(__name__)
-        logger.info("Closing connection for basin PID %s", self._cancel_pid)
+        logger.debug("Closing connection for basin PID %s", self._cancel_pid)
         try:
             conn = await self.session.connection()
             raw = await conn.get_raw_connection()

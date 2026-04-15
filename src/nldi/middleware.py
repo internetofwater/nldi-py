@@ -108,15 +108,6 @@ def disconnect_guard_factory(app: ASGIApp) -> ASGIApp:
                             await repo.cancel_running_query()
                         except Exception:  # noqa: S110
                             pass
-                    try:
-                        from .db import get_engine
-                        pool = get_engine().pool
-                        logger.info(
-                            "Pool on disconnect: size=%d in=%d out=%d overflow=%d",
-                            pool.size(), pool.checkedin(), pool.checkedout(), pool.overflow(),  # ty: ignore[unresolved-attribute]
-                        )
-                    except Exception as e:
-                        logger.warning("Pool stats unavailable on disconnect: %s", e)
                     handler.cancel()
                     return
 
