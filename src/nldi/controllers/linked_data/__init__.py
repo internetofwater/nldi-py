@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ...config import get_base_url
 from ...db.repos import CatchmentRepository, CrawlerSourceRepository, FeatureRepository, FlowlineRepository
-from ...geojson import Feature, FeatureCollection, Point, parse_geometry
+from ...geojson import Feature, FeatureCollection, Point, parse_geometry, stream_feature_collection
 from ...media import MediaType
 from ...negotiate import check_format
 from ...pygeoapi import PyGeoAPIClient
