@@ -1,6 +1,20 @@
 version: "3"
 
+vars:
+  REGISTRY: ghcr.io/internetofwater/nldi-py
+  TAG: '{{.TAG | default "alpha"}}'
+
 tasks:
+  docker:build:
+    desc: Build Docker image locally (single platform, no push)
+    cmds:
+      - docker build -t {{.REGISTRY}}:{{.TAG}} .
+
+  docker:push:
+    desc: Build and push multi-platform image to ghcr.io (requires docker login)
+    cmds:
+      - docker buildx build --platform linux/amd64,linux/arm64 --tag {{.REGISTRY}}:{{.TAG}} --push .
+
   lint:
     desc: Run ruff linter
     cmds:
