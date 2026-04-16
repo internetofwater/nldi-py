@@ -11,7 +11,7 @@ from litestar.params import Dependency, Parameter
 from litestar.response import Stream
 
 from ...db.navigation import NAV_DIST_DEFAULTS, NavigationModes, navigation_query, trim_nav_query
-from ...jsonld import to_jsonld_graph
+from ...jsonld import stream_jsonld_graph
 from . import (
     CrawlerSourceRepository,
     DataSourceParam,
@@ -220,5 +220,5 @@ class NavigationController(Controller):
 
         if f == "jsonld":
             feature_dicts = [msgspec.to_builtins(feat) for feat in features]
-            return Response(content=to_jsonld_graph(feature_dicts), status_code=200, media_type=MediaType.JSONLD)
+            return Stream(stream_jsonld_graph(feature_dicts), media_type=MediaType.JSONLD)
         return Stream(stream_feature_collection(features), media_type=MediaType.GEOJSON)

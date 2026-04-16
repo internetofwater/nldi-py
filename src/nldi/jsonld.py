@@ -7,6 +7,9 @@ into a JSON-LD graph using schema.org, hydrologic features, and geosparql
 vocabularies.
 """
 
+import json as _json
+from collections.abc import Iterator
+
 JSONLD_CONTEXT = [
     {
         "schema": "https://schema.org/",
@@ -90,3 +93,18 @@ def to_jsonld_single(feature: dict) -> dict:
     """Convert a single feature to a root-level JSON-LD document."""
     entry = feature_to_jsonld(feature.get("properties", {}), feature.get("geometry"))
     return {"@context": JSONLD_CONTEXT, **entry}
+
+
+def stream_jsonld_graph(features: list[dict]) -> Iterator[bytes]:
+    """Yield a JSON-LD @graph incrementally.
+
+    The DB query is complete before this is called — no connection is held
+    during streaming.
+    """
+    header = _json.dumps({"@context": JSONLD_CONTEXT, "@id": "_:graph", "@graph": []})
+    yield header[:-2].encode()  # strip trailing `]}`
+    for i, feat in enumerate(features):
+        if i > 0:
+            yield b","
+        yield _json.dumps(feature_to_jsonld(feat.get("properties", {}), feat.get("geometry"))).encode()
+    yield b"]}"
