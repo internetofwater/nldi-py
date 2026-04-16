@@ -8,9 +8,10 @@ import msgspec
 from litestar import Controller, Response, get, head
 from litestar.exceptions import ClientException
 from litestar.params import Dependency, Parameter
+from litestar.response import Stream
 
 from ...db.navigation import NAV_DIST_DEFAULTS, NavigationModes, navigation_query, trim_nav_query
-from ...jsonld import to_jsonld_graph
+from ...jsonld import stream_jsonld_graph
 from . import (
     CrawlerSourceRepository,
     DataSourceParam,
@@ -28,6 +29,7 @@ from . import (
     check_format,
     get_base_url,
     parse_geometry,
+    stream_feature_collection,
 )
 
 _NAV_PATHS = [
@@ -176,7 +178,7 @@ class NavigationController(Controller):
             for f in features:
                 f.geometry = None
 
-        return Response(content=FeatureCollection(features=features), status_code=200, media_type=MediaType.GEOJSON)
+        return Stream(stream_feature_collection(features), media_type=MediaType.GEOJSON)
 
     @get("/{source_name:str}/{identifier:str}/navigation/{nav_mode:str}/{data_source:str}", tags=["by_sourceid"])
     async def get_feature_navigation(
@@ -218,5 +220,5 @@ class NavigationController(Controller):
 
         if f == "jsonld":
             feature_dicts = [msgspec.to_builtins(feat) for feat in features]
-            return Response(content=to_jsonld_graph(feature_dicts), status_code=200, media_type=MediaType.JSONLD)
-        return Response(content=FeatureCollection(features=features), status_code=200, media_type=MediaType.GEOJSON)
+            return Stream(stream_jsonld_graph(feature_dicts), media_type=MediaType.JSONLD)
+        return Stream(stream_feature_collection(features), media_type=MediaType.GEOJSON)

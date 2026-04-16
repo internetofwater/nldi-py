@@ -60,3 +60,27 @@ def test_parse_geojson_linestring():
     geom = parse_geometry('{"type": "LineString", "coordinates": [[-89.0, 43.0], [-89.1, 43.1]]}')
     assert isinstance(geom, LineString)
     assert len(geom.coordinates) == 2
+
+
+def test_stream_feature_collection_empty():
+    from nldi.geojson import stream_feature_collection
+
+    result = json.loads(b"".join(stream_feature_collection([])))
+    assert result == {"type": "FeatureCollection", "features": []}
+
+
+def test_stream_feature_collection_single():
+    from nldi.geojson import Feature, Point, stream_feature_collection
+
+    features = [Feature(geometry=Point(coordinates=(-89.0, 43.0)), properties={"id": "1"})]
+    result = json.loads(b"".join(stream_feature_collection(features)))
+    assert result["type"] == "FeatureCollection"
+    assert len(result["features"]) == 1
+
+
+def test_stream_feature_collection_multiple():
+    from nldi.geojson import Feature, Point, stream_feature_collection
+
+    features = [Feature(geometry=Point(coordinates=(-89.0 - i, 43.0)), properties={"id": str(i)}) for i in range(5)]
+    result = json.loads(b"".join(stream_feature_collection(features)))
+    assert len(result["features"]) == 5
