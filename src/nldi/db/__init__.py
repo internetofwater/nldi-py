@@ -25,10 +25,7 @@ def get_engine() -> AsyncEngine:
         max_overflow=30,
         pool_timeout=60,
         connect_args={
-            "server_settings": {
-                "statement_timeout": "120s",
-                "idle_in_transaction_session_timeout": "30s",
-            }
+            "options": "-c statement_timeout=120000 -c idle_in_transaction_session_timeout=30000"
         },
     )
 

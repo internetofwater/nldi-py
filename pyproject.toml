@@ -24,7 +24,7 @@ dependencies = [
   "litestar[standard]>=2.21.0,<3",
   "uvicorn>=0.34.0,<0.35",
   "sqlalchemy[asyncio]>=2.0,<3",
-  "asyncpg>=0.30.0,<1",
+  "psycopg[async]>=3.1,<4",
   "geoalchemy2>=0.16.0,<0.17",
   "msgspec>=0.19.0,<0.20",
 ]

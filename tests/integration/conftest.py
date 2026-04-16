@@ -3,7 +3,7 @@
 import logging
 import time
 
-import asyncpg
+import psycopg
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from testcontainers.core.container import DockerContainer
@@ -16,9 +16,11 @@ def _wait_for_db(host: str, port: int, user: str, password: str, dbname: str, ti
     import asyncio
 
     async def _try_query():
-        conn = await asyncpg.connect(host=host, port=port, user=user, password=password, database=dbname)
+        conn = await psycopg.AsyncConnection.connect(
+            host=host, port=port, user=user, password=password, dbname=dbname
+        )
         try:
-            await conn.fetch("SELECT 1 FROM nldi_data.crawler_source LIMIT 1")
+            await conn.execute("SELECT 1 FROM nldi_data.crawler_source LIMIT 1")
         finally:
             await conn.close()
 
@@ -73,7 +75,7 @@ def nldi_db_container():
 def db_url(nldi_db_container):
     """Build async database URL from container info."""
     c = nldi_db_container
-    return f"postgresql+asyncpg://{c['user']}:{c['password']}@{c['host']}:{c['port']}/{c['name']}"
+    return f"postgresql+psycopg://{c['user']}:{c['password']}@{c['host']}:{c['port']}/{c['name']}"
 
 
 @pytest.fixture()

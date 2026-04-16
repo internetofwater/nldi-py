@@ -24,10 +24,23 @@ class AsyncRepository:
         self.session = session
 
     async def cancel_running_query(self) -> None:
-        """Cancel the in-flight query via pg_cancel_backend, if any."""
+        """Cancel the in-flight query via pg_cancel_backend, if any.
+
+        Uses pg_cancel_backend rather than closing the connection directly.
+        For pure SQL queries (navigation CTEs), pg_cancel_backend responds in
+        milliseconds and allows the connection to recover and be returned to
+        the pool for reuse. Closing the connection would also work but discards
+        it, forcing a new connection on next checkout — expensive under load.
+
+        CatchmentRepository overrides this with a direct connection close
+        because GEOS geometry operations (ST_Union) ignore pg_cancel_backend
+        for minutes and require OS-level termination.
+        """
         pid = self._cancel_pid
         if not pid:
             return
+        import logging
+        logging.getLogger(__name__).debug("Cancelling query on backend PID %s", pid)
         from . import get_cancel_engine
 
         async with get_cancel_engine().connect() as conn:
@@ -310,6 +323,33 @@ class CatchmentRepository(AsyncRepository):
     """Repository for catchment lookups."""
 
     model_type = CatchmentModel
+
+    async def cancel_running_query(self) -> None:
+        """Close the underlying connection to force-kill the basin query.
+
+        Overrides the base pg_cancel_backend approach because GEOS geometry
+        operations (ST_Union, ST_Simplify) ignore Postgres interrupt signals
+        for minutes — making pg_cancel_backend ineffective for basin queries.
+
+        Closing the TCP connection causes Postgres to detect a lost client and
+        kill the backend at the OS level immediately. This is the same mechanism
+        the Java implementation relies on: a thread interrupt closes the JDBC
+        socket, which Postgres detects and uses to terminate the backend.
+
+        The connection is discarded rather than returned to the pool, but that
+        is acceptable — a new connection is cheaper than holding a stuck one.
+        """
+        if not self._cancel_pid:
+            return
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.debug("Closing connection for basin PID %s", self._cancel_pid)
+        try:
+            conn = await self.session.connection()
+            raw = await conn.get_raw_connection()
+            await raw.driver_connection.close()
+        except Exception as e:
+            logger.warning("Failed to close basin connection: %s", e)
 
     async def get_by_point(self, wkt_point: str) -> CatchmentModel | None:
         """Find a catchment by spatial intersection with a WKT point."""

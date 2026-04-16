@@ -48,7 +48,7 @@ def get_database_url() -> str:
     if missing:
         raise RuntimeError(f"Required database env var(s) not set: {', '.join(missing)}")
 
-    return f"postgresql+asyncpg://{user}:{password}@{host}:{port}/{name}"
+    return f"postgresql+psycopg://{user}:{password}@{host}:{port}/{name}"
 
 
 def get_base_url() -> str:
