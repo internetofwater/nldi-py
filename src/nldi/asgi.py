@@ -69,7 +69,13 @@ def create_app(dependencies: dict | None = None) -> Litestar:
         route_handlers=[RootController, linked_data_router],
         path=get_prefix(),
         dependencies=deps,
-        logging_config=LoggingConfig(root={"level": get_log_level(), "handlers": ["queue_listener"]}),
+        logging_config=LoggingConfig(
+            root={"level": get_log_level(), "handlers": ["queue_listener"]},
+            loggers={
+                "httpx": {"level": "WARNING", "propagate": False},
+                "httpcore": {"level": "WARNING", "propagate": False},
+            },
+        ),
         exception_handlers={  # ty: ignore[invalid-argument-type]
             HTTPException: problem_details_handler,
             PyGeoAPITimeoutError: gateway_timeout_handler,
