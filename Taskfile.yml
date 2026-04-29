@@ -86,6 +86,15 @@ tasks:
     cmds:
       - uv run ty check src/
 
+  dev:docker:
+    desc: Run pulled image with decrypted secrets (equivalent of dev task but containerized)
+    cmds:
+      - gpg --quiet --decrypt ~/.secrets/nldi.env.gpg | sed 's/^\([^=]*\)="\(.*\)"$/\1=\2/' > ~/.secrets/nldi.tmp
+      - docker run --rm --env-file ~/.secrets/nldi.tmp -p 8000:8080 ghcr.io/internetofwater/nldi-py:{{.TAG}}
+      - rm -f ~/.secrets/nldi.tmp
+    vars:
+      TAG: '{{.TAG | default "alpha"}}'
+
   dev:
     desc: Run app locally with decrypted secrets from ~/.secrets/nldi.env.gpg
     cmds:
