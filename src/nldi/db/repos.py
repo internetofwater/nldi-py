@@ -117,7 +117,7 @@ class FeatureRepository(AsyncRepository):
                 .join(subq, FeatureSourceModel.comid == subq.c.comid)
                 .where(sqlalchemy.func.lower(CrawlerSourceModel.source_suffix) == data_source.lower())
                 .options(
-                    sqlalchemy.orm.joinedload(FeatureSourceModel.crawler_source),
+                    sqlalchemy.orm.contains_eager(FeatureSourceModel.crawler_source),
                     sqlalchemy.orm.joinedload(FeatureSourceModel.mainstem_lookup),
                 )
             )
