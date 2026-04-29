@@ -116,7 +116,10 @@ class FeatureRepository(AsyncRepository):
                 .join(CrawlerSourceModel, FeatureSourceModel.crawler_source_id == CrawlerSourceModel.crawler_source_id)
                 .join(subq, FeatureSourceModel.comid == subq.c.comid)
                 .where(sqlalchemy.func.lower(CrawlerSourceModel.source_suffix) == data_source.lower())
-                .options(sqlalchemy.orm.joinedload(FeatureSourceModel.mainstem_lookup))
+                .options(
+                    sqlalchemy.orm.joinedload(FeatureSourceModel.crawler_source),
+                    sqlalchemy.orm.joinedload(FeatureSourceModel.mainstem_lookup),
+                )
             )
             return list(await self.list(statement=stmt))
         finally:
