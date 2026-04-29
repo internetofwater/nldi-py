@@ -145,7 +145,7 @@ class FlowlineModel(NHDBaseModel):
         MainstemLookupModel,
         primaryjoin=lambda: FlowlineModel.nhdplus_comid == MainstemLookupModel.nhdpv2_comid,
         foreign_keys=[nhdplus_comid],
-        lazy="immediate",
+        lazy="noload",
     )
     mainstem: AssociationProxy[str] = association_proxy("mainstem_lookup", "uri")
 
