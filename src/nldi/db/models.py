@@ -115,6 +115,54 @@ class FeatureSourceModel(NLDIBaseModel):
 
 
 # ---------------------------------------------------------------------------
+# characteristic_data schema
+# ---------------------------------------------------------------------------
+
+
+class CharacteristicDataBaseModel(DeclarativeBase):
+    """Base for tables in the characteristic_data schema."""
+
+    metadata = MetaData(schema="characteristic_data")
+
+
+class CharacteristicCatchmentModel(CharacteristicDataBaseModel):
+    """Catchment polygons — characteristic_data.catchmentsp table.
+
+    Leaner than nhdplus.catchmentsp (3 columns vs 7). Used for basin
+    geometry aggregation where the narrower rows reduce I/O.
+    """
+
+    __tablename__ = "catchmentsp"
+
+    ogc_fid: Mapped[int] = mapped_column(Integer, primary_key=True, nullable=True)
+    the_geom: Mapped[Any] = mapped_column(GeoJSONGeometry, nullable=True)
+    featureid: Mapped[int] = mapped_column(Integer, nullable=True)
+
+
+class CharacteristicFlowlineVAAModel(CharacteristicDataBaseModel):
+    """Flowline VAA — characteristic_data.plusflowlinevaa_np21 table.
+
+    Same columns as :class:`FlowlineVAAModel` but in the characteristic_data
+    schema, which has better indexing for basin traversal queries.
+    """
+
+    __tablename__ = "plusflowlinevaa_np21"
+
+    comid: Mapped[int] = mapped_column(Integer, primary_key=True)
+    hydroseq: Mapped[int] = mapped_column(Integer)
+    levelpathid: Mapped[int] = mapped_column(Integer)
+    pathlength: Mapped[float] = mapped_column(Float)
+    terminalpathid: Mapped[int] = mapped_column(Integer)
+    startflag: Mapped[int] = mapped_column(SmallInteger, nullable=True)
+    terminalflag: Mapped[int] = mapped_column(SmallInteger, nullable=True)
+    uphydroseq: Mapped[int] = mapped_column(Integer)
+    dnminorhyd: Mapped[int] = mapped_column(Integer)
+    dnhydroseq: Mapped[int] = mapped_column(Integer)
+    lengthkm: Mapped[float] = mapped_column(Float)
+    fcode: Mapped[int] = mapped_column(Integer, nullable=True)
+
+
+# ---------------------------------------------------------------------------
 # nhdplus schema
 # ---------------------------------------------------------------------------
 
