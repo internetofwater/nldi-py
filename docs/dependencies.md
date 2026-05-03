@@ -7,7 +7,7 @@
 | Litestar | ASGI framework | DI, DTO layer, OpenAPI generation |
 | SQLAlchemy (async) | Database access | Query builder, async sessions, ORM for table mapping |
 | GeoAlchemy2 | PostGIS support | Spatial column types and functions (ST_Intersects, ST_Union, etc.) |
-| asyncpg | Async PostgreSQL driver | Required by SQLAlchemy async |
+| psycopg[binary] | Async PostgreSQL driver | psycopg3 with SQLAlchemy async. Self-contained binary for Docker. |
 | httpx | Async HTTP client | For pygeoapi calls. Async-native, timeout support |
 | msgspec | Struct definitions + serialization | GeoJSON DTOs, DataSource. Works well with Litestar serialization |
 
