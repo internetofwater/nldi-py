@@ -14,7 +14,7 @@ from enum import StrEnum
 from sqlalchemy import Select, and_, bindparam, select
 from sqlalchemy.orm import aliased
 
-from .models import FlowlineVAAModel
+from .models import CharacteristicFlowlineVAAModel, FlowlineVAAModel
 
 COASTAL_FCODE = 56600
 
@@ -315,34 +315,23 @@ def basin_query(comid: int) -> Select:
     Returns comids of all upstream flowlines. Join to catchmentsp and
     ST_Union the geometries to get the drainage basin polygon.
 
-    Matches Java mybatis stream.xml basin query. Should compile to::
-
-        WITH RECURSIVE nav(comid, hydroseq, startflag) AS (
-            SELECT comid, hydroseq, startflag
-            FROM nhdplus.plusflowlinevaa_np21
-            WHERE comid = :comid
-            UNION
-            SELECT vaa.comid, vaa.hydroseq, vaa.startflag
-            FROM nhdplus.plusflowlinevaa_np21 vaa, nav
-            WHERE nav.startflag != 1
-              AND (vaa.dnhydroseq = nav.hydroseq
-                   OR (vaa.dnminorhyd != 0 AND vaa.dnminorhyd = nav.hydroseq))
-        )
-        SELECT nav.comid FROM nav
+    Uses characteristic_data.plusflowlinevaa_np21 for better index
+    performance on large upstream networks, consistent with the Java
+    implementation.
     """
     from sqlalchemy import or_
 
     nav = (
         select(
-            FlowlineVAAModel.comid,
-            FlowlineVAAModel.hydroseq,
-            FlowlineVAAModel.startflag,
+            CharacteristicFlowlineVAAModel.comid,
+            CharacteristicFlowlineVAAModel.hydroseq,
+            CharacteristicFlowlineVAAModel.startflag,
         )
-        .where(FlowlineVAAModel.comid == bindparam("comid"))
+        .where(CharacteristicFlowlineVAAModel.comid == bindparam("comid"))
         .cte("nav", recursive=True)
     )
 
-    vaa = aliased(FlowlineVAAModel, name="vaa")
+    vaa = aliased(CharacteristicFlowlineVAAModel, name="vaa")
     nav_basin = nav.union(
         select(vaa.comid, vaa.hydroseq, vaa.startflag).where(
             and_(

@@ -55,3 +55,23 @@ def test_navigation_query_invalid_mode():
 
     with pytest.raises(ValueError, match="Invalid navigation mode"):
         navigation_query("BOGUS", comid=123, distance=10)
+
+
+def test_basin_query_uses_characteristic_data():
+    from nldi.db.navigation import basin_query
+
+    query = basin_query(13293396)
+    sql = str(query.compile(compile_kwargs={"literal_binds": True}))
+    assert "characteristic_data.plusflowlinevaa_np21" in sql
+    assert "nhdplus.plusflowlinevaa_np21" not in sql
+
+
+def test_navigation_ctes_use_nhdplus():
+    """Characterization: dm, dd, um, ut must use nhdplus, not characteristic_data."""
+    from nldi.db.navigation import dd, dm, um, ut
+
+    for builder in (dm, dd, um, ut):
+        query = builder(comid=13293396, distance=10)
+        sql = str(query.compile(compile_kwargs={"literal_binds": True}))
+        assert "nhdplus.plusflowlinevaa_np21" in sql, f"{builder.__name__} missing nhdplus reference"
+        assert "characteristic_data" not in sql, f"{builder.__name__} should not reference characteristic_data"

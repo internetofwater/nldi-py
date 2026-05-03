@@ -10,7 +10,7 @@ import geoalchemy2
 import sqlalchemy
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from .models import CatchmentModel, CrawlerSourceModel, FeatureSourceModel, FlowlineModel
+from .models import CatchmentModel, CharacteristicCatchmentModel, CrawlerSourceModel, FeatureSourceModel, FlowlineModel
 
 
 class AsyncRepository:
@@ -40,6 +40,7 @@ class AsyncRepository:
         if not pid:
             return
         import logging
+
         logging.getLogger(__name__).debug("Cancelling query on backend PID %s", pid)
         from . import get_cancel_engine
 
@@ -346,6 +347,7 @@ class CatchmentRepository(AsyncRepository):
         if not self._cancel_pid:
             return
         import logging
+
         logger = logging.getLogger(__name__)
         logger.debug("Closing connection for basin PID %s", self._cancel_pid)
         try:
@@ -366,21 +368,27 @@ class CatchmentRepository(AsyncRepository):
         """Aggregate upstream catchment polygons into a basin geometry.
 
         Returns GeoJSON string of the unioned polygon, optionally simplified.
+        Uses characteristic_data.catchmentsp for better I/O performance on
+        large upstream networks.
         """
         self._cancel_pid = await self.session.scalar(sqlalchemy.text("SELECT pg_backend_pid()"))
         try:
             subq = basin_nav_query.subquery()
             if simplified:
                 geom = sqlalchemy.func.ST_AsGeoJSON(
-                    sqlalchemy.func.ST_Simplify(sqlalchemy.func.ST_Union(CatchmentModel.the_geom), 0.001), 9, 0
+                    sqlalchemy.func.ST_Simplify(sqlalchemy.func.ST_Union(CharacteristicCatchmentModel.the_geom), 0.001),
+                    9,
+                    0,
                 )
             else:
-                geom = sqlalchemy.func.ST_AsGeoJSON(sqlalchemy.func.ST_Union(CatchmentModel.the_geom), 9, 0)
+                geom = sqlalchemy.func.ST_AsGeoJSON(
+                    sqlalchemy.func.ST_Union(CharacteristicCatchmentModel.the_geom), 9, 0
+                )
 
             stmt = (
                 sqlalchemy.select(geom.label("shape"))
                 .select_from(subq)
-                .join(CatchmentModel, subq.c.comid == CatchmentModel.featureid)
+                .join(CharacteristicCatchmentModel, subq.c.comid == CharacteristicCatchmentModel.featureid)
             )
             result = await self.session.execute(stmt)
             row = result.fetchone()
