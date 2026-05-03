@@ -11,97 +11,20 @@ implemented in the Python version:
 - `GET /lookups/{characteristicType}/characteristics` — list characteristics by type
 - `GET /linked-data/{featureSource}/{featureID}/{characteristicType}` — characteristic data for a feature
 
-## Bugs inherited from Java
-
-- Landing page link relations: both HTML and JSON OpenAPI links use `rel: "service-desc"`. The
-  HTML link should be `rel: "service-doc"` per OGC API conventions. Java has the same bug.
-
-## Geometry serialization: ST_AsGeoJSON vs WKB
-
-GeoAlchemy2 returns WKB by default, which requires shapely to convert to GeoJSON. An alternative is
-using `ST_AsGeoJSON` in SQL (either per-query or via a custom column type), which returns GeoJSON text
-directly and eliminates the need for shapely deserialization. Tradeoff: GeoJSON is 2-3x larger than
-WKB on the wire between DB and app, but skips the Python-side conversion step. Benchmark before deciding.
-
-## Fast-return HEAD
-
-HEAD support should be implemented as middleware that returns 200 + appropriate headers without
-executing the route handler. This avoids running expensive DB queries just to discard the body (which
-is what Spring Boot does on the Java side).
-
-## Content negotiation / browser redirect
-
-The `f=` query parameter is not standard content negotiation. When `f=` is absent and `Accept` includes
-`text/html`, the app assumes a browser and returns a canned HTML page with a link to `?f=json`. This is
-a pre-request concern that applies to all linked-data endpoints.
-
 ## Database error handling
 
-DB connection errors and timeouts currently fall through to the catch-all 500 handler. A dedicated exception handler for `sqlalchemy.exc.OperationalError` should be added to return 503 Service Unavailable with a problem+json response. Register alongside the existing handlers in `create_app`. Cross-cutting — covers all DB-backed endpoints in one place.
+DB connection errors and timeouts currently fall through to the catch-all 500 handler. A dedicated
+exception handler for `sqlalchemy.exc.OperationalError` should be added to return 503 Service
+Unavailable with a problem+json response. Register alongside the existing handlers in `create_app`.
+Cross-cutting — covers all DB-backed endpoints in one place.
 
 ## Null vs empty string for missing values
 
-Feature properties use `null` (not empty string) for missing values (comid, reachcode, mainstem). This differs from the Java implementation which uses empty strings in some cases. Follow up with project owner to confirm this is acceptable.
-
-## Phase 3: Navigation CTE readability
-
-The four navigation CTEs (DM, DD, UM, UT) share ~70% of their structure. Port as-is first (working system), then refactor for readability:
-
-- Replace `text(":param")` with `sqlalchemy.bindparam()` — type-safe, cleaner
-- Consider a builder function for the common CTE structure (anchor + recursive step + distance filter)
-- Extract "resolve starting comid" logic shared by `walk_flowlines` and `walk_features`
-- Keep the inline SQL comments showing expected compiled output — they're valuable for debugging
-
-## OpenAPI documentation polish
-
-After Phase 3 is complete, do a fit/finish pass on OpenAPI docs:
-- Add `Parameter(description=..., examples=...)` annotations to all handlers
-- Document valid `nav_mode` values (UM, UT, DM, DD) with examples
-- Add response schema descriptions for FeatureCollection endpoints
-- Add meaningful operation summaries where auto-generated ones are insufficient
+Feature properties use `null` (not empty string) for missing values (comid, reachcode, mainstem).
+This differs from the Java implementation which uses empty strings in some cases. Follow up with
+project owner to confirm this is acceptable.
 
 ## pygeoapi test URL
 
-Integration and system tests should use `https://nhgf.dev-wma.chs.usgs.gov/api/nldi/pygeoapi/` as `NLDI_PYGEOAPI_URL`. This is the dev instance — do not use production pygeoapi for testing.
-
-## Split linked_data.py into sub-controllers
-
-`linked_data.py` is growing large. Natural split:
-- `controllers/linked_data/lookups.py` — sources, features, position, hydrolocation
-- `controllers/linked_data/navigation.py` — modes, info, flowline nav, feature nav
-- `controllers/linked_data/basin.py` — basin endpoint
-- `controllers/linked_data/__init__.py` — shared helpers, DI providers, re-exports
-
-Do as a cleanup PR after Phase 4.
-
-## Session lifecycle (PR #192)
-
-Advanced-alchemy was removed because it wrapped SQLAlchemy exceptions
-(hiding `TimeoutError` behind `RepositoryError`), owned the session
-lifecycle, and installed its own exception handler. Under load, client
-disconnects left DB connections checked out ("zombie connections").
-
-Replaced with:
-- `db/__init__.py`: `get_engine()` singleton with pool config +
-  `provide_db_session()` async generator with `try/except/finally`
-  guaranteeing rollback+close on error or client disconnect.
-- `db/repos.py`: `AsyncRepository` base class (~15 lines) providing
-  `list(statement)` and `get_one_or_none(*filters, statement=)`.
-- `statement_timeout=120s` on all Postgres connections as a server-side
-  safety net for runaway queries.
-
-## Disconnect guard (PR #193)
-
-Navigation and basin queries record the Postgres backend PID before
-executing expensive CTEs. If the client disconnects mid-query, the
-`disconnect_guard_factory` middleware detects the ASGI disconnect event
-and issues `SELECT pg_cancel_backend(pid)` from a separate connection.
-This immediately frees the pool connection instead of waiting for
-`statement_timeout` (120s).
-
-Repos tracked: `FlowlineRepository.from_nav_query`,
-`from_trimmed_nav_query`, `FeatureRepository.from_nav_query`,
-`CatchmentRepository.get_drainage_basin`.
-
-Health endpoint now reports pool stats (size, checked_in, checked_out,
-overflow) for monitoring pool exhaustion.
+Integration and system tests should use `https://nhgf.dev-wma.chs.usgs.gov/api/nldi/pygeoapi/` as
+`NLDI_PYGEOAPI_URL`. This is the dev instance — do not use production pygeoapi for testing.
