@@ -11,13 +11,6 @@ implemented in the Python version:
 - `GET /lookups/{characteristicType}/characteristics` — list characteristics by type
 - `GET /linked-data/{featureSource}/{featureID}/{characteristicType}` — characteristic data for a feature
 
-## Database error handling
-
-DB connection errors and timeouts currently fall through to the catch-all 500 handler. A dedicated
-exception handler for `sqlalchemy.exc.OperationalError` should be added to return 503 Service
-Unavailable with a problem+json response. Register alongside the existing handlers in `create_app`.
-Cross-cutting — covers all DB-backed endpoints in one place.
-
 ## Null vs empty string for missing values
 
 Feature properties use `null` (not empty string) for missing values (comid, reachcode, mainstem).
