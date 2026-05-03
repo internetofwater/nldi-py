@@ -8,6 +8,7 @@ These are the boundary between the data model and the rest of the application.
 
 import geoalchemy2
 import sqlalchemy
+import sqlalchemy.orm
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from .models import CatchmentModel, CharacteristicCatchmentModel, CrawlerSourceModel, FeatureSourceModel, FlowlineModel
@@ -353,7 +354,8 @@ class CatchmentRepository(AsyncRepository):
         try:
             conn = await self.session.connection()
             raw = await conn.get_raw_connection()
-            await raw.driver_connection.close()
+            if raw.driver_connection is not None:
+                await raw.driver_connection.close()
         except Exception as e:
             logger.warning("Failed to close basin connection: %s", e)
 

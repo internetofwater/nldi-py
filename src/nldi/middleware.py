@@ -19,6 +19,7 @@ import uuid
 from time import perf_counter
 
 from litestar.types import ASGIApp, Receive, Scope, Send
+from litestar.types.asgi_types import HTTPScope
 
 logger = logging.getLogger(__name__)
 
@@ -63,17 +64,18 @@ def timing_middleware_factory(app: ASGIApp) -> ASGIApp:
             return
 
         req_id = uuid.uuid4().hex[:8]
-        qs = scope.get("query_string", b"").decode()
-        path = f"{scope['path']}?{qs}" if qs else scope["path"]
-        logger.info("[%s] %s %s - started", req_id, scope["method"], path)
+        http_scope: HTTPScope = scope  # ty: ignore[invalid-assignment]
+        qs = http_scope.get("query_string", b"").decode()
+        path = f"{http_scope['path']}?{qs}" if qs else http_scope["path"]
+        logger.info("[%s] %s %s - started", req_id, http_scope["method"], path)
         start = perf_counter()
         try:
             await app(scope, receive, send)
         except (ConnectionError, TimeoutError, OSError) as e:
-            logger.warning("[%s] Connection lost during %s %s: %s", req_id, scope["method"], scope["path"], e)
+            logger.warning("[%s] Connection lost during %s %s: %s", req_id, http_scope["method"], http_scope["path"], e)
         finally:
             elapsed = perf_counter() - start
-            logger.info("[%s] %s %s: %.3fs", req_id, scope["method"], scope["path"], elapsed)
+            logger.info("[%s] %s %s: %.3fs", req_id, http_scope["method"], http_scope["path"], elapsed)
 
     return middleware
 
@@ -96,7 +98,7 @@ def disconnect_guard_factory(app: ASGIApp) -> ASGIApp:
 
         scope["_repos"] = []  # ty: ignore[invalid-key]
 
-        handler = asyncio.create_task(app(scope, receive, send))
+        handler = asyncio.create_task(app(scope, receive, send))  # ty: ignore[invalid-argument-type]
 
         async def watch_disconnect() -> None:
             """Poll receive for client disconnect."""
