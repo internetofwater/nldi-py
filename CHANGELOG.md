@@ -1,5 +1,12 @@
 # Changelog
 
+## 3.0.1
+
+### Changed
+
+- Basin queries use `characteristic_data` schema for better performance on basin queries
+
+
 ## 3.0.0
 
 ### Added
@@ -25,7 +32,6 @@
 - Framework: Lighter database stack using SQLAlchemy async (replaced advanced-alchemy)
 - DB driver: psycopg3 (replaced asyncpg)
 - Geometry serialization: `ST_AsGeoJSON` custom column type (eliminated runtime shapely dependency)
-- Basin queries use `characteristic_data` schema for better performance on basin queries
 - Navigation queries use joined loads (eliminated N+1 queries)
 - Controllers split into sub-modules (lookups, navigation, basin)
 
