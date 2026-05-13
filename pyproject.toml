@@ -1,6 +1,6 @@
 [project]
 name = "nldi-py"
-version = "3.0.1"
+version = "3.0.2"
 description = "The Hydro Network Linked Data Index (NLDI) puts a restful application programming interface (API) in front of the National Hydrolography dataset (NHD)."
 authors = [{ name = "Internet of Water" }]
 requires-python = ">=3.11,<4.0"
@@ -12,7 +12,7 @@ maintainers = [
 ]
 keywords = ["usgs", "nldi", "nhgf", "nhd"]
 classifiers = [
-  "Development Status :: 2 - Pre-Alpha",
+  "Development Status :: 4 - Beta",
   "Intended Audience :: Developers",
   "Intended Audience :: Science/Research",
   "License :: CC0 1.0 Universal (CC0 1.0) Public Domain Dedication",
