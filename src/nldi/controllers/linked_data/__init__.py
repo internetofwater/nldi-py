@@ -115,6 +115,7 @@ def _build_source_feature(feat, base_url: str, source_name: str) -> Feature:
             "type": feat.feature_type_proxy,
             "uri": feat.uri,
             "reachcode": feat.reachcode or None,
+            "measure": feat.measure if feat.measure is not None else None,
             "mainstem": feat.mainstem if feat.mainstem and feat.mainstem != "NA" else None,
         },
         id=feat.identifier,

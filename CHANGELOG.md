@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- Feature responses now include `measure` property on source feature endpoints
+  (`/linked-data/{source}`, `/linked-data/{source}/{id}`, and feature
+  navigation), restoring parity with the Java NLDI API.
+
 ## 3.0.1
 
 ### Changed
