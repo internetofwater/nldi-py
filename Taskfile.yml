@@ -12,12 +12,6 @@ tasks:
 
   docker:push:
     desc: Build and push multi-platform image to ghcr.io (requires docker login)
-    preconditions:
-      - sh: docker buildx inspect | grep -q "linux/arm64"
-        msg: |
-          Multi-arch builder not ready. One-time setup:
-            docker run --privileged --rm tonistiigi/binfmt --install arm64
-            docker buildx create --name multiarch --driver docker-container --use --bootstrap
     cmds:
       - docker buildx build --platform linux/amd64,linux/arm64 --tag {{.REGISTRY}}:{{.TAG}} --push .
 
