@@ -16,8 +16,56 @@ logger = logging.getLogger(__name__)
 DEFAULT_TIMEOUT = 20  # seconds
 
 
+def _extract_upstream_detail(response: "httpx.Response") -> str:
+    """Pull a human-readable error detail from a pygeoapi error response.
+
+    pygeoapi typically returns JSON like::
+
+        {"type": "...", "code": "...", "description": "..."}
+
+    Other services may use ``detail`` or ``message``. Falls back to the
+    raw text body (truncated) if nothing structured is found.
+    """
+    try:
+        body = response.json()
+    except (json.JSONDecodeError, ValueError):
+        text = (response.text or "").strip()
+        return text[:500]
+
+    if isinstance(body, dict):
+        for key in ("description", "detail", "message"):
+            value = body.get(key)
+            if isinstance(value, str) and value:
+                return value
+    return str(body)[:500]
+
+
 class PyGeoAPIError(Exception):
-    """Error communicating with pygeoapi service."""
+    """Error communicating with pygeoapi service.
+
+    Carries optional upstream context when the error originated from an
+    HTTP response — ``upstream_status`` is the response code and
+    ``upstream_detail`` is a human-readable description extracted from
+    the response body (pygeoapi returns JSON with ``description``,
+    ``detail``, or ``message`` fields).
+    """
+
+    def __init__(
+        self,
+        message: str,
+        upstream_status: int | None = None,
+        upstream_detail: str = "",
+    ):
+        """Initialize with an error message and optional upstream context.
+
+        :param message: Internal error message (logged, not sent to client).
+        :param upstream_status: HTTP status returned by the upstream service.
+        :param upstream_detail: Human-readable detail from the upstream
+            response body, safe to expose in the API response.
+        """
+        super().__init__(message)
+        self.upstream_status = upstream_status
+        self.upstream_detail = upstream_detail
 
 
 class PyGeoAPITimeoutError(PyGeoAPIError):
@@ -41,14 +89,18 @@ class PyGeoAPIClient:
         try:
             async with httpx.AsyncClient(verify=False) as client:  # noqa: S501
                 r = await client.post(url, content=json.dumps(data), timeout=_timeout)
-                r.raise_for_status()
+                if r.status_code >= 400:
+                    detail = _extract_upstream_detail(r)
+                    raise PyGeoAPIError(
+                        f"HTTP {r.status_code} from {url}: {detail or r.reason_phrase}",
+                        upstream_status=r.status_code,
+                        upstream_detail=detail,
+                    )
                 return r.json()
         except httpx.TimeoutException as e:
             raise PyGeoAPITimeoutError(f"Timeout calling {url}: {e}") from e
         except httpx.ConnectError as e:
             raise PyGeoAPIError(f"Cannot connect to {url}: {e}") from e
-        except httpx.HTTPStatusError as e:
-            raise PyGeoAPIError(f"HTTP error from {url}: {e}") from e
         except json.JSONDecodeError as e:
             raise PyGeoAPIError(f"Invalid JSON from {url}: {e}") from e
 

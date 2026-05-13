@@ -32,10 +32,11 @@ from .errors import (
     db_unavailable_handler,
     gateway_timeout_handler,
     problem_details_handler,
+    pygeoapi_error_handler,
     unhandled_exception_handler,
 )
 from .middleware import disconnect_guard_factory, headers_middleware_factory, timing_middleware_factory
-from .pygeoapi import PyGeoAPITimeoutError
+from .pygeoapi import PyGeoAPIError, PyGeoAPITimeoutError
 
 _logger = logging.getLogger(__name__)
 
@@ -79,6 +80,7 @@ def create_app(dependencies: dict | None = None) -> Litestar:
         exception_handlers={  # ty: ignore[invalid-argument-type]
             HTTPException: problem_details_handler,
             PyGeoAPITimeoutError: gateway_timeout_handler,
+            PyGeoAPIError: pygeoapi_error_handler,
             sqlalchemy.exc.SQLAlchemyError: db_unavailable_handler,
             TimeoutError: db_unavailable_handler,
             Exception: unhandled_exception_handler,

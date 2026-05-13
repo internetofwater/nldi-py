@@ -49,3 +49,31 @@ async def test_post_connect_error_raises(monkeypatch):
     client = PyGeoAPIClient("https://fake.example.com/pygeoapi")
     with pytest.raises(PyGeoAPIError, match="connection"):
         await client.post("processes/test/execution", {})
+
+
+async def test_post_http_error_captures_upstream_detail(monkeypatch):
+    """PyGeoAPIError from an HTTP error must carry upstream status and body detail."""
+    import httpx
+    from nldi.pygeoapi import PyGeoAPIClient, PyGeoAPIError
+
+    async def mock_post(self, url, **kwargs):
+        request = httpx.Request("POST", url)
+        response = httpx.Response(
+            status_code=400,
+            request=request,
+            json={
+                "type": "InvalidParameterValue",
+                "code": "InvalidParameterValue",
+                "description": "Error executing process: The NLDI GeoServer failed to return a catchment.",
+            },
+        )
+        return response
+
+    monkeypatch.setattr("httpx.AsyncClient.post", mock_post)
+    client = PyGeoAPIClient("https://fake.example.com/pygeoapi")
+    with pytest.raises(PyGeoAPIError) as exc_info:
+        await client.post("processes/test/execution", {})
+
+    err = exc_info.value
+    assert err.upstream_status == 400
+    assert "NLDI GeoServer failed to return a catchment" in err.upstream_detail
