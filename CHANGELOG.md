@@ -4,11 +4,17 @@
 
 ### Fixed
 
+<<<<<<< fix/negotiate-public-url
 - Browser-facing HTML landing page now generates its JSON link using the
   configured public base URL (``NLDI_URL`` + ``NLDI_PATH``) instead of
   ``request.url``. Behind a reverse proxy such as CloudFront, the link
   previously leaked the origin-facing scheme and host (e.g. the CloudFront
   distribution hostname).
+=======
+- Feature responses now include `measure` property on source feature endpoints
+  (`/linked-data/{source}`, `/linked-data/{source}/{id}`, and feature
+  navigation), restoring parity with the Java NLDI API.
+>>>>>>> refactor/v3
 
 ## 3.0.1
 

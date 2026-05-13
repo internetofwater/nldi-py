@@ -57,6 +57,42 @@ class TestSingleFeature:
             assert "navigation" in props
             assert props["navigation"].endswith("/linked-data/wqp/USGS-01/navigation")
 
+    def test_feature_includes_measure_property(
+        self, fake_source_repo, make_source, fake_feature_repo, make_feature, fake_flowline_repo
+    ):
+        """Feature properties must include 'measure' (parity with Java NLDI)."""
+        feat = make_feature("USGS-01", "wqp", "Water Quality Portal", "Test Site", "https://example.com/USGS-01")
+        feat.measure = 42.5
+        app = _app_with_fakes(
+            fake_source_repo([make_source("wqp", "Water Quality Portal")]),
+            fake_feature_repo([feat]),
+            fake_flowline_repo([]),
+        )
+        with TestClient(app=app) as client:
+            r = client.get("/api/nldi/linked-data/wqp/USGS-01")
+            assert r.status_code == 200
+            props = r.json()["features"][0]["properties"]
+            assert "measure" in props
+            assert props["measure"] == 42.5
+
+    def test_feature_measure_is_null_when_absent(
+        self, fake_source_repo, make_source, fake_feature_repo, make_feature, fake_flowline_repo
+    ):
+        """When the DB measure is NULL, the 'measure' property should be null."""
+        feat = make_feature("USGS-02", "wqp", "Water Quality Portal", "Test Site", "https://example.com/USGS-02")
+        # feat.measure is None by default in the fake
+        app = _app_with_fakes(
+            fake_source_repo([make_source("wqp", "Water Quality Portal")]),
+            fake_feature_repo([feat]),
+            fake_flowline_repo([]),
+        )
+        with TestClient(app=app) as client:
+            r = client.get("/api/nldi/linked-data/wqp/USGS-02")
+            assert r.status_code == 200
+            props = r.json()["features"][0]["properties"]
+            assert "measure" in props
+            assert props["measure"] is None
+
     def test_invalid_comid_returns_400(self, fake_source_repo, fake_feature_repo, fake_flowline_repo):
         app = _app_with_fakes(fake_source_repo([]), fake_feature_repo([]), fake_flowline_repo([]))
         with TestClient(app=app) as client:
