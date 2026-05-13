@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- Browser-facing HTML landing page now generates its JSON link using the
+  configured public base URL (``NLDI_URL`` + ``NLDI_PATH``) instead of
+  ``request.url``. Behind a reverse proxy such as CloudFront, the link
+  previously leaked the origin-facing scheme and host (e.g. the CloudFront
+  distribution hostname).
+
 ## 3.0.1
 
 ### Changed

@@ -66,3 +66,39 @@ def test_explicit_f_overrides_accept_html():
         r = client.get("/test?f=json", headers={"Accept": "text/html"})
         assert r.status_code == 200
         assert r.json()["format"] == "json"
+
+
+def test_browser_redirect_uses_public_base_url(monkeypatch):
+    """The HTML redirect link must use NLDI_URL/NLDI_PATH, not the request host.
+
+    When behind a reverse proxy (CloudFront), ``request.url`` reflects the
+    origin-facing scheme and host, not the viewer-facing ones. The redirect
+    link must use the configured public base URL so viewers get a working
+    link.
+    """
+    monkeypatch.setenv("NLDI_URL", "https://public.example.com")
+    monkeypatch.setenv("NLDI_PATH", "/nldi")
+
+    from litestar import Litestar, get
+    from nldi.negotiate import check_format
+
+    @get("/linked-data/nwissite/{identifier:str}")
+    async def feature(identifier: str, f: str = "") -> dict:
+        return {"format": f, "id": identifier}
+
+    app = Litestar(route_handlers=[feature], path="/nldi", before_request=check_format)
+
+    with TestClient(app=app) as client:
+        # TestClient uses http://testserver as the host (origin-facing, like
+        # the CloudFront distribution hostname in production).
+        r = client.get(
+            "/nldi/linked-data/nwissite/USGS-11120000",
+            headers={"Accept": "text/html"},
+            follow_redirects=False,
+        )
+        assert r.status_code == 200
+        assert "text/html" in r.headers.get("content-type", "")
+        # The link must use the public base URL, not testserver
+        assert "https://public.example.com/nldi/linked-data/nwissite/USGS-11120000" in r.text
+        assert "testserver" not in r.text
+        assert "f=json" in r.text
