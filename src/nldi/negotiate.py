@@ -6,6 +6,7 @@ from litestar import Response
 from litestar.connection import Request
 from litestar.exceptions import ClientException
 
+from .config import get_base_url, get_prefix
 from .media import MediaType
 
 VALID_FORMATS = {"json", "jsonld", "html", ""}
@@ -22,6 +23,11 @@ async def check_format(request: Request) -> Response | None:
     If f= is present and invalid, raises 400.
     If f= is absent and the client accepts text/html (browser), returns
     a small HTML page linking to the JSON version.
+
+    The link is built from the configured public base URL (``NLDI_URL`` +
+    ``NLDI_PATH``) rather than ``request.url``, because behind a reverse
+    proxy (e.g. CloudFront) ``request.url`` reflects the origin-facing
+    scheme and host, not the viewer-facing ones.
     """
     f = request.query_params.get("f", "")
 
@@ -30,8 +36,16 @@ async def check_format(request: Request) -> Response | None:
         raise ClientException(detail=f"Invalid format '{f}'. Must be one of: {options}")
 
     if not f and MediaType.HTML in request.headers.get("accept", ""):
-        sep = "&" if "?" in str(request.url) else "?"
-        json_url = f"{request.url}{sep}f=json"
+        # Rebuild the URL using the public base URL, preserving only the
+        # path-after-prefix and the original query string.
+        base_url = get_base_url()
+        prefix = get_prefix()
+        path = request.url.path
+        if prefix and path.startswith(prefix):
+            path = path[len(prefix) :]
+        query = request.url.query
+        sep = "&" if query else "?"
+        json_url = f"{base_url}{path}{'?' + query if query else ''}{sep}f=json"
         return Response(
             content=HTML_REDIRECT_TEMPLATE.format(url=json_url),
             status_code=200,
