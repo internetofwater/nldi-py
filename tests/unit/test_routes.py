@@ -117,3 +117,41 @@ def test_openapi_redirects_to_docs():
         r = client.get("/api/nldi/openapi", follow_redirects=False)
         assert r.status_code == 301
         assert "/api/nldi/docs" in r.headers["location"]
+
+
+# --- Characterization tests: lock in HEAD behavior before refactor ---
+
+
+def test_head_landing_page_headers():
+    """C1: HEAD on root returns 200 + empty body + CORS headers."""
+    with _client() as client:
+        r = client.head("/api/nldi/")
+        assert r.status_code == 200
+        assert r.content == b""
+        assert r.headers.get("access-control-allow-origin") == "*"
+        assert "cache-control" in r.headers
+        assert "vary" in r.headers
+
+
+def test_head_health_check():
+    """C2: HEAD on health returns 200 + empty body."""
+    with _client() as client:
+        r = client.head("/api/nldi/about/health")
+        assert r.status_code == 200
+        assert r.content == b""
+
+
+def test_head_linked_data_source_headers():
+    """C3: HEAD on linked-data source returns 200 + empty body + headers."""
+    with _client() as client:
+        r = client.head("/api/nldi/linked-data/wqp")
+        assert r.status_code == 200
+        assert r.content == b""
+        assert r.headers.get("access-control-allow-origin") == "*"
+
+
+def test_head_invalid_format_returns_400():
+    """C7: HEAD with invalid f= returns 400."""
+    with _client() as client:
+        r = client.head("/api/nldi/linked-data/wqp?f=xml")
+        assert r.status_code == 400
