@@ -2,7 +2,7 @@
 # SPDX-FileCopyrightText: 2024-present USGS
 """Root controller — landing page and health check."""
 
-from litestar import Controller, Response, get, head
+from litestar import Controller, Response, route
 from litestar.response import Redirect
 
 from .. import __description__, __title__
@@ -17,12 +17,7 @@ class RootController(Controller):
     path = ""
     tags = ["nldi"]
 
-    @head(["/", "/about/health"], include_in_schema=False)
-    async def handle_head(self) -> None:
-        """HEAD support for all root endpoints."""
-        return None
-
-    @get("/", media_type=MediaType.JSON)
+    @route("/", http_method=["GET", "HEAD"], media_type=MediaType.JSON)
     async def landing_page(self) -> dict:
         """Landing page."""
         return {
@@ -40,18 +35,18 @@ class RootController(Controller):
             ],
         }
 
-    @get("/about/health", include_in_schema=False)
+    @route("/about/health", http_method=["GET", "HEAD"], include_in_schema=False)
     async def health_check(self) -> Response:
         """Health check for server and dependent services."""
         data = await health_status()
         return Response(content=data, headers={"cache-control": "no-cache, no-store, max-age=0"})
 
-    @get("/swagger-ui/index.html", include_in_schema=False)
+    @route("/swagger-ui/index.html", http_method=["GET", "HEAD"], include_in_schema=False)
     async def swagger_ui_redirect(self) -> Redirect:
         """Redirect legacy Java Swagger UI path to docs."""
         return Redirect(path=f"{get_prefix()}/docs", status_code=301)
 
-    @get("/openapi", include_in_schema=False)
+    @route("/openapi", http_method=["GET", "HEAD"], include_in_schema=False)
     async def openapi_redirect(self) -> Redirect:
         """Redirect legacy OpenAPI path to docs."""
         return Redirect(path=f"{get_prefix()}/docs", status_code=301)

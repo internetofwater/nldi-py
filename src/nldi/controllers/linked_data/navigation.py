@@ -5,7 +5,7 @@
 from typing import Annotated
 
 import msgspec
-from litestar import Controller, Response, get, head
+from litestar import Controller, Response, route
 from litestar.exceptions import ClientException
 from litestar.params import Dependency, Parameter
 from litestar.response import Stream
@@ -32,13 +32,6 @@ from . import (
     stream_feature_collection,
 )
 
-_NAV_PATHS = [
-    "/{source_name:str}/{identifier:str}/navigation",
-    "/{source_name:str}/{identifier:str}/navigation/{nav_mode:str}",
-    "/{source_name:str}/{identifier:str}/navigation/{nav_mode:str}/flowlines",
-    "/{source_name:str}/{identifier:str}/navigation/{nav_mode:str}/{data_source:str}",
-]
-
 
 class NavigationController(Controller):
     """Navigation endpoints."""
@@ -47,12 +40,7 @@ class NavigationController(Controller):
     tags = ["nldi"]
     before_request = check_format
 
-    @head(_NAV_PATHS, include_in_schema=False)
-    async def handle_head(self) -> None:
-        """HEAD support for navigation endpoints."""
-        return None
-
-    @get("/{source_name:str}/{identifier:str}/navigation", tags=["by_sourceid"])
+    @route("/{source_name:str}/{identifier:str}/navigation", http_method=["GET", "HEAD"], tags=["by_sourceid"])
     async def get_navigation_modes(
         self,
         source_name: SourceName,
@@ -79,7 +67,11 @@ class NavigationController(Controller):
             "downstreamDiversions": f"{nav_url}/DD",
         }
 
-    @get("/{source_name:str}/{identifier:str}/navigation/{nav_mode:str}", tags=["by_sourceid"])
+    @route(
+        "/{source_name:str}/{identifier:str}/navigation/{nav_mode:str}",
+        http_method=["GET", "HEAD"],
+        tags=["by_sourceid"],
+    )
     async def get_navigation_info(
         self,
         source_name: SourceName,
@@ -118,7 +110,11 @@ class NavigationController(Controller):
             )
         return result
 
-    @get("/{source_name:str}/{identifier:str}/navigation/{nav_mode:str}/flowlines", tags=["by_sourceid"])
+    @route(
+        "/{source_name:str}/{identifier:str}/navigation/{nav_mode:str}/flowlines",
+        http_method=["GET", "HEAD"],
+        tags=["by_sourceid"],
+    )
     async def get_flowline_navigation(
         self,
         source_name: SourceName,
@@ -180,7 +176,11 @@ class NavigationController(Controller):
 
         return Stream(stream_feature_collection(features), media_type=MediaType.GEOJSON)
 
-    @get("/{source_name:str}/{identifier:str}/navigation/{nav_mode:str}/{data_source:str}", tags=["by_sourceid"])
+    @route(
+        "/{source_name:str}/{identifier:str}/navigation/{nav_mode:str}/{data_source:str}",
+        http_method=["GET", "HEAD"],
+        tags=["by_sourceid"],
+    )
     async def get_feature_navigation(
         self,
         source_name: SourceName,

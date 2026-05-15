@@ -35,7 +35,12 @@ from .errors import (
     pygeoapi_error_handler,
     unhandled_exception_handler,
 )
-from .middleware import disconnect_guard_factory, headers_middleware_factory, timing_middleware_factory
+from .middleware import (
+    disconnect_guard_factory,
+    head_shortcircuit_factory,
+    headers_middleware_factory,
+    timing_middleware_factory,
+)
 from .pygeoapi import PyGeoAPIError, PyGeoAPITimeoutError
 
 _logger = logging.getLogger(__name__)
@@ -85,7 +90,7 @@ def create_app(dependencies: dict | None = None) -> Litestar:
             TimeoutError: db_unavailable_handler,
             Exception: unhandled_exception_handler,
         },
-        middleware=[headers_middleware_factory],
+        middleware=[headers_middleware_factory, head_shortcircuit_factory],
         on_shutdown=[_log_pending_tasks],
         openapi_config=OpenAPIConfig(
             title=__title__,

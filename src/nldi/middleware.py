@@ -1,14 +1,18 @@
 # SPDX-License-Identifier: CC0-1.0
 # SPDX-FileCopyrightText: 2024-present USGS
-"""ASGI middleware for explicit HTTP headers.
+"""ASGI middleware for explicit HTTP headers and HEAD short-circuit.
 
 Litestar provides built-in CORSConfig, but we implement CORS headers explicitly
 because CORSConfig only adds headers when it sees an Origin request header.
 Behind a reverse proxy that strips Origin, CORS headers silently disappear.
 This middleware adds them unconditionally.
 
-HEAD is handled at the route level using @head decorators with
-multi-path arrays, excluded from the OpenAPI schema.
+HEAD requests on endpoints that inject a repository or pygeoapi_client
+dependency are short-circuited by ``head_shortcircuit_factory`` at the
+app-level middleware layer. The handler body never executes, so no DB
+connections are acquired and no upstream calls are made. Lightweight
+endpoints (redirects, landing page, health) pass through to the GET
+handler, and Litestar handles HEAD response semantics automatically.
 
 See docs/principles.md #3: "Explicit over magical."
 """
@@ -125,5 +129,72 @@ def disconnect_guard_factory(app: ASGIApp) -> ASGIApp:
                 await watcher
             except asyncio.CancelledError:
                 pass
+
+    return middleware
+
+
+# Dependencies whose presence in a handler's signature indicates a
+# "heavy" endpoint that should be short-circuited on HEAD.
+_HEAVY_DEPS = frozenset({"source_repo", "feature_repo", "flowline_repo", "catchment_repo", "pygeoapi_client"})
+
+
+def head_shortcircuit_factory(app: ASGIApp) -> ASGIApp:
+    """Short-circuit HEAD requests on heavy endpoints.
+
+    Fires after Litestar's route resolution. If the resolved handler
+    injects a repository or pygeoapi_client dependency, the middleware
+    validates the ``f=`` query parameter and returns an empty 200
+    response without invoking the handler. If ``f=`` is invalid, returns
+    400 with problem+json semantics.
+
+    Lightweight handlers (no heavy dependency) pass through so Litestar
+    handles HEAD automatically (strips body from GET response).
+    """
+    from .negotiate import validate_format_param
+
+    async def middleware(scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http":
+            await app(scope, receive, send)
+            return
+
+        http_scope: HTTPScope = scope  # ty: ignore[invalid-assignment]
+        if http_scope["method"] != "HEAD":
+            await app(scope, receive, send)
+            return
+
+        route_handler = http_scope.get("route_handler")
+        if route_handler is None:
+            await app(scope, receive, send)
+            return
+
+        # Check if the handler uses heavy dependencies
+        params = set(route_handler.parsed_fn_signature.parameters.keys())
+        if not params & _HEAVY_DEPS:
+            await app(scope, receive, send)
+            return
+
+        # Validate f= query parameter
+        query_string: bytes = http_scope.get("query_string", b"")
+        error = validate_format_param(query_string)
+        if error:
+            import json as _json
+
+            body = _json.dumps({"type": "about:blank", "title": "Bad Request", "status": 400, "detail": error}).encode()
+            await send(
+                {
+                    "type": "http.response.start",
+                    "status": 400,
+                    "headers": [
+                        (b"content-type", b"application/problem+json"),
+                        (b"content-length", str(len(body)).encode()),
+                    ],
+                }
+            )
+            await send({"type": "http.response.body", "body": body})  # ty: ignore[invalid-argument-type]
+            return
+
+        # Short-circuit: return empty 200
+        await send({"type": "http.response.start", "status": 200, "headers": []})
+        await send({"type": "http.response.body", "body": b""})  # ty: ignore[invalid-argument-type]
 
     return middleware

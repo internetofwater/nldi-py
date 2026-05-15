@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+### Changed
+
+- HEAD requests are now handled by a single ASGI middleware
+  (`head_shortcircuit_factory`) instead of per-controller `@head`
+  decorators. Adding a new GET endpoint automatically gains HEAD support
+  without additional configuration.
+
+- OPTIONS responses on all GET endpoints now correctly include ``GET`` in
+  the ``Allow`` header (previously omitted due to a Litestar routing
+  quirk with separate `@head`/`@get` decorators on the same path).
+
 ### Fixed
 
 - Errors from the upstream pygeoapi service now return ``502 Bad Gateway``

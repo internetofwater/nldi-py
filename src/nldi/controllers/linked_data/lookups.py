@@ -5,7 +5,7 @@
 from typing import Annotated
 
 import msgspec
-from litestar import Controller, Response, get, head
+from litestar import Controller, Response, route
 from litestar.params import Dependency, Parameter
 
 from ...dto import DataSource
@@ -42,15 +42,6 @@ def _respond_features(features: list[Feature], f: str = "") -> Response:
     return Response(content=FeatureCollection(features=features), status_code=200, media_type=MediaType.GEOJSON)
 
 
-_LOOKUP_PATHS = [
-    "/",
-    "/hydrolocation",
-    "/comid/position",
-    "/{source_name:str}",
-    "/{source_name:str}/{identifier:str}",
-]
-
-
 class LookupController(Controller):
     """Source and feature lookup endpoints."""
 
@@ -58,12 +49,7 @@ class LookupController(Controller):
     tags = ["nldi"]
     before_request = check_format
 
-    @head(_LOOKUP_PATHS, include_in_schema=False)
-    async def handle_head(self) -> None:
-        """HEAD support for lookup endpoints."""
-        return None
-
-    @get("/")
+    @route("/", http_method=["GET", "HEAD"])
     async def list_sources(
         self, source_repo: Annotated[CrawlerSourceRepository, Dependency(skip_validation=True)]
     ) -> list[DataSource]:
@@ -86,7 +72,7 @@ class LookupController(Controller):
             )
         return result
 
-    @get("/hydrolocation")
+    @route("/hydrolocation", http_method=["GET", "HEAD"])
     async def get_hydrolocation(
         self,
         catchment_repo: Annotated[CatchmentRepository, Dependency(skip_validation=True)],
@@ -169,7 +155,7 @@ class LookupController(Controller):
             media_type=MediaType.GEOJSON,
         )
 
-    @get("/comid/position")
+    @route("/comid/position", http_method=["GET", "HEAD"])
     async def flowline_by_position(
         self,
         catchment_repo: Annotated[CatchmentRepository, Dependency(skip_validation=True)],
@@ -207,7 +193,7 @@ class LookupController(Controller):
         feature = _build_comid_feature(flowline, base_url)
         return Response(content=FeatureCollection(features=[feature]), status_code=200, media_type=MediaType.GEOJSON)
 
-    @get("/{source_name:str}", tags=["by_sourceid"])
+    @route("/{source_name:str}", http_method=["GET", "HEAD"], tags=["by_sourceid"])
     async def list_features_by_source(
         self,
         source_name: SourceName,
@@ -238,7 +224,7 @@ class LookupController(Controller):
             features = [_build_source_feature(feat, base_url, source_name) for feat in items]
         return _respond_features(features, f)
 
-    @get("/{source_name:str}/{identifier:str}", tags=["by_sourceid"])
+    @route("/{source_name:str}/{identifier:str}", http_method=["GET", "HEAD"], tags=["by_sourceid"])
     async def get_feature_by_identifier(
         self,
         source_name: SourceName,

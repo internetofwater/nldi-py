@@ -17,6 +17,23 @@ HTML_REDIRECT_TEMPLATE = """<!doctype html>
 </body></html>"""
 
 
+def validate_format_param(query_string: bytes) -> str | None:
+    """Check the f= query parameter against VALID_FORMATS.
+
+    :param query_string: Raw query string bytes from the ASGI scope.
+    :returns: An error message string if invalid, or ``None`` if valid.
+    """
+    from urllib.parse import parse_qs
+
+    params = parse_qs(query_string.decode())
+    f_values = params.get("f", [""])
+    f = f_values[0] if f_values else ""
+    if f not in VALID_FORMATS:
+        options = ", ".join(sorted(VALID_FORMATS - {""}))
+        return f"Invalid format '{f}'. Must be one of: {options}"
+    return None
+
+
 async def check_format(request: Request) -> Response | None:
     """Validate the f= query parameter and handle browser redirect.
 

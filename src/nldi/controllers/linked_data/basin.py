@@ -5,7 +5,7 @@
 import json
 from typing import Annotated
 
-from litestar import Controller, Response, get, head
+from litestar import Controller, Response, route
 from litestar.exceptions import ClientException, NotFoundException
 from litestar.params import Dependency, Parameter
 
@@ -26,10 +26,6 @@ from . import (
     parse_geometry,
 )
 
-_BASIN_PATHS = [
-    "/{source_name:str}/{identifier:str}/basin",
-]
-
 SPLIT_CATCHMENT_THRESHOLD = 200  # meters
 
 
@@ -40,12 +36,7 @@ class BasinController(Controller):
     tags = ["nldi"]
     before_request = check_format
 
-    @head(_BASIN_PATHS, include_in_schema=False)
-    async def handle_head(self) -> None:
-        """HEAD support for basin endpoint."""
-        return None
-
-    @get("/{source_name:str}/{identifier:str}/basin", tags=["by_sourceid"])
+    @route("/{source_name:str}/{identifier:str}/basin", http_method=["GET", "HEAD"], tags=["by_sourceid"])
     async def get_basin(
         self,
         source_name: SourceName,
