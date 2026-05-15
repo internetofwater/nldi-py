@@ -153,11 +153,16 @@ def head_shortcircuit_factory(app: ASGIApp) -> ASGIApp:
     from .negotiate import validate_format_param
 
     async def middleware(scope: Scope, receive: Receive, send: Send) -> None:
-        if scope["type"] != "http" or scope["method"] != "HEAD":
+        if scope["type"] != "http":
             await app(scope, receive, send)
             return
 
-        route_handler = scope.get("route_handler")
+        http_scope: HTTPScope = scope  # ty: ignore[invalid-assignment]
+        if http_scope["method"] != "HEAD":
+            await app(scope, receive, send)
+            return
+
+        route_handler = http_scope.get("route_handler")
         if route_handler is None:
             await app(scope, receive, send)
             return
@@ -169,7 +174,7 @@ def head_shortcircuit_factory(app: ASGIApp) -> ASGIApp:
             return
 
         # Validate f= query parameter
-        query_string: bytes = scope.get("query_string", b"")
+        query_string: bytes = http_scope.get("query_string", b"")
         error = validate_format_param(query_string)
         if error:
             import json as _json
@@ -185,11 +190,11 @@ def head_shortcircuit_factory(app: ASGIApp) -> ASGIApp:
                     ],
                 }
             )
-            await send({"type": "http.response.body", "body": body})
+            await send({"type": "http.response.body", "body": body})  # ty: ignore[invalid-argument-type]
             return
 
         # Short-circuit: return empty 200
         await send({"type": "http.response.start", "status": 200, "headers": []})
-        await send({"type": "http.response.body", "body": b""})
+        await send({"type": "http.response.body", "body": b""})  # ty: ignore[invalid-argument-type]
 
     return middleware
