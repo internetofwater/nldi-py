@@ -12,7 +12,7 @@ from litestar import Request, Response
 from litestar.exceptions import HTTPException
 
 from .media import MediaType
-from .pygeoapi import PyGeoAPITimeoutError
+from .pygeoapi import PyGeoAPIError, PyGeoAPITimeoutError
 
 logger = logging.getLogger(__name__)
 
@@ -60,6 +60,30 @@ def gateway_timeout_handler(_request: Request[Any, Any, Any], exc: PyGeoAPITimeo
         "instance": f"urn:error:{ref}",
     }
     return Response(content=body, status_code=504, media_type=MediaType.PROBLEM_JSON)
+
+
+def pygeoapi_error_handler(_request: Request[Any, Any, Any], exc: PyGeoAPIError) -> Response[dict[str, Any]]:
+    """Return a 502 Bad Gateway for pygeoapi errors, surfacing upstream detail.
+
+    When the pygeoapi service returns an error response, we pass its
+    description along in the problem+json ``detail`` field so the client
+    sees the underlying reason (e.g. "Error executing process: The NLDI
+    GeoServer failed to return a catchment."). For connect or parse
+    errors without upstream context, a generic detail is used.
+    """
+    ref = uuid.uuid4().hex[:8]
+    logger.warning("pygeoapi error [%s]: %s", ref, exc)
+    detail = exc.upstream_detail or "Upstream service returned an error."
+    body: dict[str, Any] = {
+        "type": "about:blank",
+        "title": "Bad Gateway",
+        "status": 502,
+        "detail": detail,
+        "instance": f"urn:error:{ref}",
+    }
+    if exc.upstream_status is not None:
+        body["upstream_status"] = exc.upstream_status
+    return Response(content=body, status_code=502, media_type=MediaType.PROBLEM_JSON)
 
 
 def _short_tb(exc: Exception, frames: int = 3) -> str:

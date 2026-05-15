@@ -4,6 +4,13 @@
 
 ### Fixed
 
+- Errors from the upstream pygeoapi service now return ``502 Bad Gateway``
+  with a problem+json response that surfaces the upstream ``description``
+  (or ``detail``/``message``) in the ``detail`` field, along with an
+  ``upstream_status`` field. Previously any non-timeout pygeoapi error
+  (HTTP 4xx/5xx, invalid JSON, connect failure) fell through to the
+  generic 500 handler and logged a full traceback.
+
 - Browser-facing HTML landing page now generates its JSON link using the
   configured public base URL (``NLDI_URL`` + ``NLDI_PATH``) instead of
   ``request.url``. Behind a reverse proxy such as CloudFront, the link
