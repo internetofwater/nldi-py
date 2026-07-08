@@ -1,0 +1,106 @@
+# SPDX-License-Identifier: CC0-1.0
+# SPDX-FileCopyrightText: 2024-present USGS
+"""RFC 9457 Problem Details error handlers."""
+
+import logging
+import traceback
+import uuid
+from http import HTTPStatus
+from typing import Any
+
+from litestar import Request, Response
+from litestar.exceptions import HTTPException
+
+from .media import MediaType
+from .pygeoapi import PyGeoAPIError, PyGeoAPITimeoutError
+
+logger = logging.getLogger(__name__)
+
+
+def problem_details_handler(_request: Request[Any, Any, Any], exc: HTTPException) -> Response[dict[str, Any]]:
+    """Return an RFC 9457 Problem Details response for HTTP exceptions."""
+    title = HTTPStatus(exc.status_code).phrase if exc.status_code in HTTPStatus else "Error"
+    body: dict[str, Any] = {
+        "type": "about:blank",
+        "title": title,
+        "status": exc.status_code,
+        "detail": exc.detail,
+    }
+    return Response(content=body, status_code=exc.status_code, media_type=MediaType.PROBLEM_JSON)
+
+
+def unhandled_exception_handler(_request: Request[Any, Any, Any], exc: Exception) -> Response[dict[str, Any]]:
+    """Return a generic 500 Problem Details response for unhandled exceptions.
+
+    Logs the full traceback server-side with a reference ID.
+    The reference ID is returned to the client via the ``instance`` field
+    so it can be used to correlate error reports with log entries.
+    """
+    ref = uuid.uuid4().hex[:8]
+    logger.exception("Unhandled exception [%s]", ref)
+    body: dict[str, Any] = {
+        "type": "about:blank",
+        "title": "Internal Server Error",
+        "status": 500,
+        "detail": "An unexpected error occurred.",
+        "instance": f"urn:error:{ref}",
+    }
+    return Response(content=body, status_code=500, media_type=MediaType.PROBLEM_JSON)
+
+
+def gateway_timeout_handler(_request: Request[Any, Any, Any], exc: PyGeoAPITimeoutError) -> Response[dict[str, Any]]:
+    """Return a 504 Gateway Timeout for pygeoapi timeouts."""
+    ref = uuid.uuid4().hex[:8]
+    logger.warning("pygeoapi timeout [%s]: %s", ref, exc)
+    body: dict[str, Any] = {
+        "type": "about:blank",
+        "title": "Gateway Timeout",
+        "status": 504,
+        "detail": "Upstream service timed out.",
+        "instance": f"urn:error:{ref}",
+    }
+    return Response(content=body, status_code=504, media_type=MediaType.PROBLEM_JSON)
+
+
+def pygeoapi_error_handler(_request: Request[Any, Any, Any], exc: PyGeoAPIError) -> Response[dict[str, Any]]:
+    """Return a 502 Bad Gateway for pygeoapi errors, surfacing upstream detail.
+
+    When the pygeoapi service returns an error response, we pass its
+    description along in the problem+json ``detail`` field so the client
+    sees the underlying reason (e.g. "Error executing process: The NLDI
+    GeoServer failed to return a catchment."). For connect or parse
+    errors without upstream context, a generic detail is used.
+    """
+    ref = uuid.uuid4().hex[:8]
+    logger.warning("pygeoapi error [%s]: %s", ref, exc)
+    detail = exc.upstream_detail or "Upstream service returned an error."
+    body: dict[str, Any] = {
+        "type": "about:blank",
+        "title": "Bad Gateway",
+        "status": 502,
+        "detail": detail,
+        "instance": f"urn:error:{ref}",
+    }
+    if exc.upstream_status is not None:
+        body["upstream_status"] = exc.upstream_status
+    return Response(content=body, status_code=502, media_type=MediaType.PROBLEM_JSON)
+
+
+def _short_tb(exc: Exception, frames: int = 3) -> str:
+    """Format a short traceback: last N frames + exception line."""
+    tb = traceback.format_tb(exc.__traceback__)
+    return "".join(tb[-frames:]) + "".join(traceback.format_exception_only(type(exc), exc))
+
+
+def db_unavailable_handler(_request: Request[Any, Any, Any], exc: Exception) -> Response[dict[str, Any]]:
+    """Return a 503 Service Unavailable for database connection errors."""
+    ref = uuid.uuid4().hex[:8]
+    logger.error("Database unavailable [%s]\n%s", ref, _short_tb(exc))
+    body: dict[str, Any] = {
+        "type": "about:blank",
+        "title": "Service Unavailable",
+        "status": 503,
+        "detail": "Database is temporarily unavailable.",
+        "instance": f"urn:error:{ref}",
+    }
+    return Response(content=body, status_code=503, media_type=MediaType.PROBLEM_JSON)

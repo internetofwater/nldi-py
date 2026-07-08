@@ -1,0 +1,36 @@
+{
+  "endpoint": "/linked-data/comid/13293396/navigation/DM/wqp?distance=50&f=json",
+  "captured": "2026-04-06T02:10:20.558384+00:00",
+  "feature_count": 145,
+  "content_type": "application/geo+json",
+  "property_keys": [
+    "comid",
+    "identifier",
+    "name",
+    "navigation",
+    "source",
+    "sourceName",
+    "type",
+    "uri"
+  ],
+  "geometry_types": [
+    "Point"
+  ],
+  "sources_present": [
+    "WQP"
+  ],
+  "first_feature": {
+    "type": "Feature",
+    "geometry": null,
+    "properties": {
+      "type": "varies",
+      "source": "WQP",
+      "sourceName": "Water Quality Portal",
+      "identifier": "USGS-431331089212601",
+      "name": "DN-09/10E/19-0906",
+      "uri": "https://www.waterqualitydata.us/provider/NWIS/USGS-WI/USGS-431331089212601/",
+      "comid": "13294110",
+      "navigation": "https://api.water.usgs.gov/nldi/linked-data/wqp/USGS-431331089212601/navigation"
+    }
+  }
+}

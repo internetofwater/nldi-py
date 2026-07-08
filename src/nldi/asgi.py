@@ -1,74 +1,105 @@
-#!/usr/bin/env python
-# coding: utf-8
 # SPDX-License-Identifier: CC0-1.0
 # SPDX-FileCopyrightText: 2024-present USGS
-# See the full copyright notice in LICENSE.md
-#
-"""ASGI application factory for NLDI API server."""
+"""ASGI application factory."""
 
+import asyncio
 import logging
 
-from advanced_alchemy.config.engine import EngineConfig
-from advanced_alchemy.extensions.litestar import SQLAlchemyAsyncConfig, SQLAlchemyPlugin
+import sqlalchemy.exc
 from litestar import Litestar
-from litestar.config.cors import CORSConfig
+from litestar.di import Provide
+from litestar.exceptions import HTTPException
 from litestar.logging import LoggingConfig
-from litestar.openapi.config import OpenAPIConfig, SwaggerRenderPlugin
-from litestar.openapi.spec import Tag
+from litestar.openapi.config import OpenAPIConfig
+from litestar.openapi.plugins import SwaggerRenderPlugin
+from litestar.router import Router
 
-from . import __version__
-from .config import get_config, log_level
-from .server.linked_data.endpoints import LinkedDataController
-from .server.root.endpoints import RootController
+from . import __description__, __title__, __version__
+from .config import get_log_level, get_prefix
+from .controllers.linked_data import (
+    provide_catchment_repo,
+    provide_feature_repo,
+    provide_flowline_repo,
+    provide_pygeoapi_client,
+    provide_source_repo,
+)
+from .controllers.linked_data.basin import BasinController
+from .controllers.linked_data.lookups import LookupController
+from .controllers.linked_data.navigation import NavigationController
+from .controllers.root import RootController
+from .db import provide_db_session
+from .errors import (
+    db_unavailable_handler,
+    gateway_timeout_handler,
+    problem_details_handler,
+    pygeoapi_error_handler,
+    unhandled_exception_handler,
+)
+from .middleware import (
+    disconnect_guard_factory,
+    head_shortcircuit_factory,
+    headers_middleware_factory,
+    timing_middleware_factory,
+)
+from .pygeoapi import PyGeoAPIError, PyGeoAPITimeoutError
+
+_logger = logging.getLogger(__name__)
 
 
-def create_app() -> Litestar:
-    _cfg = get_config()
+async def _log_pending_tasks() -> None:
+    """Log any tasks still running at shutdown."""
+    current = asyncio.current_task()
+    pending = [t for t in asyncio.all_tasks() if not t.done() and t is not current]
+    if pending:
+        _logger.warning("Shutdown: %d pending task(s)", len(pending))
 
-    alchemy_plugin = SQLAlchemyPlugin(
-        config=SQLAlchemyAsyncConfig(
-            connection_string=_cfg.db.URL,
-            create_all=False,
-            engine_config=EngineConfig(
-                pool_pre_ping=True,
-                pool_size=10,  ## How many connections to hold ready in the pool.  A large number here will tax the database.
-                max_overflow=10,  ## How much we can increase the pool to respond to burst traffic.
-                pool_recycle=-1,  ## Disabled: pool_pre_ping handles stale connections at checkout.
-                pool_timeout=30,  ## If the max pool size (pool_size + max_overflow) makes a session wait, this is how long before it gives up waiting for a session from the pool.
-            ),
-        )
+
+def create_app(dependencies: dict | None = None) -> Litestar:
+    """Create and configure the Litestar ASGI application."""
+    deps = {
+        "db_session": Provide(provide_db_session),
+        "source_repo": Provide(provide_source_repo),
+        "feature_repo": Provide(provide_feature_repo),
+        "flowline_repo": Provide(provide_flowline_repo),
+        "catchment_repo": Provide(provide_catchment_repo),
+        "pygeoapi_client": Provide(provide_pygeoapi_client, sync_to_thread=False),
+    }
+    if dependencies:
+        deps.update(dependencies)
+    linked_data_router = Router(
+        path="/",
+        route_handlers=[LookupController, NavigationController, BasinController],
+        middleware=[disconnect_guard_factory, timing_middleware_factory],
     )
-
-    app = Litestar(
-        route_handlers=[RootController, LinkedDataController],
-        plugins=[alchemy_plugin],
-        cors_config=CORSConfig(allow_origins=["*"]),
-        logging_config=LoggingConfig(root={"level": log_level(), "handlers": ["queue_listener"]}),
-        on_startup=[lambda app: setattr(app.state, "nldi_config", _cfg)],
-        path=_cfg.server.prefix,
+    return Litestar(
+        route_handlers=[RootController, linked_data_router],
+        path=get_prefix(),
+        dependencies=deps,
+        logging_config=LoggingConfig(
+            root={"level": get_log_level(), "handlers": ["queue_listener"]},
+            loggers={
+                "httpx": {"level": "WARNING", "propagate": False},
+                "httpcore": {"level": "WARNING", "propagate": False},
+            },
+        ),
+        exception_handlers={  # ty: ignore[invalid-argument-type]
+            HTTPException: problem_details_handler,
+            PyGeoAPITimeoutError: gateway_timeout_handler,
+            PyGeoAPIError: pygeoapi_error_handler,
+            sqlalchemy.exc.SQLAlchemyError: db_unavailable_handler,
+            TimeoutError: db_unavailable_handler,
+            Exception: unhandled_exception_handler,
+        },
+        middleware=[headers_middleware_factory, head_shortcircuit_factory],
+        on_shutdown=[_log_pending_tasks],
         openapi_config=OpenAPIConfig(
-            title=_cfg.metadata.title,
+            title=__title__,
             version=__version__,
             path="/docs",
             render_plugins=[SwaggerRenderPlugin()],
             use_handler_docstrings=True,
-            tags=[
-                Tag(
-                    name="nldi",
-                    description="Root NLDI services",
-                ),
-                Tag(
-                    name="by_comid",
-                    description="Endpoints that only work against the `comid` source. 'comid' can always be used as a source in `by_sourceid` endpoints.",
-                ),
-                Tag(
-                    name="by_sourceid",
-                    description="lookups by a source name (`source_name`); 'comid' is always a valid source. A list of all sources is available at the `/linked-data` endpoint.",
-                ),
-            ],
         ),
     )
-    return app
 
 
-APP = create_app()
+app = create_app()

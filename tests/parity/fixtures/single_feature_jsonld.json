@@ -1,0 +1,40 @@
+{
+  "@context": [
+    {
+      "schema": "https://schema.org/",
+      "geo": "schema:geo",
+      "hyf": "https://www.opengis.net/def/schema/hy_features/hyf/",
+      "gsp": "http://www.opengis.net/ont/geosparql#",
+      "name": "schema:name",
+      "comid": {
+        "@id": "schema:geoWithin",
+        "@type": "@id"
+      },
+      "hyf:linearElement": {
+        "@type": "@id"
+      }
+    }
+  ],
+  "@id": "https://www.waterqualitydata.us/provider/NWIS/USGS-WI/USGS-05427930/",
+  "@type": "https://www.opengis.net/def/schema/hy_features/hyf/HY_HydroLocation",
+  "schema:subjectOf": {
+    "@type": "schema:CreativeWork",
+    "schema:identifier": "WQP",
+    "schema:name": "Water Quality Portal"
+  },
+  "name": "DORN (SPRING) CREEK AT CT HIGHWAY M NR WAUNAKEE,WI",
+  "comid": "https://geoconnex.us/nhdplusv2/comid/13294176",
+  "hyf:referencedPosition": [],
+  "geo": {
+    "@type": "schema:GeoCoordinates",
+    "schema:longitude": -89.4423056,
+    "schema:latitude": 43.1402778
+  },
+  "gsp:hasGeometry": {
+    "@type": "http://www.opengis.net/ont/sf#Point",
+    "gsp:asWKT": {
+      "@value": "POINT(-89.4423056 43.1402778)",
+      "@type": "http://www.opengis.net/ont/geosparql#wktLiteral"
+    }
+  }
+}

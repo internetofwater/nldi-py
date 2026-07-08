@@ -1,69 +1,108 @@
-# Taskfile to ease the use of dev tooling...
-# note that task should be run in the virtual environment you set up with uv.
-#
-#  uv run  task reformat    # runs the 'reformat' task, defined below to use ruff
-#  uv run  task fixme       # this will run both the reformat and lint tasks
+version: "3"
 
-version: '3'
-
-env:
-  SRCS: ./src
+vars:
+  REGISTRY: ghcr.io/internetofwater/nldi-py
+  TAG: '{{.TAG | default "alpha"}}'
 
 tasks:
-  fixme:
-    summary: |
-      Runs static code analysis tools, including reformat.
+  docker:build:
+    desc: Build Docker image locally (single platform, no push)
     cmds:
-      - task: reformat
-      - task: lint
-#      - task: typecheck
-#      TODO: type checking....
+      - docker build -t {{.REGISTRY}}:{{.TAG}} .
 
-  format:
+  docker:push:
+    desc: Build and push multi-platform image to ghcr.io (requires docker login)
     cmds:
-      - ruff format $SRCS
+      - docker buildx build --platform linux/amd64,linux/arm64 --tag {{.REGISTRY}}:{{.TAG}} --push .
 
   lint:
+    desc: Run ruff linter
     cmds:
-      - ruff check $SRCS
+      - uv run ruff check src/
+
+  format:
+    desc: Format code with ruff
+    cmds:
+      - uv run ruff format src/
+
+  format:check:
+    desc: Check formatting without changes
+    cmds:
+      - uv run ruff format --check src/
+
+  test:
+    desc: Run all tests
+    cmds:
+      - uv run pytest tests/unit tests/integration # tests/parity
+
+  test:unit:
+    desc: Run unit tests only
+    cmds:
+      - uv run pytest tests/unit
+
+  test:integration:
+    desc: Run integration tests (requires Docker)
+    cmds:
+      - uv run pytest tests/integration
+
+  test:load:
+    desc: Run load test (requires running app — task dev)
+    cmds:
+      - mkdir -p tests/load/results
+      - >
+        uv run locust
+        -f tests/load/locustfile.py
+        --host {{.NLDI_TEST_URL}}
+        --users 20
+        --spawn-rate 5
+        --run-time {{.DURATION}}
+        --headless
+        --csv tests/load/results/report
+        --html tests/load/results/report.html
+    vars:
+      NLDI_TEST_URL: '{{.NLDI_TEST_URL | default "http://localhost:8000/api/nldi"}}'
+      DURATION: '{{.DURATION | default "5m"}}'
+
+  test:parity:
+    desc: Run parity tests (requires running app — task dev)
+    cmds:
+      - uv run pytest tests/parity -m parity -v
+    env:
+      NLDI_TEST_URL: "{{.NLDI_TEST_URL}}"
+    vars:
+      NLDI_TEST_URL: '{{.NLDI_TEST_URL | default "http://localhost:8000/api/nldi"}}'
+
+  test:system:
+    desc: Run system tests (requires running app — task dev)
+    cmds:
+      - uv run pytest tests/system -m system -v
+    env:
+      NLDI_TEST_URL: "{{.NLDI_TEST_URL}}"
+    vars:
+      NLDI_TEST_URL: '{{.NLDI_TEST_URL | default "http://localhost:8000/api/nldi"}}'
 
   typecheck:
+    desc: Run type checker
     cmds:
-      - mypy --install-types --non-interactive $SRCS
+      - uv run ty check src/
 
-  tests:
-    summary: |
-      Runs all tests configured in pytest, regardless of marking.
+  dev:docker:
+    desc: Run pulled image with decrypted secrets (equivalent of dev task but containerized)
     cmds:
-      - pytest --cov --sparse-ordering ./tests
+      - gpg --quiet --decrypt ~/.secrets/nldi.env.gpg | sed 's/^\([^=]*\)="\(.*\)"$/\1=\2/' > ~/.secrets/nldi.tmp
+      - docker run --rm --env-file ~/.secrets/nldi.tmp -p 8000:8080 ghcr.io/internetofwater/nldi-py:{{.TAG}}
+      - rm -f ~/.secrets/nldi.tmp
+    vars:
+      TAG: '{{.TAG | default "alpha"}}'
 
-  ## NOTE: for the following test-like tasks, I have an implied hierarchy of tests.
-  # tests.unittest are small and fast, with no out-of-process dependencies.
-  # tests.integration have out-of-process dependencies, namely a connection to the containerized
-  #     database running in a local docker service.  Integration implies (to me) that unittests
-  #     should also run.
-  # tests.system require connection to cloud-hosted database.  system implies integration and
-  #     also unittest.  In theory, tests.system is the same as the run-all-tests task  above.
-  #     The main difference is that the `tests` target will also cover unmarked tests.
-
-  tests.unittest:
-    summary: |
-      Run only tests marked as 'unittest'
+  dev:
+    desc: Run app locally with decrypted secrets from ~/.secrets/nldi.env.gpg
     cmds:
-      - pytest  -m 'unittest' --cov --sparse-ordering ./tests
+      - env $(gpg --quiet --decrypt ~/.secrets/nldi.env.gpg | xargs) uv run uvicorn nldi.asgi:app --reload --timeout-graceful-shutdown 5 
 
-  tests.integration:
-    summary: |
-      Run tests marked as 'integration' (unittests are also included)
+  check:
+    desc: Pre-commit gate — lint, format check, unit tests
     cmds:
-      - pytest  -m 'integration' -m 'unittest' --cov --sparse-ordering ./tests
-
-  test.system:
-    summary: |
-      Run all tests marked as 'system', as well as integration and unittest
-      - pytest  -m 'integration' -m 'unittest' -m 'system' --cov --sparse-ordering ./tests
-
-
-  docker:
-    cmds:
-      - docker build . -t nldi-py
+      - task: lint
+      - task: format:check
+      - task: test:unit

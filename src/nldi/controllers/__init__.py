@@ -1,0 +1,3 @@
+# SPDX-License-Identifier: CC0-1.0
+# SPDX-FileCopyrightText: 2024-present USGS
+"""NLDI API controllers."""

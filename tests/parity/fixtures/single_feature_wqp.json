@@ -1,0 +1,19 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": null,
+      "properties": {
+        "identifier": "USGS-05427930",
+        "navigation": "https://api.water.usgs.gov/nldi/linked-data/wqp/USGS-05427930/navigation",
+        "name": "DORN (SPRING) CREEK AT CT HIGHWAY M NR WAUNAKEE,WI",
+        "source": "WQP",
+        "sourceName": "Water Quality Portal",
+        "comid": "13294176",
+        "type": "varies",
+        "uri": "https://www.waterqualitydata.us/provider/NWIS/USGS-WI/USGS-05427930/"
+      }
+    }
+  ]
+}

@@ -1,0 +1,229 @@
+"""Unit test fixtures."""
+
+import pytest
+
+
+class FakeSource:
+    """Minimal stand-in for CrawlerSourceModel."""
+
+    def __init__(self, source_suffix: str, source_name: str):
+        self.source_suffix = source_suffix
+        self.source_name = source_name
+
+
+class FakeFeatureModel:
+    """Minimal stand-in for FeatureSourceModel."""
+
+    def __init__(self, identifier: str, source_suffix: str, source_name: str, name: str, uri: str, comid: int | None = None):
+        self.identifier = identifier
+        self.name = name
+        self.uri = uri
+        self.comid = comid
+        self.reachcode = None
+        self.measure = None
+        self.location = None
+        # Simulate association proxies
+        self.source_suffix_proxy = source_suffix
+        self.source_name_proxy = source_name
+        self.feature_type_proxy = "point"
+        self.mainstem = None
+
+
+class FakeFlowlineModel:
+    """Minimal stand-in for FlowlineModel."""
+
+    def __init__(self, nhdplus_comid: int, shape: str | None = '{"type":"LineString","coordinates":[[-89,43],[-89.1,43.1]]}'):
+        self.nhdplus_comid = nhdplus_comid
+        self.shape = shape
+        self.permanent_identifier = str(nhdplus_comid)
+        self.reachcode = "00000000000000"
+        self.fmeasure = 0.0
+        self.tmeasure = 100.0
+        self.mainstem = None
+
+
+class FakeCrawlerSourceRepository:
+    """Fake CrawlerSourceRepository for unit tests."""
+
+    def __init__(self, sources: list | None = None):
+        self._sources = sources or []
+
+    async def list(self, **kwargs) -> list:
+        """Return canned sources."""
+        return self._sources
+
+    async def get_one_or_none(self, *args, **kwargs) -> FakeSource | None:
+        """Find a source by suffix."""
+        suffix = kwargs.get("source_suffix", "")
+        for s in self._sources:
+            if s.source_suffix.lower() == suffix.lower():
+                return s
+        return None
+
+    async def get_by_suffix(self, suffix: str) -> FakeSource | None:
+        """Find a source by suffix, case-insensitive."""
+        for s in self._sources:
+            if s.source_suffix.lower() == suffix.lower():
+                return s
+        return None
+
+
+class FakeFeatureRepository:
+    """Fake FeatureRepository for unit tests."""
+
+    def __init__(self, features: list | None = None):
+        self._features = features or []
+
+    async def feature_lookup(self, source_suffix: str, identifier: str) -> FakeFeatureModel | None:
+        """Find a feature by source and identifier."""
+        for f in self._features:
+            if f.identifier == identifier:
+                return f
+        return None
+
+    async def list_by_source(self, source_suffix: str, limit: int = 0, offset: int = 0) -> list:
+        """List features for a source with pagination."""
+        results = [f for f in self._features if f.source_suffix_proxy.lower() == source_suffix.lower()]
+        results = results[offset:]
+        if limit > 0:
+            results = results[:limit]
+        return results
+
+    async def from_nav_query(self, data_source: str, nav_query) -> list:
+        """Fake: return features matching data_source (ignores nav query)."""
+        return [f for f in self._features if f.source_suffix_proxy.lower() == data_source.lower()]
+
+
+class FakeFlowlineRepository:
+    """Fake FlowlineRepository for unit tests."""
+
+    def __init__(self, flowlines: list | None = None):
+        self._flowlines = flowlines or []
+
+    async def get(self, id, **kwargs) -> FakeFlowlineModel | None:
+        """Find a flowline by comid."""
+        for f in self._flowlines:
+            if f.nhdplus_comid == int(id):
+                return f
+        return None
+
+    async def get_one_or_none(self, *args, **kwargs) -> FakeFlowlineModel | None:
+        """Find a flowline by comid."""
+        comid = kwargs.get("nhdplus_comid")
+        if comid is not None:
+            for f in self._flowlines:
+                if f.nhdplus_comid == int(comid):
+                    return f
+        # Positional filter: return first flowline if any exist
+        if args and self._flowlines:
+            return self._flowlines[0]
+        return None
+
+    async def get_by_comid(self, comid: int) -> FakeFlowlineModel | None:
+        """Find a flowline by comid."""
+        for f in self._flowlines:
+            if f.nhdplus_comid == int(comid):
+                return f
+        return None
+
+    async def list_all(self, limit: int = 0, offset: int = 0) -> list:
+        """List flowlines with pagination."""
+        results = self._flowlines[offset:]
+        if limit > 0:
+            results = results[:limit]
+        return results
+
+    async def from_nav_query(self, nav_query) -> list:
+        """Fake: return all flowlines (ignores nav query)."""
+        return self._flowlines
+
+    async def get_measure_and_reachcode(self, comid: int, wkt_point: str) -> tuple:
+        """Fake: return dummy measure and reachcode."""
+        return 50.0, "00000000000000"
+
+    async def feat_get_point_along_flowline(self, feature_id: str, feature_source: str):
+        """Fake: return a point if flowlines exist, else None."""
+        if self._flowlines:
+            return (-89.47, 43.09)
+        return None
+
+    async def feat_get_distance_from_flowline(self, feature_id: str, feature_source: str):
+        """Fake: return None."""
+        return None
+
+    async def feat_get_nearest_point_on_flowline(self, feature_id: str, feature_source: str):
+        """Fake: return None."""
+        return None
+
+
+class FakeCatchmentModel:
+    """Minimal stand-in for CatchmentModel."""
+
+    def __init__(self, featureid: int):
+        self.featureid = featureid
+        self.the_geom = None
+
+
+class FakeCatchmentRepository:
+    """Fake CatchmentRepository for unit tests."""
+
+    def __init__(self, catchments: list | None = None):
+        self._catchments = catchments or []
+
+    async def get_by_point(self, wkt_point: str) -> FakeCatchmentModel | None:
+        """Return first catchment if any exist."""
+        return self._catchments[0] if self._catchments else None
+
+    async def get_drainage_basin(self, nav_query, simplified: bool = True) -> str | None:
+        """Fake: return a simple polygon GeoJSON string."""
+        if not self._catchments:
+            return None
+        return '{"type":"Polygon","coordinates":[[[-89,43],[-89,44],[-88,44],[-88,43],[-89,43]]]}'
+
+
+@pytest.fixture()
+def fake_source_repo():
+    """Provide a FakeCrawlerSourceRepository factory."""
+    return FakeCrawlerSourceRepository
+
+
+@pytest.fixture()
+def make_source():
+    """Provide a FakeSource factory."""
+    return FakeSource
+
+
+@pytest.fixture()
+def fake_feature_repo():
+    """Provide a FakeFeatureRepository factory."""
+    return FakeFeatureRepository
+
+
+@pytest.fixture()
+def make_feature():
+    """Provide a FakeFeatureModel factory."""
+    return FakeFeatureModel
+
+
+@pytest.fixture()
+def fake_flowline_repo():
+    """Provide a FakeFlowlineRepository factory."""
+    return FakeFlowlineRepository
+
+
+@pytest.fixture()
+def make_flowline():
+    """Provide a FakeFlowlineModel factory."""
+    return FakeFlowlineModel
+
+
+@pytest.fixture()
+def fake_catchment_repo():
+    """Provide a FakeCatchmentRepository factory."""
+    return FakeCatchmentRepository
+
+
+@pytest.fixture()
+def make_catchment():
+    """Provide a FakeCatchmentModel factory."""
+    return FakeCatchmentModel
